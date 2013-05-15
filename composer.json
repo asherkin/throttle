@@ -24,6 +24,6 @@
         "cilex/console-service-provider": "1.0.*@dev"
     },
     "autoload": {
-        "psr-0": { "Accelerator": "src/" }
+        "psr-0": { "Throttle": "src/" }
     }
 }

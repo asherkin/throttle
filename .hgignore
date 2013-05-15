@@ -3,3 +3,4 @@
 ^dumps/
 ^logs/
 ^vendor/
+^cache/

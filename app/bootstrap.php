@@ -14,8 +14,7 @@ Symfony\Component\HttpKernel\Debug\ErrorHandler::register();
 $app = new Silex\Application();
 
 $app['debug'] = false;
-
-$app['root'] = __DIR__.'/..';
+$app['root'] = __DIR__ . '/..';
 
 $app->register(new Silex\Provider\DoctrineServiceProvider(), array(
     'db.options' => array(

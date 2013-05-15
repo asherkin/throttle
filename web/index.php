@@ -1,11 +1,14 @@
 <?php
 
-$app = require_once __DIR__.'/../app/bootstrap.php';
+$app = require_once __DIR__ . '/../app/bootstrap.php';
 
 $app->register(new Silex\Provider\UrlGeneratorServiceProvider());
 
 $app->register(new Silex\Provider\TwigServiceProvider(), array(
-    'twig.path' => __DIR__.'/../views',
+    'twig.path' => __DIR__ . '/../views',
+    'twig.options' => array(
+        'cache' => __DIR__ . '/../cache'
+    ),
 ));
 
 $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
@@ -113,35 +116,35 @@ $app['openid'] = $app->share(function () {
     return new LightOpenID('crash.limetech.org');
 });
 
-$app->get('/login', 'Accelerator\Home::login')
+$app->get('/login', 'Throttle\Home::login')
     ->bind('login');
 
-$app->post('/symbols/submit', 'Accelerator\Symbols::submit')
+$app->post('/symbols/submit', 'Throttle\Symbols::submit')
     ->value('_format', 'txt');
 
-$app->post('/submit', 'Accelerator\Crash::submit')
+$app->post('/submit', 'Throttle\Crash::submit')
     ->value('_format', 'txt');
 
-$app->get('/list', 'Accelerator\Crash::list_crashes')
+$app->get('/list', 'Throttle\Crash::list_crashes')
     ->bind('list');
 
-$app->get('/{id}/stack', 'Accelerator\Crash::stack')
+$app->get('/{id}/stack', 'Throttle\Crash::stack')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('stack');
 
-$app->post('/{id}/reprocess', 'Accelerator\Crash::reprocess')
+$app->post('/{id}/reprocess', 'Throttle\Crash::reprocess')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('reprocess');
 
-$app->post('/{id}/delete', 'Accelerator\Crash::delete')
+$app->post('/{id}/delete', 'Throttle\Crash::delete')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('delete');
 
-$app->get('/{id}', 'Accelerator\Crash::details')
+$app->get('/{id}', 'Throttle\Crash::details')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('details');
 
-$app->get('/', 'Accelerator\Home::index')
+$app->get('/', 'Throttle\Home::index')
     ->bind('index');
 
 $app->run();

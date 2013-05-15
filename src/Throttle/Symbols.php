@@ -1,6 +1,6 @@
 <?php
 
-namespace Accelerator;
+namespace Throttle;
 
 use Silex\Application;
 
