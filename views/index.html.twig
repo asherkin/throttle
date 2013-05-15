@@ -1,0 +1,42 @@
+{% extends 'layout.html.twig' %}
+ 
+{% block content %}
+<div class="page-header">
+    <h1>Throttle
+    <small class="pull-right"><a href="{{ url('login') }}">
+         <img src="img/sits_large_noborder.png">
+    </a></small></h1>
+</div>
+{% if maintenance_message is not empty %}
+    <div class="alert alert-block alert-info">
+        {{ maintenance_message }}
+    </div>
+{% endif %}
+
+<h2>Find Crash</h2>
+{% for error in errors %}
+    <div class="alert alert-block alert-error">
+        {{ error }}
+    </div>
+{% endfor %}
+<form action="" method="get" class="form-inline">
+    <div class="input-prepend input-append">
+        <label class="add-on control-label" for="inputCrash">Crash ID</label>
+        <input type="text" id="inputCrash" name="id">
+        <button type="submit" class="btn btn-primary">Go</button>
+    </div>
+</form>
+
+<h2>Statistics</h2>
+<p>
+    {{ processed }} crash dumps processed ({{ pending }} pending)
+</p>
+<p>
+    <img class="well well-small" src="img/graph.png">
+</p>
+
+<p>
+    <small>Powered By <a href="http://forums.alliedmods.net/showthread.php?t=146644">Accelerator - Take Back Control</a></small>
+</p>
+{% endblock %}
+

@@ -1,0 +1,29 @@
+{
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "facebook/libphutil",
+                "version": "dev-master",
+                "source": {
+                    "url": "https://github.com/facebook/libphutil.git",
+                    "type": "git",
+                    "reference": "origin/master"
+                }
+            }
+        }
+    ],
+    "require": {
+        "silex/silex": "1.0.*@dev",
+        "doctrine/dbal": ">=2.2.0,<2.4.0-dev",
+        "twig/twig": ">=1.8,<2.0-dev",
+        "symfony/twig-bridge": "~2.2",
+        "fp/lightopenid": "dev-master",
+        "symfony/console": "~2.1",
+        "facebook/libphutil": "dev-master",
+        "cilex/console-service-provider": "1.0.*@dev"
+    },
+    "autoload": {
+        "psr-0": { "Accelerator": "src/" }
+    }
+}

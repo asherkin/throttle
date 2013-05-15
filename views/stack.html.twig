@@ -1,0 +1,7 @@
+<dl class="dl-horizontal">
+{% for frame in stack %}
+    <dt>{{ frame.frame }}</dt>
+    <dd>{{ frame|stackframe }}</dd>
+{% endfor %}
+</dl>
+
