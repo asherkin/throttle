@@ -1,7 +1,7 @@
 {% extends 'layout.html.twig' %}
  
 {% block content %}
-<div class="page-header">
+<div class="page-header page-header-table">
     <h1>All Crashes <small class="pull-right pull-subtitle">{{ app.session.get('user').id }}</small></h1>
 </div>
 
@@ -9,7 +9,7 @@
     <tbody>
 {% for crash in crashes %}
         <tr>
-            <td><img src="{{ crash.cmdline|identicon }}" width="20" height="20"></td>
+            <td><img class="identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20"></td>
             <th><a href="{{ url('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></th>
             <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
 {% if app.session.get('user').admin %}

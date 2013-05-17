@@ -1,8 +1,16 @@
 .btn-row {
-    padding: 1px 5px;
     margin: 0 5px;
-    font-size: 12px;
-    line-height: 18px;
+    font-size: 14px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    padding: 0 6px;
+}
+
+.identicon {
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
 }
 
 .pull-subtitle {
@@ -12,11 +20,16 @@
 .column-stackframe {
     overflow-x: hidden;
     white-space: nowrap;
-    max-width: 390px;
+    max-width: 700px;
     text-overflow: ellipsis;
 }
 
 .table th, .table td {
     vertical-align: middle;
+}
+
+.page-header-table {
+    margin-bottom: 0;
+    border-bottom: 0;
 }
 
