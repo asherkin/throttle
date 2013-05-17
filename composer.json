@@ -21,7 +21,8 @@
         "fp/lightopenid": "dev-master",
         "symfony/console": "~2.1",
         "facebook/libphutil": "dev-master",
-        "cilex/console-service-provider": "1.0.*@dev"
+        "cilex/console-service-provider": "1.0.*@dev",
+        "monolog/monolog": ">=1.0.0"
     },
     "autoload": {
         "psr-0": { "Throttle": "src/" }
