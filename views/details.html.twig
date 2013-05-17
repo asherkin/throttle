@@ -9,7 +9,7 @@
     <dt>Uploaded</dt>
     <dd>{{ crash.timestamp|date }}</dd>
 
-{% if crash.processed == 1 %}
+{% if crash.cmdline %}
     <dt>Command Line</dt>
     <dd>{{ crash.cmdline }}</dd>
 {% endif %}
