@@ -12,7 +12,11 @@
 .column-stackframe {
     overflow-x: hidden;
     white-space: nowrap;
-    max-width: 400px;
+    max-width: 390px;
     text-overflow: ellipsis;
+}
+
+.table th, .table td {
+    vertical-align: middle;
 }
 

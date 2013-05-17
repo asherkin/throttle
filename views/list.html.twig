@@ -19,7 +19,8 @@
 {% endif %}
             </td>
 {% endif %}
-            <td class="column-stackframe">{{ {module: crash.module, function: crash.function, file: crash.file, line: crash.line, offset: crash.offset}|stackframe }}</td>
+            {% set frame = {module: crash.module, function: crash.function, file: crash.file, line: crash.line, offset: crash.offset} %}
+            <td title="{{ frame|stackframe }}" class="column-stackframe">{{ frame|stackframe }}</td>
 {% if app.session.get('user').admin %}
             <td>
                 <form action="{{ url('delete', {id: crash.id}) }}" method="post" class="navbar-form pull-right"><button type="submit" class="btn btn-danger btn-row"><i class="icon-trash"></i></button></form>
