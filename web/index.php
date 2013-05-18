@@ -14,7 +14,7 @@ $app->register(new Silex\Provider\TwigServiceProvider(), array(
 $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
     $twig->addFilter('stackframe', new \Twig_Filter_Function(function($frame) {
         if ($frame['file'] != "") {
-            $file = basename($frame['file']);
+            $file = basename(str_replace('\\', '/', $frame['file']));
             $symbol = "${frame['module']}!${frame['function']} [${file}:${frame['line']} + ${frame['offset']}]";
         } else if ($frame['function'] != "") {
             $symbol = "${frame['module']}!${frame['function']} + ${frame['offset']}";
