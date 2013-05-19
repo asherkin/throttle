@@ -18,7 +18,11 @@
 <dl class="dl-horizontal">
 {% for key, value in crash.metadata %}
     <dt>{{ key|decamel }}</dt>
+{% if value %}
     <dd>{{ value }}</dd>
+{% else %}
+    <dd>&nbsp;</dd>
+{% endif %}
 {% endfor %}
 </dl>
 

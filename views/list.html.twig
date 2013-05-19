@@ -9,7 +9,11 @@
     <tbody>
 {% for crash in crashes %}
         <tr>
-            <td><img class="identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20"></td>
+            <td>
+{% if crash.cmdline %}
+                <img class="identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20">
+{% endif %}
+            </td>
             <th><a href="{{ url('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></th>
             <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
 {% if app.session.get('user').admin %}
@@ -19,8 +23,14 @@
 {% endif %}
             </td>
 {% endif %}
-            {% set frame = {module: crash.module, function: crash.function, file: crash.file, line: crash.line, offset: crash.offset} %}
-            <td title="{{ frame|stackframe }}" class="column-stackframe">{{ frame|stackframe }}</td>
+{% if crash.module %}
+{% set frame = {module: crash.module, function: crash.function, file: crash.file, line: crash.line, offset: crash.offset, first: true} %}
+{% else %}
+{% set frame = {module: crash.module2, function: crash.function2, file: crash.file2, line: crash.line2, offset: crash.offset2, first: false} %}
+{% endif %}
+            <td title="{{ frame|stackframe }}" class="column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
+                {{ frame|stackframe }}
+            </td>
 {% if app.session.get('user').admin %}
             <td class="column-actions">
                 <form action="{{ url('reprocess', {id: crash.id}) }}" method="post" class="table-form">

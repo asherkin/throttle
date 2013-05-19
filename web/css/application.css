@@ -27,6 +27,11 @@
     white-space: nowrap;
     max-width: 700px;
     text-overflow: ellipsis;
+    font-family: Consolas, Lucida Console, monospace;
+}
+
+.column-stackframe-fallback {
+    font-style: oblique;
 }
 
 td.column-actions {
@@ -40,5 +45,9 @@ td.column-actions {
 .page-header-table {
     margin-bottom: 0;
     border-bottom: 0;
+}
+
+dl.dl-stackframe dd {
+    font-family: Consolas, Lucida Console, monospace;
 }
 
