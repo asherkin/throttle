@@ -58,7 +58,7 @@ class Crash
 
     public function stack(Application $app, $id)
     {
-        $stack = $app['db']->executeQuery('SELECT frame.frame, frame.module, frame.function, frame.file, frame.line, frame.offset FROM frame JOIN crash ON crash.id = frame.crash AND crash.thread = frame.thread WHERE crash = ? ORDER BY frame LIMIT 10', array($id))->fetchAll();
+        $stack = $app['db']->executeQuery('SELECT frame.frame, frame.module, frame.function, frame.file, frame.line, frame.offset FROM frame JOIN crash ON crash.id = frame.crash AND crash.thread = frame.thread WHERE crash = ? ORDER BY frame', array($id))->fetchAll();
 
         return $app['twig']->render('stack.html.twig', array(
             'stack' => $stack,

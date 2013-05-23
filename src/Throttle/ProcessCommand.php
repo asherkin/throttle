@@ -31,6 +31,9 @@ class ProcessCommand extends Command
 
         $app = $this->getApplication()->getContainer();
 
+        $lock = \PhutilFileLock::newForPath($app['root'] . '/cache/process.lck');
+        $lock->lock();
+
         $pending = $app['db']->executeQuery('SELECT COALESCE(COUNT(id), 0) FROM crash WHERE processed = 0')->fetchColumn(0);
 
         $output->writeln("Found $pending pending crash dump(s)");
@@ -69,9 +72,9 @@ class ProcessCommand extends Command
                     if (!$foundStack) {
                         if ($line == '') {
                             $foundStack = true;
-                        } elseif ($data[0] == 'Crash' && isset($data[3])) {
+                        } elseif ($data[0] == 'Crash' && $data[3] !== "") {
                             $crashThread = $data[3];
-                        } elseif ($data[0] == 'Module') {
+                        } elseif ($data[0] == 'Module' && $data[3] !== "" && $data[4] !== "") {
                             $app['db']->executeUpdate('INSERT INTO module VALUES (?, ?, ?)', array($id, $data[3], $data[4]));
                         }
 
@@ -111,6 +114,8 @@ class ProcessCommand extends Command
         }
 
         $progress->finish();
+
+        $lock->unlock();
     }
 }
 
