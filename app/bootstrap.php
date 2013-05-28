@@ -40,11 +40,6 @@ $app['monolog'] = $app->share($app->extend('monolog', function($monolog, $app) {
         ));
     }
 
-    // Install the debug handler always (register does this for non-debug env)
-    if (!$app['debug'] && isset($app['monolog.handler.debug'])) {
-        $monolog->pushHandler($app['monolog.handler.debug']);
-    }
-
     return $monolog;
 }));
 

@@ -127,6 +127,14 @@ if ($app['config']['debug'] || (($user = $app['session']->get('user')) && $user[
     $app->register(new Silex\Provider\WebProfilerServiceProvider(), array(
         'profiler.cache_dir' => __DIR__ . '/../cache/profiler',
     ));
+
+    // Install the debug handler (register does this for non-debug env)
+    if (!$app['debug'] && isset($app['monolog.handler.debug'])) {
+        $app['monolog'] = $app->share($app->extend('monolog', function($monolog, $app) {
+            $monolog->pushHandler($app['monolog.handler.debug']);
+            return $monolog;
+        }));
+    }
 }
 
 $app['openid'] = $app->share(function() use ($app) {
