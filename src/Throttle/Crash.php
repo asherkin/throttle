@@ -106,8 +106,8 @@ class Crash
             return $app->redirect($app['url_generator']->generate('login'));
         }
 
-        $check_user = $user['admin'] ? '' : 'AND owner = ?';
-        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, frame.module, frame.function, frame.file, frame.line, frame.offset, frame2.module AS module2, frame2.function AS function2, frame2.file AS file2, frame2.line AS line2, frame2.offset AS offset2 FROM crash LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 WHERE crash.processed = 1 ' . $check_user . ' ORDER BY crash.timestamp DESC LIMIT 100', array($user['id']))->fetchAll();
+        $check_user = $user['admin'] ? '' : 'WHERE owner = ?';
+        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, frame.module, frame.function, frame.file, frame.line, frame.offset, frame2.module AS module2, frame2.function AS function2, frame2.file AS file2, frame2.line AS line2, frame2.offset AS offset2 FROM crash LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $check_user . ' ORDER BY crash.timestamp DESC LIMIT 100', array($user['id']))->fetchAll();
 
         return $app['twig']->render('list.html.twig', array(
             'crashes' => $crashes,

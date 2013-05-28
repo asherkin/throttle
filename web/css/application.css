@@ -12,10 +12,14 @@
     padding: 0 6px;
 }
 
-.identicon {
+.column-identicon {
     -webkit-border-radius: 3px;
     -moz-border-radius: 3px;
     border-radius: 3px;
+}
+
+.column-crashid {
+    font-weight: bold;
 }
 
 .pull-subtitle {

@@ -8,13 +8,13 @@
 <table class="table table-striped ">
     <tbody>
 {% for crash in crashes %}
-        <tr>
+        <tr {% if crash.processed == 0 %}class="warning"{% endif %}>
             <td>
 {% if crash.cmdline %}
-                <img class="identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20">
+                <img class="column-identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20">
 {% endif %}
             </td>
-            <th><a href="{{ url('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></th>
+            <td class="column-crashid"><a href="{{ url('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></td>
             <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
 {% if app.session.get('user').admin %}
             <td>
@@ -23,7 +23,7 @@
 {% endif %}
             </td>
 {% endif %}
-{% if crash.module %}
+{% if crash.module is not empty or crash.module2 is empty %}
 {% set frame = {module: crash.module, function: crash.function, file: crash.file, line: crash.line, offset: crash.offset, first: true} %}
 {% else %}
 {% set frame = {module: crash.module2, function: crash.function2, file: crash.file2, line: crash.line2, offset: crash.offset2, first: false} %}
