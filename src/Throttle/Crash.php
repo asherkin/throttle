@@ -69,7 +69,7 @@ class Crash
     {
         $user = $app['session']->get('user');
 
-        if ($user['admin']) {
+        if ($user && $user['admin']) {
             $app['db']->transactional(function($db) use($id) {
                 $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
                 $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
@@ -85,7 +85,7 @@ class Crash
     {
         $user = $app['session']->get('user');
 
-        if ($user['admin']) {
+        if ($user && $user['admin']) {
             $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
             $app['db']->transactional(function($db) use($id, $path) {

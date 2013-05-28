@@ -2,6 +2,8 @@
 
 $app = require_once __DIR__ . '/../app/bootstrap.php';
 
+$app->register(new Silex\Provider\ServiceControllerServiceProvider());
+
 $app->register(new Silex\Provider\UrlGeneratorServiceProvider());
 
 $app->register(new Silex\Provider\TwigServiceProvider(), array(
@@ -119,6 +121,12 @@ if ($app['config'] === false) {
 
     $app->run();
     return;
+}
+
+if ($app['config']['debug'] || (($user = $app['session']->get('user')) && $user['admin'])) {
+    $app->register(new Silex\Provider\WebProfilerServiceProvider(), array(
+        'profiler.cache_dir' => __DIR__ . '/../cache/profiler',
+    ));
 }
 
 $app['openid'] = $app->share(function() use ($app) {
