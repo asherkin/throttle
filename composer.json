@@ -24,7 +24,8 @@
         "cilex/console-service-provider": "1.0.*@dev",
         "monolog/monolog": ">=1.0.0",
         "silex/web-profiler": "1.0.*@dev",
-        "symfony/monolog-bridge": "~2.2"
+        "symfony/monolog-bridge": "~2.2",
+        "symfony/doctrine-bridge": "~2.2"
     },
     "autoload": {
         "psr-0": { "Throttle": "src/" }

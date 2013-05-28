@@ -17,7 +17,7 @@ $app['root'] = __DIR__ . '/..';
 
 $app->register(new Silex\Provider\MonologServiceProvider(), array(
     'monolog.logfile' => __DIR__ . '/../logs/main.log',
-    'monolog.level'   => Monolog\Logger::INFO,
+    'monolog.level'   => Monolog\Logger::DEBUG,
     'monolog.name'    => 'throttle',
 ));
 
