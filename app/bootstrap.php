@@ -17,7 +17,7 @@ $app['root'] = __DIR__ . '/..';
 
 $app->register(new Silex\Provider\MonologServiceProvider(), array(
     'monolog.logfile' => __DIR__ . '/../logs/main.log',
-    'monolog.level'   => Monolog\Logger::WARNING,
+    'monolog.level'   => Monolog\Logger::INFO,
     'monolog.name'    => 'throttle',
 ));
 
@@ -38,6 +38,11 @@ $app['monolog'] = $app->share($app->extend('monolog', function($monolog, $app) {
             $app['config']['email-errors.from'],
             Monolog\Logger::CRITICAL
         ));
+    }
+
+    // Install the debug handler always (register does this for non-debug env)
+    if (!$app['debug'] && isset($app['monolog.handler.debug'])) {
+        $monolog->pushHandler($app['monolog.handler.debug']);
     }
 
     return $monolog;
