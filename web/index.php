@@ -112,8 +112,17 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
 
 $app->register(new Silex\Provider\SessionServiceProvider());
 
-$app['openid'] = $app->share(function () {
-    return new LightOpenID('crash.limetech.org');
+if ($app['config'] === false) {
+    $app->get('/', function() {
+        return 'Missing configuration file, please see app/config.dist.php';
+    });
+
+    $app->run();
+    return;
+}
+
+$app['openid'] = $app->share(function() use ($app) {
+    return new LightOpenID($app['config']['hostname']);
 });
 
 $app->get('/login', 'Throttle\Home::login')

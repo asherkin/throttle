@@ -42,11 +42,9 @@ class Home
         } else {
             $user = preg_replace('/^http\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);
 
-            $admin = ($user == 76561197987819599);
-
             $app['session']->set('user', array(
                 'id' => $user,
-                'admin' => $admin,
+                'admin' => in_array($user, $app['config']['admins']),
             ));
 
             return $app->redirect($app['url_generator']->generate('list'));

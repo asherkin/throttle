@@ -9,11 +9,10 @@ require_once __DIR__ . '/../vendor/facebook/libphutil/src/__phutil_library_init_
 spl_autoload_register(function ($class) {});
 
 // Catch PHP errors
-Symfony\Component\HttpKernel\Debug\ErrorHandler::register();
+Symfony\Component\HttpKernel\Debug\ErrorHandler::register(E_ALL);
 
 $app = new Silex\Application();
 
-$app['debug'] = false;
 $app['root'] = __DIR__ . '/..';
 
 $app->register(new Silex\Provider\MonologServiceProvider(), array(
@@ -22,12 +21,21 @@ $app->register(new Silex\Provider\MonologServiceProvider(), array(
     'monolog.name'    => 'throttle',
 ));
 
+try {
+    $app['config'] = include_once __DIR__ . '/config.php';
+} catch (ErrorException $e) {
+    $app['config'] = false;
+    return $app;
+}
+
+$app['debug'] = $app['config']['debug'];
+
 $app['monolog'] = $app->share($app->extend('monolog', function($monolog, $app) {
-    if (!$app['debug']) {
+    if ($app['config']['email-errors']) {
         $monolog->pushHandler(new Monolog\Handler\NativeMailerHandler(
-            array('asherkin@limetech.org'),
+            $app['config']['email-errors.to'],
             '[Throttle] Error Report',
-            'throttle@limetech.org',
+            $app['config']['email-errors.from'],
             Monolog\Logger::CRITICAL
         ));
     }
@@ -38,10 +46,10 @@ $app['monolog'] = $app->share($app->extend('monolog', function($monolog, $app) {
 $app->register(new Silex\Provider\DoctrineServiceProvider(), array(
     'db.options' => array(
         'driver'   => 'pdo_mysql',
-        'host'     => 'localhost',
-        'user'     => 'throttle',
-        'password' => 'throttle',
-        'dbname'   => 'throttle',
+        'host'     => $app['config']['db.host'],
+        'user'     => $app['config']['db.user'],
+        'password' => $app['config']['db.password'],
+        'dbname'   => $app['config']['db.name'],
     ),
 ));
 
