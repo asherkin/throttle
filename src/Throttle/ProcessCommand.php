@@ -25,10 +25,6 @@ class ProcessCommand extends Command
     {
         $app = $this->getApplication()->getContainer();
 
-        if ($app['config'] === false) {
-            throw new \Exception('Missing configuration file, please see app/config.dist.php');
-        }
-
         $limit = $input->getArgument('limit');
 
         if ($limit !== null && !ctype_digit($limit)) {

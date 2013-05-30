@@ -8,6 +8,13 @@ $app->register(new Cilex\Provider\Console\Adapter\Silex\ConsoleServiceProvider()
     'console.version' => '0.0.0',
 ));
 
+$output = new \Symfony\Component\Console\Output\ConsoleOutput();
+
+if ($app['config'] === false) {
+    $app['console']->renderException(new \Exception('Missing configuration file, please see app/config.dist.php'), $output);
+    return;
+}
+
 $app['console']->add(new Throttle\ProcessCommand);
 
 $app['console']->getHelperSet()->set(new \Doctrine\DBAL\Tools\Console\Helper\ConnectionHelper($app['db']), 'db');
@@ -20,5 +27,5 @@ $app['console']->addCommands(array(
     new \Doctrine\DBAL\Migrations\Tools\Console\Command\VersionCommand(),
 ));
 
-$app['console']->run();
+$app['console']->run(null, $output);
 
