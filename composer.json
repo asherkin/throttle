@@ -25,7 +25,8 @@
         "monolog/monolog": ">=1.0.0",
         "silex/web-profiler": "1.0.*@dev",
         "symfony/monolog-bridge": "~2.2",
-        "symfony/doctrine-bridge": "~2.2"
+        "symfony/doctrine-bridge": "~2.2",
+        "doctrine/migrations": "dev-master"
     },
     "autoload": {
         "psr-0": { "Throttle": "src/" }

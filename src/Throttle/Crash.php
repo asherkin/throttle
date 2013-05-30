@@ -29,7 +29,7 @@ class Crash
 
         $metadata = json_encode($app['request']->request->all());
 
-        $app['db']->executeUpdate('INSERT INTO crash VALUES(?, DEFAULT, ?, ?, ?, DEFAULT, DEFAULT, DEFAULT)', array($id, $ip, $owner, $metadata));
+        $app['db']->executeUpdate('INSERT INTO crash VALUES(?, NOW(), INET_ATON(?), ?, ?, DEFAULT, DEFAULT, DEFAULT)', array($id, $ip, $owner, $metadata));
 
         return $app['twig']->render('submit.txt.twig', array(
             'id' => $id,
