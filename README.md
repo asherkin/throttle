@@ -8,10 +8,10 @@
 
 ## Virtual Host Configuration
     <VirtualHost *:80>
-        ServerName throttle.limetech.org:80
-        DocumentRoot "/var/www/throttle/web"
+        ServerName throttle.example.com:80
+        DocumentRoot "/path/to/throttle/web"
 
-        <Directory /var/www/throttle/web>
+        <Directory /path/to/throttle/web>
             Options -MultiViews
 
             RewriteEngine On
