@@ -1,4 +1,16 @@
 {
+    "name": "asherkin/throttle",
+    "type": "project",
+    "description": "Lightweight google-breakpad back-end written in PHP and backed by MySQL",
+    "homepage": "https://bitbucket.org/asherkin/throttle",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Asher Baker",
+            "email": "asherkin@limetech.org",
+            "homepage": "http://limetech.org"
+        }
+    ],
     "repositories": [
         {
             "type": "package",
