@@ -15,6 +15,7 @@
 {% endif %}
 </dl>
 
+{% if crash.metadata %}
 <dl class="dl-horizontal">
 {% for key, value in crash.metadata %}
     <dt>{{ key|decamel }}</dt>
@@ -25,6 +26,12 @@
 {% endif %}
 {% endfor %}
 </dl>
+{% endif %}
+
+{% set user = app.session.get('user') %}
+{% if user and (user.admin or user.id == crash.owner) %}
+<a class="btn btn-large" href="{{ url('download', {'id': crash.id}) }}">Download</a>
+{% endif %}
 
 {% if crash.processed == 0 %}
     <div class="alert alert-block alert-info">

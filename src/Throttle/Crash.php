@@ -65,6 +65,24 @@ class Crash
         ));
     }
 
+    public function download(Application $app, $id)
+    {
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+
+        if (!file_exists($path)) {
+            $app->abort(404);
+        }
+
+        $user = $app['session']->get('user');
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetchColumn(0);
+
+        if ($user === null || (!$user['admin'] && $user['id'] !== $owner)) {
+            $app->abort(403);
+        }
+
+        return $app->sendFile($path)->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'crash_' . $id . '.dmp');
+    }
+
     public function reprocess(Application $app, $id)
     {
         $user = $app['session']->get('user');

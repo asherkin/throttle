@@ -2,7 +2,7 @@
     curl -sS https://getcomposer.org/installer | php
     php composer.phar create-project -s dev asherkin/throttle
     cd throttle
-    mv app/config.dist.php app/config.php
+    cp app/config.dist.php app/config.php
     vim app/config.php
     php app/console.php migrations:migrate
     chmod -R a+w logs cache dumps symbols/public

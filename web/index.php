@@ -157,6 +157,10 @@ $app->get('/{id}/stack', 'Throttle\Crash::stack')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('stack');
 
+$app->get('/{id}/download', 'Throttle\Crash::download')
+    ->assert('id', '[0-9a-zA-Z]{12}')
+    ->bind('download');
+
 $app->post('/{id}/reprocess', 'Throttle\Crash::reprocess')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('reprocess');
