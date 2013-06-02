@@ -30,7 +30,7 @@
 
 {% set user = app.session.get('user') %}
 {% if user and (user.admin or user.id == crash.owner) %}
-<a class="btn btn-large" href="{{ url('download', {'id': crash.id}) }}">Download</a>
+<a class="btn" href="{{ url('download', {'id': crash.id}) }}">Download</a>
 {% endif %}
 
 {% if crash.processed == 0 %}

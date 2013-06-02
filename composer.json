@@ -26,19 +26,19 @@
         }
     ],
     "require": {
-        "silex/silex": "1.0.*@dev",
-        "doctrine/dbal": ">=2.2.0,<2.4.0-dev",
-        "twig/twig": ">=1.8,<2.0-dev",
-        "symfony/twig-bridge": "~2.2",
-        "fp/lightopenid": "dev-master",
-        "symfony/console": "~2.1",
+        "silex/silex": "~1.0.0@dev",
+        "symfony/monolog-bridge": "~2.2.0",
+        "monolog/monolog": "~1.0",
+        "symfony/doctrine-bridge": "~2.2.0",
+        "doctrine/dbal": "~2.2",
+        "doctrine/migrations": "dev-master",
+        "symfony/twig-bridge": "~2.2.0",
+        "twig/twig": "~1.8",
+        "cilex/console-service-provider": "~1.0.0@dev",
+        "symfony/console": "~2.2.0",
+        "silex/web-profiler": "~1.0.0@dev",
         "facebook/libphutil": "dev-master",
-        "cilex/console-service-provider": "1.0.*@dev",
-        "monolog/monolog": ">=1.0.0",
-        "silex/web-profiler": "1.0.*@dev",
-        "symfony/monolog-bridge": "~2.2",
-        "symfony/doctrine-bridge": "~2.2",
-        "doctrine/migrations": "dev-master"
+        "fp/lightopenid": "dev-master"
     },
     "autoload": {
         "psr-0": { "Throttle": "src/" }

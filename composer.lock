@@ -3,7 +3,7 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "ea6d3c09585f8d80037e1e26245a706d",
+    "hash": "a6bcc6b8332d71dbdd09dcb94ebf6b2e",
     "packages": [
         {
             "name": "cilex/console-service-provider",
@@ -576,17 +576,17 @@
         },
         {
             "name": "symfony/console",
-            "version": "v2.2.1",
+            "version": "v2.2.2",
             "target-dir": "Symfony/Component/Console",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Console.git",
-                "reference": "v2.2.1"
+                "reference": "v2.2.2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Console/zipball/v2.2.1",
-                "reference": "v2.2.1",
+                "url": "https://api.github.com/repos/symfony/Console/zipball/v2.2.2",
+                "reference": "v2.2.2",
                 "shasum": ""
             },
             "require": {
@@ -619,21 +619,21 @@
             ],
             "description": "Symfony Console Component",
             "homepage": "http://symfony.com",
-            "time": "2013-03-19 20:48:08"
+            "time": "2013-05-27 14:47:40"
         },
         {
             "name": "symfony/doctrine-bridge",
-            "version": "v2.2.1",
+            "version": "v2.2.2",
             "target-dir": "Symfony/Bridge/Doctrine",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/DoctrineBridge.git",
-                "reference": "v2.2.1"
+                "reference": "v2.2.2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/DoctrineBridge/zipball/v2.2.1",
-                "reference": "v2.2.1",
+                "url": "https://api.github.com/repos/symfony/DoctrineBridge/zipball/v2.2.2",
+                "reference": "v2.2.2",
                 "shasum": ""
             },
             "require": {
@@ -685,7 +685,7 @@
             ],
             "description": "Symfony Doctrine Bridge",
             "homepage": "http://symfony.com",
-            "time": "2013-04-01 08:05:23"
+            "time": "2013-05-27 14:47:40"
         },
         {
             "name": "symfony/event-dispatcher",
@@ -793,17 +793,17 @@
         },
         {
             "name": "symfony/http-kernel",
-            "version": "v2.2.1",
+            "version": "v2.2.2",
             "target-dir": "Symfony/Component/HttpKernel",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/HttpKernel.git",
-                "reference": "v2.2.1"
+                "reference": "v2.2.2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/HttpKernel/zipball/v2.2.1",
-                "reference": "v2.2.1",
+                "url": "https://api.github.com/repos/symfony/HttpKernel/zipball/v2.2.2",
+                "reference": "v2.2.2",
                 "shasum": ""
             },
             "require": {
@@ -858,7 +858,7 @@
             ],
             "description": "Symfony HttpKernel Component",
             "homepage": "http://symfony.com",
-            "time": "2013-04-06 10:16:33"
+            "time": "2013-06-02 13:03:09"
         },
         {
             "name": "symfony/monolog-bridge",
@@ -1194,11 +1194,11 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "silex/silex": 20,
-        "fp/lightopenid": 20,
-        "facebook/libphutil": 20,
+        "doctrine/migrations": 20,
         "cilex/console-service-provider": 20,
         "silex/web-profiler": 20,
-        "doctrine/migrations": 20
+        "facebook/libphutil": 20,
+        "fp/lightopenid": 20
     },
     "platform": [
 
