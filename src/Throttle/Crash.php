@@ -38,7 +38,7 @@ class Crash
 
     public function details(Application $app, $id)
     {
-        $crash = $app['db']->executeQuery('SELECT id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, metadata, cmdline, processed FROM crash WHERE id = ?', array($id))->fetch();
+        $crash = $app['db']->executeQuery('SELECT id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, owner, metadata, cmdline, processed FROM crash WHERE id = ?', array($id))->fetch();
 
         if (empty($crash)) {
             if ($app['session']->getFlashBag()->get('internal')) {

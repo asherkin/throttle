@@ -19,12 +19,12 @@
         ServerName throttle.example.com:80
         DocumentRoot "/path/to/throttle/web"
 
-        <Directory /path/to/throttle/web>
+        <Location />
             Options -MultiViews
 
             RewriteEngine On
             RewriteCond %{REQUEST_FILENAME} !-f
             RewriteRule ^ index.php [QSA,L]
-        </Directory>
+        </Location>
     </VirtualHost>
 
