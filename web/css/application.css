@@ -18,12 +18,16 @@
     border-radius: 3px;
 }
 
-.column-crashid {
-    font-weight: bold;
+.monospace {
+    font-family: Consolas, Lucida Console, monospace;
+}
+
+.input-crashid {
+    text-transform: uppercase;
 }
 
 .pull-subtitle {
-    margin-top: 0.5em;
+    line-height: 40px;
 }
 
 .column-stackframe {
@@ -31,7 +35,6 @@
     white-space: nowrap;
     max-width: 700px;
     text-overflow: ellipsis;
-    font-family: Consolas, Lucida Console, monospace;
 }
 
 .column-stackframe-fallback {
@@ -49,9 +52,5 @@ td.column-actions {
 .page-header-table {
     margin-bottom: 0;
     border-bottom: 0;
-}
-
-dl.dl-stackframe dd {
-    font-family: Consolas, Lucida Console, monospace;
 }
 

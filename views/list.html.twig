@@ -2,7 +2,7 @@
  
 {% block content %}
 <div class="page-header page-header-table">
-    <h1>All Crashes <small class="pull-right pull-subtitle">{{ app.session.get('user').id }}</small></h1>
+    <h1>All Crashes <small class="pull-right pull-subtitle monospace">{{ app.session.get('user').id }}</small></h1>
 </div>
 
 <table class="table table-striped ">
@@ -14,7 +14,7 @@
                 <img class="column-identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20">
 {% endif %}
             </td>
-            <td class="column-crashid"><a href="{{ url('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></td>
+            <td class="monospace"><a href="{{ url('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></td>
             <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
 {% if app.session.get('user').admin %}
             <td>
@@ -28,7 +28,7 @@
 {% else %}
 {% set frame = {module: crash.module2, function: crash.function2, file: crash.file2, line: crash.line2, offset: crash.offset2, first: false} %}
 {% endif %}
-            <td title="{{ frame|stackframe }}" class="column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
+            <td title="{{ frame|stackframe }}" class="monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
                 {{ frame|stackframe }}
             </td>
 {% if app.session.get('user').admin %}

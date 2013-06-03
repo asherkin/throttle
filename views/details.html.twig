@@ -2,7 +2,7 @@
  
 {% block content %}
 <div class="page-header">
-    <h1>Details <small class="pull-right pull-subtitle">{{ crash.id|crashid }}</small></h1>
+    <h1>Details <small class="pull-right pull-subtitle monospace">{{ crash.id|crashid }}</small></h1>
 </div>
 
 <dl class="dl-horizontal">
@@ -30,7 +30,7 @@
 
 {% set user = app.session.get('user') %}
 {% if user and (user.admin or user.id == crash.owner) %}
-<a class="btn" href="{{ url('download', {'id': crash.id}) }}">Download</a>
+<a class="btn" href="{{ url('download', {'id': crash.id}) }}"><i class="icon-download"></i> Download</a>
 {% endif %}
 
 {% if crash.processed == 0 %}
