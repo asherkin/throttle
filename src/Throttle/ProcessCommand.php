@@ -36,17 +36,17 @@ class ProcessCommand extends Command
 
         $pending = $app['db']->executeQuery('SELECT COALESCE(COUNT(id), 0) FROM crash WHERE processed = 0')->fetchColumn(0);
 
-        $output->writeln("Found $pending pending crash dump(s)");
+        $output->writeln('Found ' . $pending . ' pending crash dump(s)');
 
         if ($pending == 0) {
             return;
         } elseif ($limit !== null && $pending > $limit) {
             $pending = $limit;
-            $output->writeln("Only processing the first $limit");
+            $output->writeln('Only processing the first ' . $limit);
         }
 
         $symbols = \Filesystem::listDirectory($app['root'] . '/symbols');
-        $output->writeln("Using symbols from: " . implode(' ', $symbols));
+        $output->writeln('Using symbols from: ' . implode(' ', $symbols));
 
         foreach ($symbols as &$path) {
             $path = $app['root'] . '/symbols/' . $path;
@@ -57,7 +57,7 @@ class ProcessCommand extends Command
         $progress->start($output, $pending);
 
         for ($count = 0; $count < $pending; $count++) {
-            $app['db']->transactional(function($db) use($app, $symbols) {
+            $app['db']->transactional(function($db) use ($app, $symbols) {
                 $id = $app['db']->executeQuery('SELECT id FROM crash WHERE processed = 0 LIMIT 1')->fetchColumn(0);
                 $minidump = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
@@ -72,9 +72,9 @@ class ProcessCommand extends Command
                     if (!$foundStack) {
                         if ($line == '') {
                             $foundStack = true;
-                        } elseif ($data[0] == 'Crash' && $data[3] !== "") {
+                        } elseif ($data[0] == 'Crash' && $data[3] !== '') {
                             $crashThread = $data[3];
-                        } elseif ($data[0] == 'Module' && $data[3] !== "" && $data[4] !== "") {
+                        } elseif ($data[0] == 'Module' && $data[3] !== '' && $data[4] !== '') {
                             $app['db']->executeUpdate('INSERT INTO module VALUES (?, ?, ?)', array($id, $data[3], $data[4]));
                         }
 

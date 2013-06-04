@@ -11,8 +11,7 @@ $app->register(new Cilex\Provider\Console\Adapter\Silex\ConsoleServiceProvider()
 $output = new \Symfony\Component\Console\Output\ConsoleOutput();
 
 if ($app['config'] === false) {
-    $app['console']->renderException(new \Exception('Missing configuration file, please see app/config.dist.php'), $output);
-    return;
+    return $app['console']->renderException(new \Exception('Missing configuration file, please see app/config.dist.php'), $output);
 }
 
 $app['console']->add(new Throttle\ProcessCommand);

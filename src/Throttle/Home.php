@@ -10,18 +10,20 @@ class Home
     {
         $id = $app['request']->query->get('id');
         if (isset($id)) {
-            $id = strtolower(str_replace('-', '', $id)); 
+            $id = strtolower(str_replace('-', '', $id));
 
             try {
                 $app['session']->getFlashBag()->set('internal', 'true');
+
                 return $app->redirect($app['url_generator']->generate('details', array('id' => $id)));
             } catch (\Exception $e) {
                 $app['session']->getFlashBag()->add('error', 'Invalid Crash ID');
+
                 return $app->redirect($app['url_generator']->generate('index'));
             }
         }
 
-        $stats = $app['db']->fetchAssoc('SELECT COALESCE(SUM(processed = 1), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending FROM crash');
+        $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending FROM crash')->fetch();
 
         return $app['twig']->render('index.html.twig', array(
             'maintenance_message' => null,
@@ -35,9 +37,11 @@ class Home
     {
         if (!$app['openid']->mode) {
             $app['openid']->identity = 'http://steamcommunity.com/openid';
+
             return $app->redirect($app['openid']->authUrl());
-        } elseif($app['openid']->mode == 'cancel' || !$app['openid']->validate()) {
+        } elseif ($app['openid']->mode == 'cancel' || !$app['openid']->validate()) {
             $app['session']->getFlashBag()->add('error', 'There was a problem during authentication');
+
             return $app->redirect($app['url_generator']->generate('index'));
         } else {
             $user = preg_replace('/^http\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);

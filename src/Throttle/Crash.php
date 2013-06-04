@@ -29,7 +29,7 @@ class Crash
 
         $metadata = json_encode($app['request']->request->all());
 
-        $app['db']->executeUpdate('INSERT INTO crash VALUES(?, NOW(), INET_ATON(?), ?, ?, DEFAULT, DEFAULT, DEFAULT)', array($id, $ip, $owner, $metadata));
+        $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata) VALUES (?, NOW(), INET_ATON(?), ?, ?)', array($id, $ip, $owner, $metadata));
 
         return $app['twig']->render('submit.txt.twig', array(
             'id' => $id,
@@ -43,6 +43,7 @@ class Crash
         if (empty($crash)) {
             if ($app['session']->getFlashBag()->get('internal')) {
                 $app['session']->getFlashBag()->add('error', 'Invalid Crash ID');
+
                 return $app->redirect($app['url_generator']->generate('index'));
             } else {
                 return $app->abort(404);
@@ -88,7 +89,7 @@ class Crash
         $user = $app['session']->get('user');
 
         if ($user && $user['admin']) {
-            $app['db']->transactional(function($db) use($id) {
+            $app['db']->transactional(function($db) use ($id) {
                 $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
                 $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
 
@@ -99,14 +100,14 @@ class Crash
         return $app->redirect($app['url_generator']->generate('list'));
     }
 
-    public function delete(Application $app, $id) 
+    public function delete(Application $app, $id)
     {
         $user = $app['session']->get('user');
 
         if ($user && $user['admin']) {
             $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
-            $app['db']->transactional(function($db) use($id, $path) {
+            $app['db']->transactional(function($db) use ($id, $path) {
                 \Filesystem::remove($path);
 
                 $db->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
