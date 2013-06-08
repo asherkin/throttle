@@ -109,6 +109,24 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
         return implode(' ', preg_split('/(?<=[a-z])(?=[A-Z])/x', ucfirst($string)));
     }));
 
+    $twig->addFilter('steamid', new \Twig_Filter_Function(function($steamid) use ($app) {
+        if (!$app['config']['apikey']) {
+            return array('name' => $steamid, 'avatar' => 'https://secure.gravatar.com/avatar/' . md5($steamid) . '?s=184&r=any&default=identicon&forcedefault=1');
+        }
+
+        $data = apc_fetch('steamid_' . $steamid);
+
+        if ($data === false) {
+            $data = json_decode(file_get_contents('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=' . $app['config']['apikey'] . '&steamids=' . $steamid));
+            $data = $data->response->players[0];
+            $data = array('name' => $data->personaname, 'avatar' => $data->avatarfull);
+
+            apc_store('steamid_' . $steamid, $data, 1800);
+        }
+
+        return $data;
+    }));
+
     return $twig;
 }));
 

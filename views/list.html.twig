@@ -2,7 +2,7 @@
  
 {% block content %}
 <div class="page-header page-header-table">
-    <h1>All Crashes <small class="pull-right pull-subtitle monospace">{{ app.session.get('user').id }}</small></h1>
+    <h1>All Crashes <small class="pull-right pull-subtitle"><img class="column-identicon" src="{{ (app.session.get('user').id|steamid).avatar }}" width="40" height="40"> {{ (app.session.get('user').id|steamid).name }}</small></h1>
 </div>
 
 <table class="table table-striped ">
@@ -19,7 +19,8 @@
 {% if app.session.get('user').admin %}
             <td>
 {% if crash.owner %}
-                <a href="http://steamcommunity.com/profiles/{{ crash.owner }}">{{ crash.owner }}</a>
+                <img class="column-identicon" src="{{ (crash.owner|steamid).avatar }}" width="20" height="20">
+                <a href="http://steamcommunity.com/profiles/{{ crash.owner }}">{{ (crash.owner|steamid).name }}</a>
 {% endif %}
             </td>
 {% endif %}

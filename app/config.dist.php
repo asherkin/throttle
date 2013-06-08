@@ -17,5 +17,7 @@ return array(
     'hostname' => 'throttle.example.com',
 
     'admins' => array(),
+
+    'apikey' => false,
 );
 
