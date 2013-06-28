@@ -75,7 +75,7 @@ class ProcessCommand extends Command
                         } elseif ($data[0] == 'Crash' && $data[3] !== '') {
                             $crashThread = $data[3];
                         } elseif ($data[0] == 'Module' && $data[3] !== '' && $data[4] !== '') {
-                            $app['db']->executeUpdate('INSERT INTO module VALUES (?, ?, ?)', array($id, $data[3], $data[4]));
+                            $app['db']->executeUpdate('INSERT IGNORE INTO module VALUES (?, ?, ?)', array($id, $data[3], $data[4]));
                         }
 
                         continue;

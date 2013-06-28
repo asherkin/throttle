@@ -121,7 +121,7 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
             $data = $data->response->players[0];
             $data = array('name' => $data->personaname, 'avatar' => $data->avatarfull);
 
-            apc_store('steamid_' . $steamid, $data, 1800);
+            apc_store('steamid_' . $steamid, $data, 60 * 60 * 24);
         }
 
         return $data;
