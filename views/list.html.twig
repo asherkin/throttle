@@ -8,7 +8,7 @@
 <table class="table table-striped ">
     <tbody>
 {% for crash in crashes %}
-        <tr {% if crash.processed == 0 %}class="warning"{% endif %}>
+        <tr {% if crash.processed == 0 %}class="warning"{% elseif crash.failed == 1 %}class="error"{% endif %}>
             <td>
 {% if crash.cmdline %}
                 <img class="column-identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20">

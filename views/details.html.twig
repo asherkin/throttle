@@ -37,6 +37,10 @@
     <div class="alert alert-block alert-info">
         This crash is pending processing, try again later.
     </div>
+{% elseif crash.failed == 1 %}
+    <div class="alert alert-block alert-error">
+        An error occurred while processing this crash.
+    </div>
 {% else %}
     <h2>Stack Trace</h2>
     {{ render(url('stack', {'id': crash.id})) }}
