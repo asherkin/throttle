@@ -141,13 +141,23 @@ if ($app['config'] === false) {
     return;
 }
 
-if ($app['config']['debug'] || (($user = $app['session']->get('user')) && $user['admin'])) {
+$app['debug'] = $app['debug'] || (($user = $app['session']->get('user')) && $user['admin']);
+
+// Catch PHP errors
+Symfony\Component\Debug\ErrorHandler::register();
+Symfony\Component\Debug\ExceptionHandler::register($app['debug']);
+
+// Fatal errors don't hit monolog's regular handler.
+Symfony\Component\Debug\ErrorHandler::setLogger($app['monolog'], 'deprecation');
+Symfony\Component\Debug\ErrorHandler::setLogger($app['monolog'], 'emergency');
+
+if ($app['debug']) {
     $app->register(new Silex\Provider\WebProfilerServiceProvider(), array(
         'profiler.cache_dir' => __DIR__ . '/../cache/profiler',
     ));
 
-    // Install the debug handler (register does this for non-debug env)
-    if (!$app['debug'] && isset($app['monolog.handler.debug'])) {
+    // Install the debug handler (register does this earlier for non-debug env)
+    if (!$app['config']['debug'] && isset($app['monolog.handler.debug'])) {
         $app['monolog'] = $app->share($app->extend('monolog', function($monolog, $app) {
             $monolog->pushHandler($app['monolog.handler.debug']);
             return $monolog;

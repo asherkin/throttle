@@ -8,9 +8,6 @@ require_once __DIR__ . '/../vendor/facebook/libphutil/src/__phutil_library_init_
 // If libphutil is the last autoloader (Composer prepends, so will never be after it), it throws on missing classes...
 spl_autoload_register(function ($class) {});
 
-// Catch PHP errors
-Symfony\Component\HttpKernel\Debug\ErrorHandler::register(E_ALL);
-
 $app = new Silex\Application();
 
 $app['root'] = __DIR__ . '/..';
