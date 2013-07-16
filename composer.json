@@ -26,7 +26,7 @@
         }
     ],
     "require": {
-        "silex/silex": "~1.0.0@dev",
+        "silex/silex": "~1.1.0",
         "symfony/monolog-bridge": "~2.3.0",
         "monolog/monolog": "~1.0",
         "symfony/doctrine-bridge": "~2.3.0",
