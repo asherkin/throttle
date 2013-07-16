@@ -118,8 +118,14 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
 
         if ($data === false) {
             $data = json_decode(file_get_contents('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=' . $app['config']['apikey'] . '&steamids=' . $steamid));
-            $data = $data->response->players[0];
-            $data = array('name' => $data->personaname, 'avatar' => $data->avatarfull);
+
+            if ($data === null || empty($data->response->players)) {
+                $app['monolog']->critical('Failed to get player information from Steam API for '. $steamid, (array)$data);
+                $data = array('name' => $steamid, 'avatar' => 'https://secure.gravatar.com/avatar/' . md5($steamid) . '?s=184&r=any&default=identicon&forcedefault=1');
+            } else {
+                $data = $data->response->players[0];
+                $data = array('name' => $data->personaname, 'avatar' => $data->avatarfull);
+            }
 
             apc_store('steamid_' . $steamid, $data, 60 * 60 * 24);
         }

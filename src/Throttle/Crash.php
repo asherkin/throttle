@@ -25,6 +25,12 @@ class Crash
         $owner = $app['request']->request->get('UserID');
         if ($owner !== null) {
             $app['request']->request->remove('UserID');
+
+            if (stripos($owner, 'STEAM_') === 0) {
+                $owner = explode($owner, ':');
+                $owner = ($owner[2] << 1) | $owner[1];
+                $owner = gmp_add('76561197960265728', $owner);
+            }
         }
 
         $metadata = json_encode($app['request']->request->all());
