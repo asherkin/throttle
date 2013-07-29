@@ -27,7 +27,7 @@ class Crash
             $app['request']->request->remove('UserID');
 
             if (stripos($owner, 'STEAM_') === 0) {
-                $owner = explode($owner, ':');
+                $owner = explode(':', $owner);
                 $owner = ($owner[2] << 1) | $owner[1];
                 $owner = gmp_add('76561197960265728', $owner);
             }
