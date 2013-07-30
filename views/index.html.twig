@@ -9,7 +9,7 @@
 </div>
 {% if maintenance_message is not empty %}
     <div class="alert alert-block alert-info">
-        {{ maintenance_message }}
+        {{ maintenance_message|raw }}
     </div>
 {% endif %}
 
