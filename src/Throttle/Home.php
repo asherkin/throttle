@@ -26,7 +26,7 @@ class Home
         $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending FROM crash')->fetch();
 
         return $app['twig']->render('index.html.twig', array(
-            'maintenance_message' => null,
+            'maintenance_message' => $app['config']['maintenance'],
             'errors' => $app['session']->getFlashBag()->get('error'),
             'processed' => $stats['processed'],
             'pending' => $stats['pending'],

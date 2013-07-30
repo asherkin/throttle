@@ -2,6 +2,7 @@
 
 return array(
     'debug' => false,
+    'maintenance' => false,
 
     'email-errors' => false,
     'email-errors.from' => 'noreply@example.com',
