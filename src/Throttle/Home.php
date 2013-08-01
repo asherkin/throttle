@@ -44,11 +44,20 @@ class Home
 
             return $app->redirect($app['url_generator']->generate('index'));
         } else {
-            $user = preg_replace('/^http\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);
+            $id = preg_replace('/^http\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);
+
+            $user = $app['db']->executeQuery('SELECT name, avatar FROM user WHERE id = ? LIMIT 1', array($id))->fetch();
+
+            if (!$user) {
+                $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($id));
+                $user = array('name' => null, 'avatar' => null);
+            }
 
             $app['session']->set('user', array(
-                'id' => $user,
-                'admin' => in_array($user, $app['config']['admins']),
+                'id' => $id,
+                'name' => $user['name'],
+                'avatar' => $user['avatar'],
+                'admin' => in_array($id, $app['config']['admins']),
             ));
 
             return $app->redirect($app['url_generator']->generate('list'));

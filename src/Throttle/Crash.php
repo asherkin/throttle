@@ -8,6 +8,9 @@ class Crash
 {
     public function submit(Application $app)
     {
+        //TODO
+        //return $app->abort(503);
+
         $ip = $app['request']->getClientIp();
 
         $minidump = $app['request']->files->get('upload_file_minidump');
@@ -26,11 +29,16 @@ class Crash
         if ($owner !== null) {
             $app['request']->request->remove('UserID');
 
-            if (stripos($owner, 'STEAM_') === 0) {
+            if ($owner == 0) {
+                $owner = null;
+            } else if (stripos($owner, 'STEAM_') === 0) {
                 $owner = explode(':', $owner);
                 $owner = ($owner[2] << 1) | $owner[1];
                 $owner = gmp_add('76561197960265728', $owner);
             }
+
+            //TODO As we don't need to query this until servers and permissions are added, just blindly inserting saves us a query.
+            $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($owner));
         }
 
         $metadata = json_encode($app['request']->request->all());
@@ -132,7 +140,7 @@ class Crash
         }
 
         $check_user = $user['admin'] ? '' : 'WHERE owner = ?';
-        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, frame.module, frame.function, frame.file, frame.line, frame.offset, frame2.module AS module2, frame2.function AS function2, frame2.file AS file2, frame2.line AS line2, frame2.offset AS offset2 FROM crash LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $check_user . ' ORDER BY crash.timestamp DESC LIMIT 100', array($user['id']))->fetchAll();
+        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.function, frame.file, frame.line, frame.offset, frame2.module AS module2, frame2.function AS function2, frame2.file AS file2, frame2.line AS line2, frame2.offset AS offset2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $check_user . ' ORDER BY crash.timestamp DESC LIMIT 100', array($user['id']))->fetchAll();
 
         return $app['twig']->render('list.html.twig', array(
             'crashes' => $crashes,

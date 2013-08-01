@@ -97,8 +97,8 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
         return date('F Y', $ts);
     }));
 
-    $twig->addFilter('identicon', new \Twig_Filter_Function(function($string) {
-        return 'https://secure.gravatar.com/avatar/' . md5($string) . '?s=20&r=any&default=identicon&forcedefault=1';
+    $twig->addFilter('identicon', new \Twig_Filter_Function(function($string, $size = 20) {
+        return 'https://secure.gravatar.com/avatar/' . md5($string) . '?s=' . $size . '&r=any&default=identicon&forcedefault=1';
     }));
 
     $twig->addFilter('crashid', new \Twig_Filter_Function(function($string) {
@@ -107,30 +107,6 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
 
     $twig->addFilter('decamel', new \Twig_Filter_Function(function($string) {
         return implode(' ', preg_split('/(?<=[a-z])(?=[A-Z])/x', ucfirst($string)));
-    }));
-
-    $twig->addFilter('steamid', new \Twig_Filter_Function(function($steamid) use ($app) {
-        if (!$app['config']['apikey']) {
-            return array('name' => $steamid, 'avatar' => 'https://secure.gravatar.com/avatar/' . md5($steamid) . '?s=184&r=any&default=identicon&forcedefault=1');
-        }
-
-        $data = apc_fetch('steamid_' . $steamid);
-
-        if ($data === false) {
-            $data = json_decode(file_get_contents('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=' . $app['config']['apikey'] . '&steamids=' . $steamid));
-
-            if ($data === null || empty($data->response->players)) {
-                $app['monolog']->critical('Failed to get player information from Steam API for '. $steamid, (array)$data);
-                $data = array('name' => $steamid, 'avatar' => 'https://secure.gravatar.com/avatar/' . md5($steamid) . '?s=184&r=any&default=identicon&forcedefault=1');
-            } else {
-                $data = $data->response->players[0];
-                $data = array('name' => $data->personaname, 'avatar' => $data->avatarfull);
-            }
-
-            apc_store('steamid_' . $steamid, $data, 60 * 60 * 24);
-        }
-
-        return $data;
     }));
 
     return $twig;

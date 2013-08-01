@@ -14,7 +14,11 @@ if ($app['config'] === false) {
     return $app['console']->renderException(new \Exception('Missing configuration file, please see app/config.dist.php'), $output);
 }
 
-$app['console']->add(new Throttle\ProcessCommand);
+$app['console']->addCommands(array(
+    new Throttle\ProcessCommand,
+    new Throttle\UpdateCommand,
+));
+
 
 $app['console']->getHelperSet()->set(new \Doctrine\DBAL\Tools\Console\Helper\ConnectionHelper($app['db']), 'db');
 
