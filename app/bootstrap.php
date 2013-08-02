@@ -42,11 +42,14 @@ $app['monolog'] = $app->share($app->extend('monolog', function($monolog, $app) {
 
 $app->register(new Silex\Provider\DoctrineServiceProvider(), array(
     'db.options' => array(
-        'driver'   => 'pdo_mysql',
-        'host'     => $app['config']['db.host'],
-        'user'     => $app['config']['db.user'],
-        'password' => $app['config']['db.password'],
-        'dbname'   => $app['config']['db.name'],
+        'driver'        => 'pdo_mysql',
+        'host'          => $app['config']['db.host'],
+        'user'          => $app['config']['db.user'],
+        'password'      => $app['config']['db.password'],
+        'dbname'        => $app['config']['db.name'],
+        'driverOptions' => array(
+            1002 => 'SET NAMES utf8',
+        ),
     ),
 ));
 
