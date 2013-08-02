@@ -26,6 +26,8 @@ class Crash
         $minidump->move($path, $id . '.dmp');
 
         $owner = $app['request']->request->get('UserID');
+        $server = null;
+
         if ($owner !== null) {
             $app['request']->request->remove('UserID');
 
@@ -39,11 +41,13 @@ class Crash
 
             //TODO As we don't need to query this until servers and permissions are added, just blindly inserting saves us a query.
             $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($owner));
+            $app['db']->executeUpdate('INSERT IGNORE INTO server (owner) VALUES (?)', array($owner));
+            $server = '';
         }
 
         $metadata = json_encode($app['request']->request->all());
 
-        $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata) VALUES (?, NOW(), INET_ATON(?), ?, ?)', array($id, $ip, $owner, $metadata));
+        $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, server) VALUES (?, NOW(), INET_ATON(?), ?, ?, ?)', array($id, $ip, $owner, $metadata, $server));
 
         return $app['twig']->render('submit.txt.twig', array(
             'id' => $id,
