@@ -1,54 +1,60 @@
 {% extends 'layout.html.twig' %}
  
 {% block content %}
-<div class="page-header page-header-table">
-    <h1>All Crashes <small class="pull-right pull-subtitle">{% if app.session.get('user').name %}<img class="column-identicon" src="{{ app.session.get('user').avatar }}" width="40" height="40"> {{ app.session.get('user').name }}{% else %}{{ app.session.get('user').id }}{% endif %}</small></h1>
-</div>
-
-<table class="table table-striped ">
-    <tbody>
+<h2>All Crashes</h2>
+<div class="well well-tight">
+    <table class="table table-striped">
+        <thead>
+            <th></th>
+            <th>Crash ID</th>
+            <th>Uploaded</th>
+{% if user.admin %}
+            <th></th>
+{% endif %}
+            <th>Function</th>
+            <th></th>
+        </thead>
+        <tbody>
 {% for crash in crashes %}
-        <tr {% if crash.processed == 0 %}class="warning"{% elseif crash.failed == 1 %}class="error"{% endif %}>
-            <td>
+            <tr {% if crash.processed == 0 %}class="warning"{% elseif crash.failed == 1 %}class="error"{% endif %}>
+                <td>
 {% if crash.cmdline %}
-                <img class="column-identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20">
+                    <img class="column-identicon" src="{{ crash.cmdline|identicon }}" width="20" height="20">
 {% endif %}
-            </td>
-            <td class="monospace"><a href="{{ url('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></td>
-            <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
-{% if app.session.get('user').admin %}
-            <td>
-{% if crash.owner %}
-{% if crash.name %}
-                <img class="column-identicon" src="{{ crash.avatar }}" width="20" height="20">
-                <a href="http://steamcommunity.com/profiles/{{ crash.owner }}">{{ crash.name }}</a>
-{% else %}
-                {{ crash.owner }}
+                </td>
+                <td class="monospace"><a href="{{ path('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></td>
+                <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
+{% if user.admin %}
+                <td>
+{% if crash.owner and crash.name %}
+                    <a href="http://steamcommunity.com/profiles/{{ crash.owner }}">
+                        <img class="column-identicon" title="{{ crash.name }}" src="{{ crash.avatar }}" width="20" height="20">
+                    </a>
 {% endif %}
-{% endif %}
-            </td>
+                </td>
 {% endif %}
 {% if crash.module is not empty or crash.module2 is empty %}
 {% set frame = {module: crash.module, function: crash.function, file: crash.file, line: crash.line, offset: crash.offset, first: true} %}
 {% else %}
 {% set frame = {module: crash.module2, function: crash.function2, file: crash.file2, line: crash.line2, offset: crash.offset2, first: false} %}
 {% endif %}
-            <td title="{{ frame|stackframe }}" class="monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
-                {{ frame|stackframe }}
-            </td>
-{% if app.session.get('user').admin %}
-            <td class="column-actions">
-                <form action="{{ url('reprocess', {id: crash.id}) }}" method="post" class="table-form">
-                    <button type="submit" class="btn"><i class="icon-refresh"></i></button>
-                </form>
-                <form action="{{ url('delete', {id: crash.id}) }}" method="post" class="table-form">
-                    <button type="submit" class="btn btn-danger"><i class="icon-trash"></i></button>
-                </form>
-            </td>
+                <td title="{{ frame|stackframe }}" class="monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
+                    {{ frame|stackframe }}
+                </td>
+{% if user.admin %}
+                <td class="column-actions">
+                    <form action="{{ path('reprocess', {id: crash.id}) }}" method="post" class="table-form">
+                        <button type="submit" class="btn"><i class="icon-refresh"></i></button>
+                    </form>
+                    <form action="{{ path('delete', {id: crash.id}) }}" method="post" class="table-form">
+                        <button type="submit" class="btn btn-danger"><i class="icon-trash"></i></button>
+                    </form>
+                </td>
 {% endif %}
-        </tr>
+            </tr>
 {% endfor %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
+</div>
 {% endblock %}
 

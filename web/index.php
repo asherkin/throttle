@@ -2,6 +2,10 @@
 
 $app = require_once __DIR__ . '/../app/bootstrap.php';
 
+// Start working on this as soon as possible.
+$changesetFuture = new ExecFuture('hg id -i');
+$changesetFuture->setCWD(__DIR__ . '/..')->setTimeout(5)->start();
+
 $app->register(new Silex\Provider\ServiceControllerServiceProvider());
 
 $app->register(new Silex\Provider\UrlGeneratorServiceProvider());
@@ -151,8 +155,17 @@ $app['openid'] = $app->share(function() use ($app) {
     return new LightOpenID($app['config']['hostname']);
 });
 
+list($err, $stdout, $stderr) = $changesetFuture->resolve();
+
+if (!$err) {
+    $app['version'] = $stdout;
+}
+
 $app->get('/login', 'Throttle\Home::login')
     ->bind('login');
+
+$app->get('/logout', 'Throttle\Home::logout')
+    ->bind('logout');
 
 $app->post('/symbols/submit', 'Throttle\Symbols::submit')
     ->value('_format', 'txt');
@@ -162,10 +175,6 @@ $app->post('/submit', 'Throttle\Crash::submit')
 
 $app->get('/list', 'Throttle\Crash::list_crashes')
     ->bind('list');
-
-$app->get('/{id}/stack', 'Throttle\Crash::stack')
-    ->assert('id', '[0-9a-zA-Z]{12}')
-    ->bind('stack');
 
 $app->get('/{id}/download', 'Throttle\Crash::download')
     ->assert('id', '[0-9a-zA-Z]{12}')

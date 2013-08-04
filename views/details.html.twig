@@ -1,49 +1,53 @@
 {% extends 'layout.html.twig' %}
  
 {% block content %}
-<div class="page-header">
-    <h1>Details <small class="pull-right pull-subtitle monospace">{{ crash.id|crashid }}</small></h1>
-</div>
-
-<dl class="dl-horizontal">
-    <dt>Uploaded</dt>
-    <dd>{{ crash.timestamp|date }}</dd>
-
-{% if crash.cmdline %}
-    <dt>Command Line</dt>
-    <dd>{{ crash.cmdline }}</dd>
-{% endif %}
-</dl>
-
-{% if crash.metadata %}
-<dl class="dl-horizontal">
-{% for key, value in crash.metadata %}
-    <dt>{{ key|decamel }}</dt>
-{% if value %}
-    <dd>{{ value }}</dd>
-{% else %}
-    <dd>&nbsp;</dd>
-{% endif %}
-{% endfor %}
-</dl>
-{% endif %}
-
-{% set user = app.session.get('user') %}
-{% if user and (user.admin or user.id == crash.owner) %}
-<a class="btn" href="{{ url('download', {'id': crash.id}) }}"><i class="icon-download"></i> Download</a>
+{% if not user %}
+<div class="alert alert-block alert-info">If you are the owner of this crash, <a href="{{ path('login', {'return': app.request.pathInfo}) }}">login</a> to see more information.</div>
 {% endif %}
 
 {% if crash.processed == 0 %}
-    <div class="alert alert-block alert-info">
-        This crash is pending processing, try again later.
-    </div>
+<div class="alert alert-block alert-info">This crash is pending processing, try again later.</div>
 {% elseif crash.failed == 1 %}
-    <div class="alert alert-block alert-error">
-        An error occurred while processing this crash.
-    </div>
+<div class="alert alert-block alert-error">An error occurred while processing this crash.</div>
+{% endif %}
+
+<div class="well">
+    <dl class="dl-horizontal">
+        <dt>Uploaded</dt>
+        <dd>{{ crash.timestamp|date }}</dd>
+{% if user and (user.admin or user.id == crash.owner) %}
+{% if crash.cmdline %}
+        <dt>Command Line</dt>
+        <dd>{{ crash.cmdline }}</dd>
+{% endif %}
+{% for key, value in crash.metadata %}
+        <dt>{{ key|decamel }}</dt>
+{% if value %}
+        <dd>{{ value }}</dd>
 {% else %}
-    <h2>Stack Trace</h2>
-    {{ render(url('stack', {'id': crash.id})) }}
+        <dd>&nbsp;</dd>
+{% endif %}
+{% endfor %}
+{% endif %}
+    </dl>
+</div>
+
+{% if user and (user.admin or user.id == crash.owner) %}
+<div class="well">
+    <a class="btn" href="{{ path('download', {'id': crash.id}) }}"><i class="icon-download"></i> Download</a>
+</div>
+{% endif %}
+
+{% if crash.processed == 1 and crash.failed == 0 %}
+<h2>Stack Trace</h2>
+<div class="well">
+    <dl class="dl-horizontal monospace">
+{% for frame in stack %}
+        <dt>{{ frame.frame }}</dt>
+        <dd>{{ frame|stackframe }}</dd>
+{% endfor %}
+    </dl>
+</div>
 {% endif %}
 {% endblock %}
 

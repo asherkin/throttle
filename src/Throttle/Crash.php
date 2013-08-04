@@ -60,7 +60,7 @@ class Crash
 
         if (empty($crash)) {
             if ($app['session']->getFlashBag()->get('internal')) {
-                $app['session']->getFlashBag()->add('error', 'Invalid Crash ID');
+                $app['session']->getFlashBag()->add('error_crash', 'Invalid Crash ID');
 
                 return $app->redirect($app['url_generator']->generate('index'));
             } else {
@@ -70,16 +70,10 @@ class Crash
 
         $crash['metadata'] = json_decode($crash['metadata'], true);
 
-        return $app['twig']->render('details.html.twig', array(
-            'crash' => $crash,
-        ));
-    }
-
-    public function stack(Application $app, $id)
-    {
         $stack = $app['db']->executeQuery('SELECT frame.frame, frame.module, frame.function, frame.file, frame.line, frame.offset FROM frame JOIN crash ON crash.id = frame.crash AND crash.thread = frame.thread WHERE crash = ? ORDER BY frame', array($id))->fetchAll();
 
-        return $app['twig']->render('stack.html.twig', array(
+        return $app['twig']->render('details.html.twig', array(
+            'crash' => $crash,
             'stack' => $stack,
         ));
     }

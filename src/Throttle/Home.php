@@ -17,19 +17,19 @@ class Home
 
                 return $app->redirect($app['url_generator']->generate('details', array('id' => $id)));
             } catch (\Exception $e) {
-                $app['session']->getFlashBag()->add('error', 'Invalid Crash ID');
+                $app['session']->getFlashBag()->add('error_crash', 'Invalid Crash ID');
 
                 return $app->redirect($app['url_generator']->generate('index'));
             }
         }
 
-        $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending FROM crash')->fetch();
+        $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1 AND failed = 0), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending, COALESCE(SUM(failed = 1), 0) as failed FROM crash')->fetch();
 
         return $app['twig']->render('index.html.twig', array(
             'maintenance_message' => $app['config']['maintenance'],
-            'errors' => $app['session']->getFlashBag()->get('error'),
-            'processed' => $stats['processed'],
-            'pending' => $stats['pending'],
+            'errors_crash' => $app['session']->getFlashBag()->get('error_crash'),
+            'errors_auth' => $app['session']->getFlashBag()->get('error_auth'),
+            'stats' => $stats,
         ));
     }
 
@@ -40,7 +40,7 @@ class Home
 
             return $app->redirect($app['openid']->authUrl());
         } elseif ($app['openid']->mode == 'cancel' || !$app['openid']->validate()) {
-            $app['session']->getFlashBag()->add('error', 'There was a problem during authentication');
+            $app['session']->getFlashBag()->add('error_auth', 'There was a problem during authentication');
 
             return $app->redirect($app['url_generator']->generate('index'));
         } else {
@@ -60,8 +60,20 @@ class Home
                 'admin' => in_array($id, $app['config']['admins']),
             ));
 
+            $return = $app['request']->get('return', null);
+            if ($return) {
+                return $app->redirect($return);
+            }
+
             return $app->redirect($app['url_generator']->generate('list'));
         }
+    }
+
+    public function logout(Application $app)
+    {
+        $app['session']->remove('user');
+
+        return $app->redirect($app['url_generator']->generate('index'));
     }
 }
 

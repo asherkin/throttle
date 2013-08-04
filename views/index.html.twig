@@ -1,42 +1,40 @@
 {% extends 'layout.html.twig' %}
- 
+
 {% block content %}
-<div class="page-header">
-    <h1>Throttle
-    <small class="pull-right"><a href="{{ url('login') }}">
-         <img src="img/sits_large_noborder.png">
-    </a></small></h1>
-</div>
+<div class="row">
+    <div class="span6 offset3">
 {% if maintenance_message is not empty %}
-    <div class="alert alert-block alert-info">
-        {{ maintenance_message|raw }}
-    </div>
+        <div class="alert alert-block alert-info">{{ maintenance_message|raw }}</div>
 {% endif %}
-
-<h2>Find Crash</h2>
-{% for error in errors %}
-    <div class="alert alert-block alert-error">
-        {{ error }}
-    </div>
+        <div class="well">
+{% for error in errors_crash %}
+            <div class="alert alert-error">{{ error }}</div>
 {% endfor %}
-<form action="" method="get" class="form-inline">
-    <div class="input-prepend input-append">
-        <label class="add-on control-label" for="inputCrash">Crash ID</label>
-        <input class="monospace input-crashid" type="text" id="inputCrash" name="id">
-        <button type="submit" class="btn btn-primary">Go</button>
+            <form action="" method="get" class="form-inline text-center">
+                <div class="input-prepend input-append">
+                    <span class="add-on">Crash ID</span>
+                    <input type="text" name="id" class="span4 monospace input-crashid" placeholder="XXXX-XXXX-XXXX">
+                    <button type="submit" class="btn">Go</button>
+                </div>
+            </form>
+            <span class="divider">OR</span>
+{% for error in errors_auth %}
+            <div class="alert alert-error">{{ error }}</div>
+{% endfor %}
+{% if user %}
+            <a href="{{ path('list') }}" class="btn btn-large btn-inverse btn-block">Go to Dashboard</a>
+{% else %}
+            <a href="{{ path('login') }}" class="btn btn-large btn-inverse btn-block">Login</a>
+{% endif %}
+        </div>
+        <div class="well">
+            <div class="row-fluid" id="stat-blocks">
+                <div class="alert alert-block alert-success span4 text-center"><strong>{{ stats.processed }}</strong> processed</div>
+                <div class="alert alert-block span4 text-center"><strong>{{ stats.pending }}</strong> pending</div>
+                <div class="alert alert-block alert-error span4 text-center"><strong>{{ stats.failed }}</strong> failed</div>
+            </div>
+        </div>
     </div>
-</form>
-
-<h2>Statistics</h2>
-<p>
-    {{ processed }} crash dumps processed ({{ pending }} pending)
-</p>
-<p>
-    <img class="well well-small" width="500" height="200" src="img/graph.png">
-</p>
-
-<p>
-    <small>Powered By <a href="http://forums.alliedmods.net/showthread.php?t=146644">Accelerator - Take Back Control</a></small>
-</p>
+</div>
 {% endblock %}
-
+ 

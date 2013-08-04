@@ -1,15 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <meta charset="utf-8">
+        <meta content="IE=EDGE" http-equiv="X-UA-Compatible">
         <title>Throttle</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="{{ app.request.baseUrl }}/css/bootstrap.no-responsive.no-icons.min.css" rel="stylesheet">
         <link href="{{ app.request.baseUrl }}/css/font-awesome.min.css" rel="stylesheet">
         <link href="{{ app.request.baseUrl }}/css/application.css" rel="stylesheet">
     </head>
     <body>
-        <div class="container-fluid">
-        {% block content %}{% endblock %}
+        <div class="navbar navbar-static-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <a class="brand" href="/">Throttle</a>
+                    <div class="pull-right">
+{% set user = app.session.get('user') %}
+{% if user %}
+<ul class="nav">
+    <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+{% if user.name %}
+            <img src="{{ user.avatar }}" alt="{{ user.name }}'s avatar">
+{% else %}
+            Account
+{% endif %}
+            <b class="caret"></b>
+        </a>
+        <ul class="dropdown-menu pull-right">
+            <li><a href="{{ path('list') }}">Dashboard</a></li>
+            <li><a href="{{ path('logout') }}">Logout</a></li>
+        </ul>
+    </li>
+</ul>
+{% else %}
+                        <a href="{{ path('login', {'return': app.request.pathInfo}) }}" class="btn">Login</a>
+{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+{% block content %}{% endblock %}
+        </div>
+        <div id="footer" class="container text-center">
+            <small class="muted">Powered by <a href="https://forums.alliedmods.net/showthread.php?t=146644" class="muted">Accelerator</a> & <a href="http://steampowered.com" class="muted">Steam</a>{% if app.version %} &nbsp;&ndash;&nbsp; Version <a href="https://bitbucket.org/asherkin/throttle/" class="muted">{{ app.version }}</a>{% endif %}</small>
         </div>
         <script src="{{ app.request.baseUrl }}/js/jquery.min.js"></script>
         <script src="{{ app.request.baseUrl }}/js/bootstrap.min.js"></script>
