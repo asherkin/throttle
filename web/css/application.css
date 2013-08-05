@@ -151,3 +151,11 @@ td.column-actions .btn {
     display: none;
 }
 
+.pager {
+    margin: 0;
+}
+
+.table .text-center {
+    text-align: center;
+}
+

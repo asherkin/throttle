@@ -12,10 +12,14 @@
             <th></th>
 {% endif %}
             <th>Function</th>
+{% if user.admin %}
             <th></th>
+{% endif %}
         </thead>
         <tbody>
+{% set last = null %}
 {% for crash in crashes %}
+{% set last = crash.timestamp %}
             <tr {% if crash.processed == 0 %}class="warning"{% elseif crash.failed == 1 %}class="error"{% endif %}>
                 <td>
 {% if crash.cmdline %}
@@ -52,8 +56,26 @@
                 </td>
 {% endif %}
             </tr>
+{% else %}
+            <tr>
+                <td class="text-center" colspan="{% if user.admin %}6{% else %}4{% endif %}">No Crashes</td>
+            </tr>
 {% endfor %}
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="{% if user.admin %}6{% else %}4{% endif %}">
+                    <ul class="pager">
+                        <li class="previous {% if not offset %}disabled{% endif %}">
+                            <a {% if offset %}href="{{ path('list') }}"{% endif %}><i class="icon-double-angle-left"></i> Newest</a>
+                        </li>
+                        <li class="next {% if not last %}disabled{% endif %}">
+                            <a {% if last %}href="{{ path('list', {offset: last}) }}"{% endif %}>Older <i class="icon-angle-right"></i></a>
+                        </li>
+                    </ul>
+                </td>
+            </tr>
+        </tfoot>
     </table>
 </div>
 {% endblock %}

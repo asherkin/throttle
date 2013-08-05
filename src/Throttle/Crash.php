@@ -129,7 +129,7 @@ class Crash
         return $app->redirect($app['url_generator']->generate('list'));
     }
 
-    public function list_crashes(Application $app)
+    public function list_crashes(Application $app, $offset)
     {
         $user = $app['session']->get('user');
 
@@ -137,10 +137,31 @@ class Crash
             return $app->redirect($app['url_generator']->generate('login'));
         }
 
-        $check_user = $user['admin'] ? '' : 'WHERE owner = ?';
-        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.function, frame.file, frame.line, frame.offset, frame2.module AS module2, frame2.function AS function2, frame2.file AS file2, frame2.line AS line2, frame2.offset AS offset2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $check_user . ' ORDER BY crash.timestamp DESC LIMIT 100', array($user['id']))->fetchAll();
+        $where = '';
+        $params = array();
+
+        if ($offset || !$user['admin']) {
+            $where .= 'WHERE ';
+
+            if (!$user['admin']) {
+                $where .= 'owner = ?';
+                $params[] = $user['id'];
+
+                if ($offset) {
+                    $where .= ' AND ';
+                }
+            }
+
+            if ($offset) {
+                $where .= 'timestamp < FROM_UNIXTIME(?)';
+                $params[] = $offset;
+            }
+        }
+
+        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.function, frame.file, frame.line, frame.offset, frame2.module AS module2, frame2.function AS function2, frame2.file AS file2, frame2.line AS line2, frame2.offset AS offset2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 50', $params)->fetchAll();
 
         return $app['twig']->render('list.html.twig', array(
+            'offset' => $offset,
             'crashes' => $crashes,
         ));
     }

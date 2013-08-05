@@ -173,7 +173,9 @@ $app->post('/symbols/submit', 'Throttle\Symbols::submit')
 $app->post('/submit', 'Throttle\Crash::submit')
     ->value('_format', 'txt');
 
-$app->get('/list', 'Throttle\Crash::list_crashes')
+$app->get('/list/{offset}', 'Throttle\Crash::list_crashes')
+    ->assert('offset', '[0-9]+')
+    ->value('offset', null)
     ->bind('list');
 
 $app->get('/{id}/download', 'Throttle\Crash::download')
