@@ -109,6 +109,11 @@ class Crash
             });
         }
 
+        $return = $app['request']->get('return', null);
+        if ($return) {
+            return $app->redirect($return);
+        }
+
         return $app->redirect($app['url_generator']->generate('list'));
     }
 
@@ -124,6 +129,11 @@ class Crash
 
                 $db->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
             });
+        }
+
+        $return = $app['request']->get('return', null);
+        if ($return) {
+            return $app->redirect($return);
         }
 
         return $app->redirect($app['url_generator']->generate('list'));

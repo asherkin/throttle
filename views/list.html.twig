@@ -47,10 +47,10 @@
                 </td>
 {% if user.admin %}
                 <td class="column-actions">
-                    <form action="{{ path('reprocess', {id: crash.id}) }}" method="post" class="button-form">
+                    <form action="{{ path('reprocess', {id: crash.id, return: app.request.pathInfo}) }}" method="post" class="button-form">
                         <button type="submit" class="btn btn-mini"><i class="icon-refresh"></i></button>
                     </form>
-                    <form action="{{ path('delete', {id: crash.id}) }}" method="post" class="button-form">
+                    <form action="{{ path('delete', {id: crash.id, return: app.request.pathInfo}) }}" method="post" class="button-form">
                         <button type="submit" class="btn btn-mini btn-danger"><i class="icon-trash"></i></button>
                     </form>
                 </td>
