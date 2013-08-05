@@ -72,6 +72,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ app.request.baseUrl }}/js/jquery.hoverIntent.min.js"></script>
 <script type="text/javascript">
     $('.table-stacktrace tbody tr').hoverIntent(function() { $(this).toggleClass('stackframe-expand'); });
 </script>
