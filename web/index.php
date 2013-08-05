@@ -120,7 +120,7 @@ $app->register(new Silex\Provider\SessionServiceProvider());
 
 if ($app['config'] === false) {
     $app->get('/', function() {
-        return 'Missing configuration file, please see app/config.dist.php';
+        return 'Missing configuration file, please see app/config.base.php';
     });
 
     $app->run();

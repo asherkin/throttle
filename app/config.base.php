@@ -1,6 +1,15 @@
 <?php
 
-return array(
+$base = null;
+if (basename(__FILE__) != 'config.base.php') {
+    $base = include_once __DIR__ . '/config.base.php';
+}
+
+if (!is_array($base)) {
+    $base = array();
+}
+
+return array_merge($base, array(
     'debug' => false,
     'maintenance' => false,
 
@@ -20,5 +29,5 @@ return array(
     'admins' => array(),
 
     'apikey' => false,
-);
+));
 
