@@ -35,6 +35,16 @@
 {% if user and (user.admin or user.id == crash.owner) %}
 <div class="well">
     <a class="btn" href="{{ path('download', {'id': crash.id}) }}"><i class="icon-download"></i> Download</a>
+{% if user.admin %}
+    <div class="pull-right">
+        <form action="{{ path('reprocess', {id: crash.id}) }}" method="post" class="button-form">
+            <button type="submit" class="btn"><i class="icon-refresh"></i> Reprocess</button>
+        </form>
+        <form action="{{ path('delete', {id: crash.id}) }}" method="post" class="button-form">
+            <button type="submit" class="btn btn-danger"><i class="icon-trash"></i> Delete</button>
+        </form>
+    </div>
+{% endif %}
 </div>
 {% endif %}
 
@@ -52,12 +62,18 @@
 {% for frame in stack %}
             <tr>
                 <th>{{ frame.frame }}</th>
-                <td class="monospace">{{ frame|stackframe }}</td>
+                <td class="monospace column-stackframe">{{ frame|stackframe }}</td>
             </tr>
 {% endfor %}
         </tbody>
     </table>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+    $('.table-stacktrace tbody tr').hoverIntent(function() { $(this).toggleClass('stackframe-expand'); });
+</script>
 {% endblock %}
 

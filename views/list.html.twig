@@ -38,16 +38,16 @@
 {% else %}
 {% set frame = {module: crash.module2, function: crash.function2, file: crash.file2, line: crash.line2, offset: crash.offset2, first: false} %}
 {% endif %}
-                <td title="{{ frame|stackframe }}" class="monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
+                <td class="monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
                     {{ frame|stackframe }}
                 </td>
 {% if user.admin %}
                 <td class="column-actions">
-                    <form action="{{ path('reprocess', {id: crash.id}) }}" method="post" class="table-form">
-                        <button type="submit" class="btn"><i class="icon-refresh"></i></button>
+                    <form action="{{ path('reprocess', {id: crash.id}) }}" method="post" class="button-form">
+                        <button type="submit" class="btn btn-mini"><i class="icon-refresh"></i></button>
                     </form>
-                    <form action="{{ path('delete', {id: crash.id}) }}" method="post" class="table-form">
-                        <button type="submit" class="btn btn-danger"><i class="icon-trash"></i></button>
+                    <form action="{{ path('delete', {id: crash.id}) }}" method="post" class="button-form">
+                        <button type="submit" class="btn btn-mini btn-danger"><i class="icon-trash"></i></button>
                     </form>
                 </td>
 {% endif %}
@@ -56,5 +56,11 @@
         </tbody>
     </table>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+    $('.table tbody tr').hoverIntent(function() { $(this).toggleClass('stackframe-expand'); });
+</script>
 {% endblock %}
 
