@@ -124,3 +124,20 @@ td.column-actions {
     padding: 0 6px;
 }
 
+.table-stacktrace tbody th {
+    vertical-align: top;
+    text-align: right;
+    font-weight: bold;
+}
+
+.table-stacktrace tbody td {
+    overflow-x: hidden;
+    white-space: nowrap;
+    max-width: 800px;
+    text-overflow: ellipsis;
+}
+
+.table-stacktrace tbody tr:hover td {
+    white-space: normal;
+}
+

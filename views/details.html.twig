@@ -40,13 +40,23 @@
 
 {% if crash.processed == 1 and crash.failed == 0 %}
 <h2>Stack Trace</h2>
-<div class="well">
-    <dl class="dl-horizontal monospace">
+<div class="well well-tight">
+    <table class="table table-stacktrace">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Function</th>
+            </tr>
+        </thead>
+        <tbody>
 {% for frame in stack %}
-        <dt>{{ frame.frame }}</dt>
-        <dd>{{ frame|stackframe }}</dd>
+            <tr>
+                <th>{{ frame.frame }}</th>
+                <td class="monospace">{{ frame|stackframe }}</td>
+            </tr>
 {% endfor %}
-    </dl>
+        </tbody>
+    </table>
 </div>
 {% endif %}
 {% endblock %}
