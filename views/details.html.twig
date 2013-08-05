@@ -51,7 +51,7 @@
 {% if crash.processed == 1 and crash.failed == 0 %}
 <h2>Stack Trace</h2>
 <div class="well well-tight">
-    <table class="table table-stacktrace">
+    <table class="table table-stacktrace table-shown">
         <thead>
             <tr>
                 <th></th>
@@ -66,6 +66,11 @@
             </tr>
 {% endfor %}
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2"><i class="icon-ellipsis-horizontal"></i></td>
+            </tr>
+        </tfoot>
     </table>
 </div>
 {% endif %}
@@ -75,6 +80,7 @@
 <script src="{{ app.request.baseUrl }}/js/jquery.hoverIntent.min.js"></script>
 <script type="text/javascript">
     $('.table-stacktrace tbody tr').hoverIntent(function() { $(this).toggleClass('stackframe-expand'); });
+    $('.table-shown').toggleClass('table-shown').toggleClass('table-hidden').find('tfoot').click(function() { $(this).parent().toggleClass('table-hidden').toggleClass('table-shown'); });
 </script>
 {% endblock %}
 

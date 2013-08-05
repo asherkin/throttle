@@ -128,9 +128,26 @@ td.column-actions .btn {
 .table-stacktrace tbody th {
     text-align: right;
     font-weight: bold;
+    min-width: 20px;
 }
 
 .table-stacktrace tbody td {
     max-width: 800px;
+}
+
+.table-hidden tfoot:hover {
+    cursor: pointer;
+}
+
+.table-hidden tfoot td {
+    text-align: center;
+}
+
+.table-hidden tbody tr:nth-child(n+11) {
+    display: none;
+}
+
+.table-shown tfoot {
+    display: none;
 }
 
