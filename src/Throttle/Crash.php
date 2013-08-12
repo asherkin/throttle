@@ -70,7 +70,7 @@ class Crash
 
         $crash['metadata'] = json_decode($crash['metadata'], true);
 
-        $stack = $app['db']->executeQuery('SELECT frame.frame, frame.module, frame.function, frame.file, frame.line, frame.offset FROM frame JOIN crash ON crash.id = frame.crash AND crash.thread = frame.thread WHERE crash = ? ORDER BY frame', array($id))->fetchAll();
+        $stack = $app['db']->executeQuery('SELECT frame.frame, frame.rendered FROM frame JOIN crash ON crash.id = frame.crash AND crash.thread = frame.thread WHERE crash = ? ORDER BY frame', array($id))->fetchAll();
 
         return $app['twig']->render('details.html.twig', array(
             'crash' => $crash,
@@ -168,7 +168,7 @@ class Crash
             }
         }
 
-        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.function, frame.file, frame.line, frame.offset, frame2.module AS module2, frame2.function AS function2, frame2.file AS file2, frame2.line AS line2, frame2.offset AS offset2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 50', $params)->fetchAll();
+        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 50', $params)->fetchAll();
 
         return $app['twig']->render('list.html.twig', array(
             'offset' => $offset,

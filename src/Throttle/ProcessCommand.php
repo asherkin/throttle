@@ -82,7 +82,17 @@ class ProcessCommand extends Command
                             continue;
                         }
 
-                        $app['db']->executeUpdate('INSERT INTO frame VALUES (?, ?, ?, ?, ?, ?, ?, ?)', array($id, $data[0], $data[1], $data[2], $data[3], $data[4], $data[5], $data[6]));
+                        $rendered = $data[6];
+                        if ($data[4] != '') {
+                            $file = basename(str_replace('\\', '/', $data[4]));
+                            $rendered = $data[2] . '!' . $data[3] . ' [' . $file . ':' . $data[5] . ' + ' . $data[6] . ']';
+                        } else if ($data[3] != '') {
+                            $rendered = $data[2] . '!' . $data[3] . ' + ' . $data[6];
+                        } else if ($data[2] != '') {
+                            $rendered = $data[2] . ' + ' . $data[6];
+                        }
+
+                        $app['db']->executeUpdate('INSERT INTO frame VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', array($id, $data[0], $data[1], $data[2], $data[3], $data[4], $data[5], $data[6], $rendered));
                     }
 
                     $future = new \ExecFuture($app['root'] . '/bin/minidump_comment %s', $minidump);

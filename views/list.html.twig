@@ -38,12 +38,12 @@
                 </td>
 {% endif %}
 {% if crash.module is not empty or crash.module2 is empty %}
-{% set frame = {module: crash.module, function: crash.function, file: crash.file, line: crash.line, offset: crash.offset, first: true} %}
+{% set frame = {rendered: crash.rendered, first: true} %}
 {% else %}
-{% set frame = {module: crash.module2, function: crash.function2, file: crash.file2, line: crash.line2, offset: crash.offset2, first: false} %}
+{% set frame = {rendered: crash.rendered2, first: false} %}
 {% endif %}
-                <td title="{{ frame|stackframe }}" class="monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
-                    {{ frame|stackframe }}
+                <td title="{{ frame.rendered }}" class="monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
+                    {{ frame.rendered }}
                 </td>
 {% if user.admin %}
                 <td class="column-actions">

@@ -62,7 +62,7 @@
 {% for frame in stack %}
             <tr>
                 <th>{{ frame.frame }}</th>
-                <td class="monospace column-stackframe">{{ frame|stackframe }}</td>
+                <td class="monospace column-stackframe">{{ frame.rendered }}</td>
             </tr>
 {% endfor %}
         </tbody>
