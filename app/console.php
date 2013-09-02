@@ -19,6 +19,7 @@ $app['console']->addCommands(array(
     new Throttle\UserUpdateCommand,
     new Throttle\SymbolsDumpCommand,
     new Throttle\SymbolsStatsCommand,
+    new Throttle\SymbolsUpdateCommand,
 ));
 
 

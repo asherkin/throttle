@@ -19,6 +19,12 @@ class CrashProcessCommand extends Command
                 'l',
                 InputOption::VALUE_REQUIRED,
                 'Max dumps to process'
+            )
+            ->addOption(
+                'update',
+                'u',
+                InputOption::VALUE_NONE,
+                'Reprocess old dumps with new symbol files'
             );
     }
 
@@ -34,6 +40,24 @@ class CrashProcessCommand extends Command
 
         $lock = \PhutilFileLock::newForPath($app['root'] . '/cache/process.lck');
         $lock->lock();
+
+        if ($input->getOption('update')) {
+            $outdated = 0;
+            $reprocess = $app['db']->executeQuery('SELECT DISTINCT crash FROM module WHERE processed = FALSE AND present = TRUE');
+
+            while (($id = $reprocess->fetchColumn(0)) !== false) {
+                $app['db']->transactional(function($db) use ($id) {
+                    $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
+                    $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
+
+                    $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE WHERE id = ?', array($id));
+                });
+
+                $outdated += 1;
+            }
+
+            $output->writeln('Found ' . $outdated . ' outdated crash dump(s)');
+        }
 
         $pending = $app['db']->executeQuery('SELECT COALESCE(COUNT(id), 0) FROM crash WHERE processed = 0')->fetchColumn(0);
 
