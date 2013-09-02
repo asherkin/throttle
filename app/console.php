@@ -15,19 +15,21 @@ if ($app['config'] === false) {
 }
 
 $app['console']->addCommands(array(
-    new Throttle\ProcessCommand,
-    new Throttle\UpdateCommand,
+    new Throttle\CrashProcessCommand,
+    new Throttle\UserUpdateCommand,
+    new Throttle\SymbolsDumpCommand,
+    new Throttle\SymbolsStatsCommand,
 ));
 
 
 $app['console']->getHelperSet()->set(new \Doctrine\DBAL\Tools\Console\Helper\ConnectionHelper($app['db']), 'db');
 
 $app['console']->addCommands(array(
-    new \Doctrine\DBAL\Migrations\Tools\Console\Command\ExecuteCommand(),
-    new \Doctrine\DBAL\Migrations\Tools\Console\Command\GenerateCommand(),
-    new \Doctrine\DBAL\Migrations\Tools\Console\Command\MigrateCommand(),
-    new \Doctrine\DBAL\Migrations\Tools\Console\Command\StatusCommand(),
-    new \Doctrine\DBAL\Migrations\Tools\Console\Command\VersionCommand(),
+    new \Doctrine\DBAL\Migrations\Tools\Console\Command\ExecuteCommand,
+    new \Doctrine\DBAL\Migrations\Tools\Console\Command\GenerateCommand,
+    new \Doctrine\DBAL\Migrations\Tools\Console\Command\MigrateCommand,
+    new \Doctrine\DBAL\Migrations\Tools\Console\Command\StatusCommand,
+    new \Doctrine\DBAL\Migrations\Tools\Console\Command\VersionCommand,
 ));
 
 $app['console']->run(null, $output);

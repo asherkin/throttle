@@ -7,11 +7,11 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UpdateCommand extends Command
+class UserUpdateCommand extends Command
 {
     protected function configure()
     {
-        $this->setName('update')
+        $this->setName('user:update')
             ->setDescription('Update user information from Steam');
     }
 
@@ -19,10 +19,10 @@ class UpdateCommand extends Command
     {
         $app = $this->getApplication()->getContainer();
 
-        $users = $app['db']->executeQuery('SELECT id FROM user WHERE updated IS NULL OR  updated < DATE_SUB(NOW(), INTERVAL 1 DAY)');
+        $users = $app['db']->executeQuery('SELECT id FROM user WHERE updated IS NULL OR updated < DATE_SUB(NOW(), INTERVAL 1 DAY)');
 
         $futures = array();
-        while ($user = $users->fetchColumn(0)) {
+        while (($user = $users->fetchColumn(0)) !== false) {
             $futures[$user] = new \HTTPSFuture('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=' . $app['config']['apikey'] . '&steamids=' . $user);
         }
 

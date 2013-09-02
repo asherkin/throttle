@@ -3,21 +3,22 @@
 namespace Throttle;
 
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProcessCommand extends Command
+class CrashProcessCommand extends Command
 {
     protected function configure()
     {
-        $this->setName('process')
+        $this->setName('crash:process')
             ->setDescription('Process pending crash dumps')
-            ->addArgument(
+            ->addOption(
                 'limit',
-                InputArgument::OPTIONAL,
-                'Max dumps to process',
-                null
+                'l',
+                InputOption::VALUE_REQUIRED,
+                'Max dumps to process'
             );
     }
 
@@ -25,7 +26,7 @@ class ProcessCommand extends Command
     {
         $app = $this->getApplication()->getContainer();
 
-        $limit = $input->getArgument('limit');
+        $limit = $input->getOption('limit');
 
         if ($limit !== null && !ctype_digit($limit)) {
             throw new \InvalidArgumentException('\'limit\' must be an integer');
