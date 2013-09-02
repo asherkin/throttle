@@ -23,6 +23,11 @@ class Crash
 
         $path = $app['root'] . '/dumps/' . substr($id, 0, 2);
         \Filesystem::createDirectory($path, 0755, true);
+
+        if (file_exists($path . '/' . $id . '.dmp')) {
+            throw new \Exception();
+        }
+
         $minidump->move($path, $id . '.dmp');
 
         $owner = $app['request']->request->get('UserID');
