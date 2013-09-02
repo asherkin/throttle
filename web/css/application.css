@@ -135,6 +135,19 @@ td.column-actions .btn {
     max-width: 800px;
 }
 
+.table-modules tbody td:first-child, .table-modules thead th:first-child {
+    font-weight: bold;
+    text-align: right;
+}
+
+.table-modules.table-hidden tfoot tr td {
+    border-top: 0;
+}
+
+.table-modules.table-hidden thead, .table-modules.table-hidden tbody {
+    display: none;
+}
+
 .table-hidden tfoot:hover {
     cursor: pointer;
 }

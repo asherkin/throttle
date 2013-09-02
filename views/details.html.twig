@@ -73,6 +73,31 @@
         </tfoot>
     </table>
 </div>
+
+<h2>Modules</h2>
+<div class="well well-tight">
+    <table class="table table-modules table-shown">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Identifier</th>
+            </tr>
+        </thead>
+        <tbody>
+{% for module in modules %}
+            <tr>
+                <td>{{ module.name }}</td>
+                <td class="monospace">{{ module.identifier }}</td>
+            </tr>
+{% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2"><i class="icon-ellipsis-horizontal"></i></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
 {% endif %}
 {% endblock %}
 

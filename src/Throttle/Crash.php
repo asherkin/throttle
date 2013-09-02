@@ -56,7 +56,7 @@ class Crash
 
     public function details(Application $app, $id)
     {
-        $crash = $app['db']->executeQuery('SELECT id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, owner, metadata, cmdline, processed, failed FROM crash WHERE id = ?', array($id))->fetch();
+        $crash = $app['db']->executeQuery('SELECT id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, owner, metadata, cmdline, thread, processed, failed FROM crash WHERE id = ?', array($id))->fetch();
 
         if (empty($crash)) {
             if ($app['session']->getFlashBag()->get('internal')) {
@@ -70,11 +70,13 @@ class Crash
 
         $crash['metadata'] = json_decode($crash['metadata'], true);
 
-        $stack = $app['db']->executeQuery('SELECT frame.frame, frame.rendered FROM frame JOIN crash ON crash.id = frame.crash AND crash.thread = frame.thread WHERE crash = ? ORDER BY frame', array($id))->fetchAll();
+        $stack = $app['db']->executeQuery('SELECT frame.frame, frame.rendered FROM frame WHERE crash = ? AND thread = ? ORDER BY frame', array($id, $crash['thread']))->fetchAll();
+        $modules = $app['db']->executeQuery('SELECT module.name, module.identifier FROM module WHERE crash = ? ORDER BY name', array($id))->fetchAll();
 
         return $app['twig']->render('details.html.twig', array(
             'crash' => $crash,
             'stack' => $stack,
+            'modules' => $modules,
         ));
     }
 
