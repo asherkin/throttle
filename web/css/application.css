@@ -6,7 +6,7 @@ body {
     background-color: #F5F5F5;
 }
 
-.well {
+.well, pre {
     background-color: #FFF;
 }
 

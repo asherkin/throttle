@@ -103,6 +103,19 @@ class Crash
         return $app->sendFile($path)->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'crash_' . $id . '.dmp');
     }
 
+    public function logs(Application $app, $id)
+    {
+        $user = $app['session']->get('user');
+
+        if (!$user || !$user['admin']) {
+            $app->abort(403);
+        }
+
+        $logs = $app['db']->executeQuery('SELECT output FROM crash WHERE id = ?', array($id))->fetchColumn(0);
+
+        return $app['twig']->render('logs.html.twig', array('logs' => $logs));
+    }
+
     public function reprocess(Application $app, $id)
     {
         $user = $app['session']->get('user');
@@ -112,7 +125,7 @@ class Crash
                 $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
                 $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
 
-                $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE WHERE id = ?', array($id));
+                $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, output = NULL, processed = FALSE WHERE id = ?', array($id));
             });
         }
 

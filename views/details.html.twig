@@ -37,6 +37,7 @@
     <a class="btn" href="{{ path('download', {'id': crash.id}) }}"><i class="icon-download"></i> Download</a>
 {% if user.admin %}
     <div class="pull-right">
+        <a class="btn" href="{{ path('logs', {id: crash.id}) }}"><i class="icon-cogs"></i> View Logs</a>
         <form action="{{ path('reprocess', {id: crash.id, return: app.request.pathInfo}) }}" method="post" class="button-form">
             <button type="submit" class="btn"><i class="icon-refresh"></i> Reprocess</button>
         </form>
