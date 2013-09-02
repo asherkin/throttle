@@ -77,7 +77,15 @@ class CrashProcessCommand extends Command
                             } elseif ($data[0] == 'Crash' && $data[3] !== '') {
                                 $crashThread = $data[3];
                             } elseif ($data[0] == 'Module' && $data[3] !== '' && $data[4] !== '') {
-                                $app['db']->executeUpdate('INSERT IGNORE INTO module VALUES (?, ?, ?)', array($id, $data[3], $data[4]));
+                                $hasSymbols = false;
+                                foreach ($symbols as $path) {
+                                    if (file_exists($path . '/' . $data[3] . '/' . $data[4] . '/' . $data[3] . '.sym')) {
+                                        $hasSymbols = true;
+                                        break;
+                                    }
+                                }
+
+                                $app['db']->executeUpdate('INSERT IGNORE INTO module VALUES (?, ?, ?, ?, ?)', array($id, $data[3], $data[4], $hasSymbols, $hasSymbols));
                             }
 
                             continue;

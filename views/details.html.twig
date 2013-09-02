@@ -85,7 +85,8 @@
         </thead>
         <tbody>
 {% for module in modules %}
-            <tr>
+{% set class = ((module.identifier == '000000000000000000000000000000000') ? 'info' : (module.processed ? '' : (module.present ? 'warning' : 'error'))) %}
+            <tr class="{{ class }}">
                 <td>{{ module.name }}</td>
                 <td class="monospace">{{ module.identifier }}</td>
             </tr>
