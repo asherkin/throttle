@@ -136,6 +136,8 @@ if ($app['debug']) {
     }
 }
 
+Symfony\Component\HttpFoundation\Request::setTrustedHosts(array(preg_quote($app['config']['hostname'])));
+
 $app['openid'] = $app->share(function() use ($app) {
     return new LightOpenID($app['config']['hostname']);
 });
