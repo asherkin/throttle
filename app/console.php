@@ -16,6 +16,7 @@ if ($app['config'] === false) {
 
 $app['console']->addCommands(array(
     new Throttle\CrashProcessCommand,
+    new Throttle\CrashStatsCommand,
     new Throttle\UserUpdateCommand,
     new Throttle\SymbolsDumpCommand,
     new Throttle\SymbolsStatsCommand,
