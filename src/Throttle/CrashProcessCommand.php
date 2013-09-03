@@ -103,8 +103,14 @@ class CrashProcessCommand extends Command
                                 $crashThread = $data[3];
                             } elseif ($data[0] == 'Module' && $data[3] !== '' && $data[4] !== '') {
                                 $hasSymbols = false;
+
+                                $symname = $data[3];
+                                if (stripos($symname, '.pdb') == strlen($symname) - 4) {
+                                    $symname = substr($symname, 0, -4);
+                                }
+
                                 foreach ($symbols as $path) {
-                                    if (file_exists($path . '/' . $data[3] . '/' . $data[4] . '/' . $data[3] . '.sym')) {
+                                    if (file_exists($path . '/' . $data[3] . '/' . $data[4] . '/' . $symname . '.sym')) {
                                         $hasSymbols = true;
                                         break;
                                     }

@@ -32,8 +32,13 @@ class SymbolsUpdateCommand extends Command
         while (($module = $query->fetch()) !== false) {
             $found = false;
 
+            $symname = $module['name'];
+            if (stripos($symname, '.pdb') == strlen($symname) - 4) {
+                $symname = substr($symname, 0, -4);
+            }
+
             foreach ($symbols as $path) {
-                if (file_exists($app['root'] . '/symbols/' . $path . '/' . $module['name'] . '/' . $module['identifier'] . '/' . $module['name'] . '.sym')) {
+                if (file_exists($app['root'] . '/symbols/' . $path . '/' . $module['name'] . '/' . $module['identifier'] . '/' . $symname . '.sym')) {
                     $found = true;
                     break;
                 }
