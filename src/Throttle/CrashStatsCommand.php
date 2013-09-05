@@ -13,7 +13,7 @@ class CrashStatsCommand extends Command
     protected function configure()
     {
         $this->setName('crash:stats')
-            ->setDescription('Display statistics about crashes')
+            ->setDescription('Display statistics about crashes.')
             ->addOption(
                 'limit',
                 'l',

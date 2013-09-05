@@ -20,7 +20,7 @@ class SymbolsStatsCommand extends Command
     protected function configure()
     {
         $this->setName('symbols:stats')
-            ->setDescription('Display statistics about symbol files')
+            ->setDescription('Display statistics about symbol files.')
             ->addOption(
                 'unused',
                 'u',

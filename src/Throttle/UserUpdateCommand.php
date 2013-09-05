@@ -12,7 +12,7 @@ class UserUpdateCommand extends Command
     protected function configure()
     {
         $this->setName('user:update')
-            ->setDescription('Update user information from Steam');
+            ->setDescription('Update user information from Steam.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

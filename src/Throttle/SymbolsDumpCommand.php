@@ -13,18 +13,12 @@ class SymbolsDumpCommand extends Command
     protected function configure()
     {
         $this->setName('symbols:dump')
-            ->setDescription('Dump symbol data from binary')
+            ->setDescription('Dump symbol data from binary. This should only be used for binaries missing debugging information.')
             ->addArgument(
                 'binary',
                 InputArgument::IS_ARRAY | InputArgument::REQUIRED,
                 'Binaries to process, seperate multiple values with a space'
-            )
-            /*->addOption(
-                'only-public',
-                'p',
-                InputOption::VALUE_NONE,
-                'Required if the binary doesn\'t have debugging information or it isn\'t available'
-            )*/;
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

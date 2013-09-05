@@ -13,7 +13,7 @@ class CrashProcessCommand extends Command
     protected function configure()
     {
         $this->setName('crash:process')
-            ->setDescription('Process pending crash dumps')
+            ->setDescription('Process pending crash dumps.')
             ->addOption(
                 'limit',
                 'l',

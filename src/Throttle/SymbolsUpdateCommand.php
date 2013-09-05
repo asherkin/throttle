@@ -13,7 +13,7 @@ class SymbolsUpdateCommand extends Command
     protected function configure()
     {
         $this->setName('symbols:update')
-            ->setDescription('Update module information in database')
+            ->setDescription('Update module information in database.')
             ->addOption(
                 'clean',
                 'c',
