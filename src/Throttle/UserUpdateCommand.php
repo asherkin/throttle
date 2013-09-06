@@ -26,10 +26,16 @@ class UserUpdateCommand extends Command
             $futures[$user] = new \HTTPSFuture('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=' . $app['config']['apikey'] . '&steamids=' . $user);
         }
 
-        $output->writeln('Found ' . count($futures) . ' stale user(s)');
+        $count = count($futures);
+
+        $output->writeln('Found ' . $count . ' stale user(s)');
+
+        if ($count === 0) {
+            return;
+        }
 
         $progress = $this->getHelperSet()->get('progress');
-        $progress->start($output, count($futures));
+        $progress->start($output, $count);
 
         foreach (\Futures($futures)->limit(5) as $user => $future) {
             list($status, $body, $headers) = $future->resolve();
