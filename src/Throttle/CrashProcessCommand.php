@@ -164,6 +164,20 @@ class CrashProcessCommand extends Command
                 }
 
                 $app['db']->executeUpdate('UPDATE crash SET cmdline = ?, thread = ?, output = ?, processed = TRUE WHERE id = ?', array($cmdline, $crashThread, str_replace($app['root'], '', \Filesystem::readFile($logs)), $id));
+
+                // This isn't as important, so do it after we mark the crash as processed.
+                $rules = $app['db']->executeQuery('SELECT rule FROM notice');
+
+                $query = 'INSERT INTO crashnotice ';
+                while (($rule = $rules->fetchColumn(0)) !== false) {
+                    $query .= $rule . ' UNION ALL ';
+                }
+                $query = substr($query, 0, -strlen(' UNION ALL '));
+
+                // This is a hack, but conceivably there can be cases where there are no notices configured.
+                if (strlen($query) > strlen('INSERT INTO crashnotice ')) {
+                    $app['db']->executeUpdate($query, array('crash' => $id));
+                }
             });
 
             $progress->advance();

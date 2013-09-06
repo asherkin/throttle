@@ -87,7 +87,7 @@ class SymbolsDownloadCommand extends Command
                     $app['root'] . '/.wine', $app['root'] . '/bin/dump_syms.exe', $prefix . '/' . $module['name'], $symdir . '/' . $symfile);
             } catch (\CommandException $e) {
                 $failed = true;
-                $output->writeln(' Failed to process: ' . $module['name'] . ' ' . $module['identifier']);
+                $output->writeln("\r" . 'Failed to process: ' . $module['name'] . ' ' . $module['identifier']);
 
                 // While a bit messy, we need to delete the orphan symbol file to stop it being marked as present.
                 \Filesystem::remove($symdir . '/' . $symfile);

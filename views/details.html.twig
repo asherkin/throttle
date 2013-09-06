@@ -51,7 +51,7 @@
 
 {% if crash.processed == 1 and crash.failed == 0 %}
 {% for notice in notices %}
-<div class="alert alert-block alert-{{ notice.severity }}">{{ notice.text }}</div>
+<div class="alert alert-block alert-{{ notice.severity }}">{{ notice.text|raw }}</div>
 {% endfor %}
 
 <h2>Stack Trace</h2>
