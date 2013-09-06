@@ -1,3 +1,4 @@
+^.wine/
 ^app/config\.php
 ^web/img/graph\.png
 ^symbols/
