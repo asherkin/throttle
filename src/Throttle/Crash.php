@@ -77,11 +77,13 @@ class Crash
 
         $crash['metadata'] = json_decode($crash['metadata'], true);
 
+        $notices = $app['db']->executeQuery('SELECT severity, text FROM crashnotice JOIN notice ON notice.id = crashnotice.notice WHERE crash = ?', array($id))->fetchAll();
         $stack = $app['db']->executeQuery('SELECT frame, rendered FROM frame WHERE crash = ? AND thread = ? ORDER BY frame', array($id, $crash['thread']))->fetchAll();
         $modules = $app['db']->executeQuery('SELECT name, identifier, processed, present FROM module WHERE crash = ? ORDER BY name', array($id))->fetchAll();
 
         return $app['twig']->render('details.html.twig', array(
             'crash' => $crash,
+            'notices' => $notices,
             'stack' => $stack,
             'modules' => $modules,
         ));
