@@ -44,10 +44,12 @@ class Crash
                 $owner = gmp_add('76561197960265728', $owner);
             }
 
-            //TODO As we don't need to query this until servers and permissions are added, just blindly inserting saves us a query.
-            $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($owner));
-            $app['db']->executeUpdate('INSERT IGNORE INTO server (owner) VALUES (?)', array($owner));
-            $server = '';
+            if ($owner !== null) {
+                //TODO As we don't need to query this until servers and permissions are added, just blindly inserting saves us a query.
+                $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($owner));
+                $app['db']->executeUpdate('INSERT IGNORE INTO server (owner) VALUES (?)', array($owner));
+                $server = '';
+            }
         }
 
         $metadata = json_encode($app['request']->request->all());
