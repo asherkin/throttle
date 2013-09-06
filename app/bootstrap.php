@@ -10,10 +10,10 @@ spl_autoload_register(function ($class) {});
 
 $app = new Silex\Application();
 
-$app['root'] = __DIR__ . '/..';
+$app['root'] = \Filesystem::resolvePath(__DIR__ . '/..');
 
 $app->register(new Silex\Provider\MonologServiceProvider(), array(
-    'monolog.logfile' => __DIR__ . '/../logs/main.log',
+    'monolog.logfile' => $app['root'] . '/logs/main.log',
     'monolog.level'   => Monolog\Logger::DEBUG,
     'monolog.name'    => 'throttle',
 ));
