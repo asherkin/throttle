@@ -168,14 +168,15 @@ class CrashProcessCommand extends Command
                 // This isn't as important, so do it after we mark the crash as processed.
                 $rules = $app['db']->executeQuery('SELECT rule FROM notice');
 
-                $query = 'INSERT INTO crashnotice ';
+                $count = 0;
+                $query = 'INSERT INTO crashnotice SELECT :crash AS crash, notice FROM (';
                 while (($rule = $rules->fetchColumn(0)) !== false) {
                     $query .= $rule . ' UNION ALL ';
+                    $count++;
                 }
-                $query = substr($query, 0, -strlen(' UNION ALL '));
+                $query = substr($query, 0, -strlen(' UNION ALL ')) . ') AS notices';
 
-                // This is a hack, but conceivably there can be cases where there are no notices configured.
-                if (strlen($query) > strlen('INSERT INTO crashnotice ')) {
+                if ($count > 0) {
                     $app['db']->executeUpdate($query, array('crash' => $id));
                 }
             });
