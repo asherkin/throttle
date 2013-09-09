@@ -1,6 +1,6 @@
 <?php
 
-namespace Throttle;
+namespace Throttle\Command;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;

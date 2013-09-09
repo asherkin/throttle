@@ -11,19 +11,18 @@ $app->register(new Cilex\Provider\Console\Adapter\Silex\ConsoleServiceProvider()
 $output = new \Symfony\Component\Console\Output\ConsoleOutput();
 
 if ($app['config'] === false) {
-    return $app['console']->renderException(new \Exception('Missing configuration file, please see app/config.dist.php'), $output);
+    return $app['console']->renderException(new \Exception('Missing configuration file, please see app/config.base.php'), $output);
 }
 
-$app['console']->addCommands(array(
-    new Throttle\CrashProcessCommand,
-    new Throttle\CrashStatsCommand,
-    new Throttle\UserUpdateCommand,
-    new Throttle\SymbolsDumpCommand,
-    new Throttle\SymbolsStatsCommand,
-    new Throttle\SymbolsUpdateCommand,
-    new Throttle\SymbolsDownloadCommand,
-));
+$commands = id(new \FileFinder($app['root'] . '/src/Throttle/Command/'))->withType('f')->withSuffix('php')->find();
 
+foreach ($commands as &$command) {
+    $command = '\\Throttle\\Command\\' . substr($command, 0, -4);
+    $command = new $command;
+}
+unset($command);
+
+$app['console']->addCommands($commands);
 
 $app['console']->getHelperSet()->set(new \Doctrine\DBAL\Tools\Console\Helper\ConnectionHelper($app['db']), 'db');
 
