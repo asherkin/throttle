@@ -8,7 +8,7 @@
 {% if crash.processed == 0 %}
 <div class="alert alert-block alert-info">This crash is pending processing, try again later.</div>
 {% elseif crash.failed == 1 %}
-<div class="alert alert-block alert-error">An error occurred while processing this crash.</div>
+<div class="alert alert-block alert-danger">An error occurred while processing this crash.</div>
 {% endif %}
 
 <div class="well">

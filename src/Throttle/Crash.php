@@ -164,7 +164,25 @@ class Crash
         return $app->redirect($app['url_generator']->generate('dashboard'));
     }
 
-    public function dashboard(Application $app, $offset)
+    public function dashboard(Application $app)
+    {
+        $user = $app['session']->get('user');
+
+        if (!$user) {
+            return $app->redirect($app['url_generator']->generate('login'));
+        }
+
+        $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1 AND failed = 0), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending, COALESCE(SUM(failed = 1), 0) as failed FROM crash WHERE owner = ?', array($user['id']))->fetch();
+
+        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 WHERE owner = ? ORDER BY crash.timestamp DESC LIMIT 10', array($user['id']))->fetchAll();
+
+        return $app['twig']->render('dashboard.html.twig', array(
+            'stats' => $stats,
+            'crashes' => $crashes,
+        ));
+    }
+
+    public function list_crashes(Application $app, $offset)
     {
         $user = $app['session']->get('user');
 
@@ -193,10 +211,13 @@ class Crash
             }
         }
 
-        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 50', $params)->fetchAll();
+        $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1 AND failed = 0), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending, COALESCE(SUM(failed = 1), 0) as failed FROM crash' . ($user['admin'] ? '' : ' WHERE owner = ?'), ($user['admin'] ? array() : array($user['id'])))->fetch();
 
-        return $app['twig']->render('dashboard.html.twig', array(
+        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 100', $params)->fetchAll();
+
+        return $app['twig']->render('list.html.twig', array(
             'offset' => $offset,
+            'stats' => $stats,
             'crashes' => $crashes,
         ));
     }

@@ -6,6 +6,14 @@ body {
     background-color: #F8F8F8;
 }
 
+.navbar-static-top {
+    margin-bottom: 0;
+}
+
+.container > div:first-child {
+    margin-top: 20px;
+}
+
 .well, pre {
     background-color: #FFF;
 }
@@ -101,6 +109,10 @@ span.divider:after {
 
 #footer {
     padding-bottom: 20px;
+}
+
+.crash-counts { 
+    margin-top: 12px;
 }
 
 .column-identicon {
@@ -201,7 +213,7 @@ td.column-actions .btn {
     cursor: pointer;
 }
 
-.table-hidden tfoot td {
+.table-hidden tfoot td, .table-more {
     text-align: center;
 }
 
@@ -211,6 +223,19 @@ td.column-actions .btn {
 
 .table-shown tfoot {
     display: none;
+}
+
+.table-more {
+    padding: 0 !important;
+}
+
+.table-more a {
+    display: block;
+    padding: 8px;
+}
+
+.table-more a:hover {
+    text-decoration: none;
 }
 
 .pager {

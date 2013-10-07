@@ -1,7 +1,7 @@
 {% extends 'layout.html.twig' %}
  
 {% block content %}
-<h2>Recent Crashes
+<h2>All Crashes
 <small class="crash-counts pull-right">
     <span class="label label-success">{{ stats.processed }}</span>
     <span class="label label-warning">{{ stats.pending }}</span>
@@ -13,13 +13,18 @@
             <th></th>
             <th>Crash ID</th>
             <th>Uploaded</th>
+{% if user.admin %}
+            <th class="hidden-xs"></th>
+{% endif %}
             <th class="hidden-xs">Function</th>
 {% if user.admin %}
             <th class="hidden-xs"></th>
 {% endif %}
         </thead>
         <tbody>
+{% set last = null %}
 {% for crash in crashes %}
+{% set last = crash.timestamp %}
             <tr {% if crash.processed == 0 %}class="warning"{% elseif crash.failed == 1 %}class="danger"{% endif %}>
                 <td>
 {% if crash.cmdline %}
@@ -28,6 +33,15 @@
                 </td>
                 <td class="monospace"><a href="{{ path('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></td>
                 <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
+{% if user.admin %}
+                <td class="hidden-xs">
+{% if crash.owner and crash.name %}
+                    <a href="http://steamcommunity.com/profiles/{{ crash.owner }}">
+                        <img class="column-identicon" title="{{ crash.name }}" src="{{ crash.avatar }}" width="20" height="20">
+                    </a>
+{% endif %}
+                </td>
+{% endif %}
 {% if crash.module is not empty or crash.module2 is empty %}
 {% set frame = {rendered: crash.rendered, first: true} %}
 {% else %}
@@ -49,16 +63,21 @@
             </tr>
 {% else %}
             <tr>
-                <td class="text-center" colspan="{% if user.admin %}5{% else %}4{% endif %}">No Crashes</td>
+                <td class="text-center" colspan="{% if user.admin %}6{% else %}4{% endif %}">No Crashes</td>
             </tr>
 {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td class="table-more" colspan="{% if user.admin %}5{% else %}4{% endif %}">
-                    <a {% if crashes is not empty %}href="{{ path('list') }}"{% endif %}>
-                        <i class="icon-ellipsis-horizontal"></i>
-                    </a>
+                <td colspan="{% if user.admin %}6{% else %}4{% endif %}">
+                    <ul class="pager">
+                        <li class="previous {% if not offset %}disabled{% endif %}">
+                            <a {% if offset %}href="{{ path('list') }}"{% endif %}><i class="icon-double-angle-left"></i> Newest</a>
+                        </li>
+                        <li class="next {% if not last %}disabled{% endif %}">
+                            <a {% if last %}href="{{ path('list', {offset: last}) }}"{% endif %}>Older <i class="icon-angle-right"></i></a>
+                        </li>
+                    </ul>
                 </td>
             </tr>
         </tfoot>

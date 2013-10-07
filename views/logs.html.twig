@@ -2,7 +2,7 @@
  
 {% block content %}
 {% if logs is not empty %}
-<pre>{{ logs }}</pre>
+<div><pre>{{ logs }}</pre></div>
 {% else %}
 <div class="alert alert-block alert-error">Logs are unavailable for this crash.</div>
 {% endif %}
