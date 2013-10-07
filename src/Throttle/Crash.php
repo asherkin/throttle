@@ -139,7 +139,7 @@ class Crash
             return $app->redirect($return);
         }
 
-        return $app->redirect($app['url_generator']->generate('list'));
+        return $app->redirect($app['url_generator']->generate('dashboard'));
     }
 
     public function delete(Application $app, $id)
@@ -161,10 +161,10 @@ class Crash
             return $app->redirect($return);
         }
 
-        return $app->redirect($app['url_generator']->generate('list'));
+        return $app->redirect($app['url_generator']->generate('dashboard'));
     }
 
-    public function list_crashes(Application $app, $offset)
+    public function dashboard(Application $app, $offset)
     {
         $user = $app['session']->get('user');
 
@@ -195,7 +195,7 @@ class Crash
 
         $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 50', $params)->fetchAll();
 
-        return $app['twig']->render('list.html.twig', array(
+        return $app['twig']->render('dashboard.html.twig', array(
             'offset' => $offset,
             'crashes' => $crashes,
         ));
