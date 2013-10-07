@@ -56,12 +56,31 @@
         <tfoot>
             <tr>
                 <td class="table-more" colspan="{% if user.admin %}5{% else %}4{% endif %}">
-                    <a {% if crashes is not empty %}href="{{ path('list') }}"{% endif %}>
+                    <a href="{{ path('list') }}">
                         <i class="icon-ellipsis-horizontal"></i>
                     </a>
                 </td>
             </tr>
         </tfoot>
+    </table>
+</div>
+
+<h2>Servers<a class="crash-counts pull-right btn btn-default btn-xs disabled"><i class="icon-plus"></i> New</a></h2>
+<div class="well well-tight">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Last Crash</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-center" colspan="4">No Servers</td>
+            </tr>
+        </tbody>
     </table>
 </div>
 {% endblock %}
