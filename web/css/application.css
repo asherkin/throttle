@@ -3,7 +3,7 @@ html, body {
 }
 
 body {
-    background-color: #F5F5F5;
+    background-color: #F8F8F8;
 }
 
 .well, pre {
@@ -22,8 +22,24 @@ body {
     margin-bottom: 0;
 }
 
-.navbar-static-top {
-    margin-bottom: 20px;
+.navbar-nav {
+    margin: 0 -15px;
+    padding-top: 5px;
+}
+
+.navbar-nav li a {
+    padding-right: 30px;
+}
+
+@media (min-width: 768px) {
+    .navbar-nav {
+        margin: 0;
+        padding-top: 0;
+    }
+
+    .navbar-nav li a {
+        padding-right: 15px;
+    }
 }
 
 .nav>li>a>img {
@@ -35,13 +51,16 @@ body {
     border-radius: 3px;
 }
 
+form.form-crashid {
+    margin-bottom: 20px;
+}
+
 span.divider {
     color: #BBB;
     display: block;
     margin: 0 auto;
     width: 35px;
     text-align: center;
-    margin-top: 20px;
     margin-bottom: 20px;
 }
 
@@ -94,11 +113,46 @@ span.divider:after {
 .column-stackframe {
     overflow-x: hidden;
     white-space: nowrap;
-    max-width: 500px;
+    max-width: 330px;
     text-overflow: ellipsis;
+    word-break: break-word;
 }
 
-tr.stackframe-expand td.column-stackframe {
+.table-stacktrace tbody td {
+    word-break: break-word;
+}
+
+@media (min-width: 768px) {
+    .table-stacktrace tbody td {
+        max-width: 600px;
+
+        overflow-x: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
+@media (min-width: 992px) {
+    .column-stackframe {
+        max-width: 500px;
+    }
+
+    .table-stacktrace tbody td {
+        max-width: 800px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .column-stackframe {
+        max-width: 750px;
+    }
+
+    .table-stacktrace tbody td {
+        max-width: 1000px;
+    }
+}
+
+tr.stackframe-expand td {
     white-space: normal;
 }
 
@@ -108,8 +162,7 @@ tr.stackframe-expand td.column-stackframe {
 
 td.column-actions {
     text-align: right;
-    padding-top: 7px;
-    padding-bottom: 7px;
+    padding: 7px 8px !important;
 }
 
 td.column-actions .btn {
@@ -121,23 +174,19 @@ td.column-actions .btn {
     display: inline-block;
 }
 
-.btn-mini {
-    font-size: 14px;
-}
-
 .table-stacktrace tbody th {
     text-align: right;
     font-weight: bold;
     min-width: 20px;
 }
 
-.table-stacktrace tbody td {
-    max-width: 800px;
-}
-
 .table-modules tbody td:first-child, .table-modules thead th:first-child {
     font-weight: bold;
     text-align: right;
+}
+
+.table-modules tbody td:last-child {
+    word-break: break-all;
 }
 
 .table-modules.table-hidden tfoot tr td {
