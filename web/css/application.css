@@ -14,7 +14,7 @@ body {
     margin-top: 20px;
 }
 
-.well, pre {
+.navbar-default, .well, pre {
     background-color: #FFF;
 }
 
