@@ -65,7 +65,7 @@ class Home
                 return $app->redirect($return);
             }
 
-            return $app->redirect($app['url_generator']->generate('list'));
+            return $app->redirect($app['url_generator']->generate('dashboard'));
         }
     }
 
