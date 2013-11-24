@@ -49,6 +49,7 @@ class CrashProcessCommand extends Command
                 $app['db']->transactional(function($db) use ($id) {
                     $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
                     $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
+                    $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
 
                     $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, output = NULL, processed = FALSE WHERE id = ?', array($id));
                 });
