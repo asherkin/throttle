@@ -8,7 +8,7 @@
 {% endif %}
         <div class="well">
 {% for error in errors_crash %}
-            <div class="alert alert-error">{{ error }}</div>
+            <div class="alert alert-danger">{{ error }}</div>
 {% endfor %}
             <form action="" method="get" class="form-crashid form-inline text-center">
                 <div class="input-group">
@@ -21,7 +21,7 @@
             </form>
             <span class="divider hidden-xs">OR</span>
 {% for error in errors_auth %}
-            <div class="alert alert-error">{{ error }}</div>
+            <div class="alert alert-danger">{{ error }}</div>
 {% endfor %}
 {% if user %}
             <a href="{{ path('dashboard') }}" class="btn btn-lg btn-primary btn-block">Go to Dashboard</a>
