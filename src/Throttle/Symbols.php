@@ -26,7 +26,7 @@ class Symbols
             $file = substr($file, 0, -4);
         }
 
-        \Filesystem::writeFile($path . '/' . $file . '.sym', $data);
+        \Filesystem::writeFile($path . '/' . $file . '.sym.gz', gzencode($data));
 
         return $app['twig']->render('submit-symbols.txt.twig', array(
             'module' => $info,

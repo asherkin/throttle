@@ -78,12 +78,12 @@ class SymbolsDownloadCommand extends Command
             \Filesystem::remove($prefix . '/' . $compressedName);
 
             // Finally, dump the symbols.
-            $symfile = substr($module['name'], 0, -3) . 'sym';
+            $symfile = substr($module['name'], 0, -3) . 'sym.gz';
             $symdir = \Filesystem::createDirectory($app['root'] . '/symbols/microsoft/' . $module['name'] . '/' . $module['identifier'], 0755, true);
             
             $failed = false;
             try {
-                execx('WINEPREFIX=%s WINEDEBUG=-all wine %s %s > %s',
+                execx('WINEPREFIX=%s WINEDEBUG=-all wine %s %s | gzip > %s',
                     $app['root'] . '/.wine', $app['root'] . '/bin/dump_syms.exe', $prefix . '/' . $module['name'], $symdir . '/' . $symfile);
             } catch (\CommandException $e) {
                 $failed = true;

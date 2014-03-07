@@ -51,7 +51,7 @@ class CrashProcessCommand extends Command
                     $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
                     $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
 
-                    $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, output = NULL, processed = FALSE WHERE id = ?', array($id));
+                    $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE WHERE id = ?', array($id));
                 });
 
                 $outdated += 1;
@@ -86,7 +86,7 @@ class CrashProcessCommand extends Command
             $app['db']->transactional(function($db) use ($app, $symbols) {
                 $id = $app['db']->executeQuery('SELECT id FROM crash WHERE processed = 0 LIMIT 1')->fetchColumn(0);
                 $minidump = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
-                $logs = new \TempFile();
+                $logs = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt.gz';
 
                 try {
                     $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s %Ls 2> %s', $minidump, $symbols, $logs);
@@ -120,6 +120,10 @@ class CrashProcessCommand extends Command
                                 $app['db']->executeUpdate('INSERT IGNORE INTO module VALUES (?, ?, ?, ?, ?)', array($id, $data[3], $data[4], $hasSymbols, $hasSymbols));
                             }
 
+                            continue;
+                        }
+
+                        if ($data[0] != $crashThread && $data[0] != '0') {
                             continue;
                         }
 
@@ -159,12 +163,16 @@ class CrashProcessCommand extends Command
 
                     $cmdline = trim(str_replace('\\0', ' ', $cmdline));
                 } catch (\CommandException $e) {
-                    $app['db']->executeUpdate('UPDATE crash SET output = ?, processed = TRUE, failed = TRUE WHERE id = ?', array(str_replace($app['root'], '', \Filesystem::readFile($logs)), $id));
+                    \Filesystem::writeFile($logs, gzencode(str_replace($app['root'], '', \Filesystem::readFile($logs))));
+
+                    $app['db']->executeUpdate('UPDATE crash SET processed = TRUE, failed = TRUE WHERE id = ?', array($id));
 
                     return;
                 }
 
-                $app['db']->executeUpdate('UPDATE crash SET cmdline = ?, thread = ?, output = ?, processed = TRUE WHERE id = ?', array($cmdline, $crashThread, str_replace($app['root'], '', \Filesystem::readFile($logs)), $id));
+                \Filesystem::writeFile($logs, gzencode(str_replace($app['root'], '', \Filesystem::readFile($logs))));
+
+                $app['db']->executeUpdate('UPDATE crash SET cmdline = ?, thread = ?, processed = TRUE WHERE id = ?', array($cmdline, $crashThread, $id));
 
                 // This isn't as important, so do it after we mark the crash as processed.
                 $rules = $app['db']->executeQuery('SELECT rule FROM notice');
