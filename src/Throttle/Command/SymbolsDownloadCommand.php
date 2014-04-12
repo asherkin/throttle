@@ -50,10 +50,10 @@ class SymbolsDownloadCommand extends Command
         $progress = $this->getHelperSet()->get('progress');
         $progress->start($output, $count);
 
-        // Only run 5 concurrent requests.
+        // Only run 10 concurrent requests.
         // I'm unsure on what MS would consider fair here, 1 might be better but is slooooow.
         // Futures() returns them in the order they resolve, so running concurrently lets the later stages optimize.
-        foreach (\Futures($futures)->limit(5) as $key => $future) {
+        foreach (\Futures($futures)->limit(10) as $key => $future) {
             list($status, $body, $headers) = $future->resolve();
 
             if ($status->isError()) {

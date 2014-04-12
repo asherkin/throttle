@@ -38,7 +38,7 @@ class SymbolsUpdateCommand extends Command
             }
 
             foreach ($symbols as $path) {
-                if (file_exists($app['root'] . '/symbols/' . $path . '/' . $module['name'] . '/' . $module['identifier'] . '/' . $symname . '.sym')) {
+                if (file_exists($app['root'] . '/symbols/' . $path . '/' . $module['name'] . '/' . $module['identifier'] . '/' . $symname . '.sym.gz')) {
                     $found = true;
                     break;
                 }

@@ -79,17 +79,49 @@ class CrashProcessCommand extends Command
         }
         unset($path);
 
+        $symbolCache = \Filesystem::createDirectory($app['root'] . '/cache/symbols', 0777, true);
+
         $progress = $this->getHelperSet()->get('progress');
         $progress->start($output, $pending);
 
         for ($count = 0; $count < $pending; $count++) {
-            $app['db']->transactional(function($db) use ($app, $symbols) {
+            $app['db']->transactional(function($db) use ($app, $symbols, $symbolCache) {
                 $id = $app['db']->executeQuery('SELECT id FROM crash WHERE processed = 0 LIMIT 1')->fetchColumn(0);
                 $minidump = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
                 $logs = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt.gz';
 
                 try {
-                    $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s %Ls 2> %s', $minidump, $symbols, $logs);
+                    $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s 2> %s', $minidump, $logs);
+
+                    foreach (new \LinesOfALargeExecFuture($future) as $line) {
+                        $data = str_getcsv($line, '|');
+
+                        if ($data[0] != 'Module' || $data[3] === '' || $data[4] === '') {
+                            continue;
+                        }
+
+                        $symname = $data[3];
+                        if (stripos($symname, '.pdb') == strlen($symname) - 4) {
+                            $symname = substr($symname, 0, -4);
+                        }
+
+                        $symdir = $data[3] . '/' . $data[4];
+                        $sympath = $symdir . '/' . $symname . '.sym';
+
+                        if (file_exists($symbolCache . '/' . $sympath)) {
+                            continue;
+                        }
+
+                        foreach ($symbols as $path) {
+                            if (file_exists($path . '/' . $sympath . '.gz')) {
+                                \Filesystem::createDirectory($symbolCache . '/' . $symdir, 0777, true);
+                                \Filesystem::writeFile($symbolCache . '/' . $sympath, gzdecode(str_replace($app['root'], '', \Filesystem::readFile($path . '/' . $sympath . '.gz'))));
+                                break;
+                            }
+                        }
+                    }
+
+                    $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s %s 2>> %s', $minidump, $symbolCache, $logs);
 
                     $crashThread = -1;
                     $foundStack = false;
@@ -103,19 +135,14 @@ class CrashProcessCommand extends Command
                             } elseif ($data[0] == 'Crash' && $data[3] !== '') {
                                 $crashThread = $data[3];
                             } elseif ($data[0] == 'Module' && $data[3] !== '' && $data[4] !== '') {
-                                $hasSymbols = false;
-
                                 $symname = $data[3];
                                 if (stripos($symname, '.pdb') == strlen($symname) - 4) {
                                     $symname = substr($symname, 0, -4);
                                 }
 
-                                foreach ($symbols as $path) {
-                                    if (file_exists($path . '/' . $data[3] . '/' . $data[4] . '/' . $symname . '.sym')) {
-                                        $hasSymbols = true;
-                                        break;
-                                    }
-                                }
+                                $sympath = $data[3] . '/' . $data[4] . '/' . $symname . '.sym';
+
+                                $hasSymbols = file_exists($symbolCache . '/' . $sympath);
 
                                 $app['db']->executeUpdate('INSERT IGNORE INTO module VALUES (?, ?, ?, ?, ?)', array($id, $data[3], $data[4], $hasSymbols, $hasSymbols));
                             }
@@ -170,7 +197,7 @@ class CrashProcessCommand extends Command
                     return;
                 }
 
-                \Filesystem::writeFile($logs, gzencode(str_replace($app['root'], '', \Filesystem::readFile($logs))));
+                \Filesystem::remove($logs);
 
                 $app['db']->executeUpdate('UPDATE crash SET cmdline = ?, thread = ?, processed = TRUE WHERE id = ?', array($cmdline, $crashThread, $id));
 
