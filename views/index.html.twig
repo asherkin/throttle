@@ -29,14 +29,6 @@
             <a href="{{ path('login') }}" class="btn btn-lg btn-primary btn-block">Login</a>
 {% endif %}
         </div>
-        <div class="well">
-            <div class="row" id="stat-blocks">
-                <div class="col-sm-4"><div class="alert alert-block alert-success text-center"><strong>{{ stats.processed }}</strong> processed</div></div>
-                <div class="col-sm-4"><div class="alert alert-block alert-warning text-center"><strong>{{ stats.pending }}</strong> pending</div></div>
-                <div class="col-sm-4"><div class="alert alert-block alert-danger text-center"><strong>{{ stats.failed }}</strong> failed</div></div>
-            </div>
-            <div class="well well-tight"><img class="img-responsive" src="{{ app.request.baseUrl }}/img/graph.png"></div>
-        </div>
     </div>
 </div>
 {% endblock %}

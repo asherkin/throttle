@@ -13,7 +13,7 @@ class CrashCleanCommand extends Command
     protected function configure()
     {
         $this->setName('crash:clean')
-            ->setDescription('Cleanup orphaned crash dumps.')
+            ->setDescription('Cleanup old crash dumps.')
             ->addOption(
                 'dry-run',
                 null,
@@ -26,24 +26,23 @@ class CrashCleanCommand extends Command
     {
         $app = $this->getApplication()->getContainer();
 
-        $prefixes = \Filesystem::listDirectory($app['root'] . '/dumps', false);
-        foreach ($prefixes as $prefix) {
-            $dumps = \Filesystem::listDirectory($app['root'] . '/dumps/' . $prefix, false);
-            foreach ($dumps as $dump) {
-                $id = substr($dump, 0, -4);
-                $present = $app['db']->executeQuery('SELECT id FROM crash WHERE id = ? LIMIT 1', array($id))->fetchColumn(0) !== false;
+        $groups = $app['db']->executeQuery('SELECT owner, ip FROM crash WHERE processed = 1 GROUP BY owner, ip HAVING COUNT(*) > 100');
 
-                if ($present) {
-                    continue;
-                }
+        while ($group = $groups->fetch()) {
+            $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner = ? AND ip = ? AND processed = 1 ORDER BY timestamp DESC LIMIT 1000 OFFSET 100', array($group['owner'], $group['ip']));
 
-                if ($input->getOption('dry-run')) {
-                    $output->writeln($id);
-                    continue;
-                }
-
-                \Filesystem::remove($app['root'] . '/dumps/' . $prefix . '/' . $dump);
+            $crashes = array();
+            while ($id = $query->fetchColumn(0)) {
+                $crashes[] = $id;
             }
+
+            if ($input->getOption('dry-run')) {
+                $count = count($crashes);
+            } else {
+                $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) LIMIT 1000', array($crashes), array(\Doctrine\DBAL\Connection::PARAM_INT_ARRAY));
+            }
+
+            $output->writeln('Deleted ' . $count . ' crash dumps for server: ' . $group['owner'] . ', ' . long2ip($group['ip']));
         }
     }
 }

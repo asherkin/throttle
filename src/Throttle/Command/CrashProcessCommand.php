@@ -43,7 +43,7 @@ class CrashProcessCommand extends Command
 
         if ($input->getOption('update')) {
             $outdated = 0;
-            $reprocess = $app['db']->executeQuery('SELECT DISTINCT crash FROM module WHERE processed = FALSE AND present = TRUE');
+            $reprocess = $app['db']->executeQuery('SELECT DISTINCT crash FROM module WHERE processed = FALSE AND present = TRUE LIMIT 100');
 
             while (($id = $reprocess->fetchColumn(0)) !== false) {
                 $app['db']->transactional(function($db) use ($id) {
@@ -156,8 +156,8 @@ class CrashProcessCommand extends Command
 
                         $rendered = $data[6];
                         if ($data[4] != '') {
-                            $file = basename(str_replace('\\', '/', $data[4]));
-                            $rendered = $data[2] . '!' . $data[3] . ' [' . $file . ':' . $data[5] . ' + ' . $data[6] . ']';
+                            $data[4] = basename(str_replace('\\', '/', $data[4]));
+                            $rendered = $data[2] . '!' . $data[3] . ' [' . $data[4] . ':' . $data[5] . ' + ' . $data[6] . ']';
                         } else if ($data[3] != '') {
                             $rendered = $data[2] . '!' . $data[3] . ' + ' . $data[6];
                         } else if ($data[2] != '') {

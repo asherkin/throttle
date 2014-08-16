@@ -121,6 +121,69 @@ class Crash
         return $app['twig']->render('logs.html.twig', array('logs' => $logs));
     }
 
+    public function error(Application $app, $id)
+    {
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+
+        if (!\Filesystem::pathExists($path)) {
+            $app->abort(404);
+        }
+
+        $minidump = \Filesystem::readFile($path);
+
+        $output = array();
+
+        $output['header'] = $header = unpack('A4magic/Lversion/Lstream_count/Lstream_offset', $minidump);
+
+        $output['stream'] = $stream = unpack('Ltype/Lsize/Loffset', substr($minidump, $header['stream_offset'], 16));
+
+        if ($stream['type'] !== 3) {
+            $app->abort(500);
+        }
+
+        $output['thread'] = $thread = unpack('Lthread_count/Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, $stream['offset'], 52));
+
+        $output['context_flags'] = $context_flags = unpack('Lflags', substr($minidump, $thread['context_offset'], 4));
+
+        if ($context_flags['flags'] !== 0x1000F) {
+            $app->abort(500);
+        }
+
+        function get_register_offset($minidump, $stack_start, $register_offset) {
+            $context_register = unpack('Lregister', substr($minidump, $register_offset, 4));
+            return (int)bcsub(sprintf('%u', $context_register['register']), sprintf('%u', $stack_start));
+        }
+
+        $output['register_esp'] = $register_esp = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 196);
+        $output['register_ebp'] = $register_ebp = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 180);
+
+        $error_offset = 0;
+        for ($i = 0; $i < 6; $i++) {
+            $output['register_offset_'.$i] = $register_offset = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 156 + ($i * 4));
+            if ($register_offset >= $register_esp && $register_offset <= $register_ebp) {
+                $output['error_offset'] = $error_offset = $register_offset;
+                break;
+            }
+        }
+
+        if ($error_offset === 0) {
+            $app->abort(500);
+        }
+
+        $output['string_start'] = $string_start = $thread['stack_offset'] + $error_offset;
+        $string_length = 0;
+
+        while (ord($minidump[$string_start + $string_length]) != 0 && $string_length < 256) {
+            $string_length++;
+        }
+
+        $output['string_length'] = $string_length;
+
+        $output['error_string'] = $error_string = substr($minidump, $string_start, $string_length);
+
+        return '<pre>'.json_encode($output, JSON_PRETTY_PRINT).'</pre>';
+    }
+
     public function reprocess(Application $app, $id)
     {
         $user = $app['session']->get('user');
@@ -173,12 +236,9 @@ class Crash
             return $app->redirect($app['url_generator']->generate('login'));
         }
 
-        $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1 AND failed = 0), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending, COALESCE(SUM(failed = 1), 0) as failed FROM crash WHERE owner = ?', array($user['id']))->fetch();
-
         $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 WHERE owner = ? ORDER BY crash.timestamp DESC LIMIT 10', array($user['id']))->fetchAll();
 
         return $app['twig']->render('dashboard.html.twig', array(
-            'stats' => $stats,
             'crashes' => $crashes,
         ));
     }
@@ -212,13 +272,10 @@ class Crash
             }
         }
 
-        $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1 AND failed = 0), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending, COALESCE(SUM(failed = 1), 0) as failed FROM crash' . ($user['admin'] ? '' : ' WHERE owner = ?'), ($user['admin'] ? array() : array($user['id'])))->fetch();
-
         $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2 FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 100', $params)->fetchAll();
 
         return $app['twig']->render('list.html.twig', array(
             'offset' => $offset,
-            'stats' => $stats,
             'crashes' => $crashes,
         ));
     }

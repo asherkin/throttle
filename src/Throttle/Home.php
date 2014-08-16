@@ -23,13 +23,10 @@ class Home
             }
         }
 
-        $stats = $app['db']->executeQuery('SELECT COALESCE(SUM(processed = 1 AND failed = 0), 0) as processed, COALESCE(SUM(processed = 0), 0) as pending, COALESCE(SUM(failed = 1), 0) as failed FROM crash')->fetch();
-
         return $app['twig']->render('index.html.twig', array(
             'maintenance_message' => $app['config']['maintenance'],
             'errors_crash' => $app['session']->getFlashBag()->get('error_crash'),
             'errors_auth' => $app['session']->getFlashBag()->get('error_auth'),
-            'stats' => $stats,
         ));
     }
 

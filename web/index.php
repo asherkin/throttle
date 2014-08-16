@@ -169,6 +169,26 @@ $app->get('/dashboard/all/{offset}', 'Throttle\Crash::list_crashes')
     ->value('offset', null)
     ->bind('list');
 
+$app->get('/stats/daily/{module}/{function}', 'Throttle\Stats::daily')
+    ->value('module', null)
+    ->value('function', null)
+    ->bind('stats_daily');
+
+$app->get('/stats/top/{module}/{function}', 'Throttle\Stats::top')
+    ->value('module', null)
+    ->value('function', null)
+    ->bind('stats_top');
+
+$app->get('/stats/latest/{module}/{function}', 'Throttle\Stats::latest')
+    ->value('module', null)
+    ->value('function', null)
+    ->bind('stats_latest');
+
+$app->get('/stats/{module}/{function}', 'Throttle\Stats::index')
+    ->value('module', null)
+    ->value('function', null)
+    ->bind('stats');
+
 $app->get('/{id}/download', 'Throttle\Crash::download')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('download');
@@ -176,6 +196,10 @@ $app->get('/{id}/download', 'Throttle\Crash::download')
 $app->get('/{id}/logs', 'Throttle\Crash::logs')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('logs');
+
+$app->get('/{id}/error', 'Throttle\Crash::error')
+    ->assert('id', '[0-9a-zA-Z]{12}')
+    ->bind('error');
 
 $app->post('/{id}/reprocess', 'Throttle\Crash::reprocess')
     ->assert('id', '[0-9a-zA-Z]{12}')
