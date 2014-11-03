@@ -28,8 +28,6 @@ class Crash
             throw new \Exception();
         }
 
-        $minidump->move($path, $id . '.dmp');
-
         $owner = $app['request']->request->get('UserID');
         $server = null;
 
@@ -55,6 +53,9 @@ class Crash
         $metadata = json_encode($app['request']->request->all());
 
         $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, server) VALUES (?, NOW(), INET_ATON(?), ?, ?, ?)', array($id, $ip, $owner, $metadata, $server));
+
+	// Move after it's in the DB, to avoid a race condition with the cleanup code.
+        $minidump->move($path, $id . '.dmp');
 
         return $app['twig']->render('submit.txt.twig', array(
             'id' => $id,
@@ -86,6 +87,7 @@ class Crash
             'notices' => $notices,
             'stack' => $stack,
             'modules' => $modules,
+            'sys_error' => (isset($stack[0]['rendered']) ? (preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1) : false),
         ));
     }
 
@@ -123,6 +125,12 @@ class Crash
 
     public function error(Application $app, $id)
     {
+        $thread = $app['db']->executeQuery('SELECT thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetchColumn(0);
+
+        if ($thread === null) {
+            $app->abort(404);
+        }
+
         $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
         if (!\Filesystem::pathExists($path)) {
@@ -138,15 +146,15 @@ class Crash
         $output['stream'] = $stream = unpack('Ltype/Lsize/Loffset', substr($minidump, $header['stream_offset'], 16));
 
         if ($stream['type'] !== 3) {
-            $app->abort(500);
+            throw new \RuntimeException('Bad stream type.');
         }
 
-        $output['thread'] = $thread = unpack('Lthread_count/Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, $stream['offset'], 52));
+        $output['thread'] = $thread = unpack('Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, $stream['offset'] + 4 + ($thread * 48), 48));
 
         $output['context_flags'] = $context_flags = unpack('Lflags', substr($minidump, $thread['context_offset'], 4));
 
-        if ($context_flags['flags'] !== 0x1000F) {
-            $app->abort(500);
+        if (($context_flags['flags'] & 0x10000) === 0) {
+            throw new \RuntimeException('Bad context flags.');
         }
 
         function get_register_offset($minidump, $stack_start, $register_offset) {
@@ -167,7 +175,7 @@ class Crash
         }
 
         if ($error_offset === 0) {
-            $app->abort(500);
+            throw new \RuntimeException('Failed to find error string.' . PHP_EOL . print_r($output, true));
         }
 
         $output['string_start'] = $string_start = $thread['stack_offset'] + $error_offset;
@@ -181,7 +189,7 @@ class Crash
 
         $output['error_string'] = $error_string = substr($minidump, $string_start, $string_length);
 
-        return '<pre>'.json_encode($output, JSON_PRETTY_PRINT).'</pre>';
+        return $app->json($output);
     }
 
     public function reprocess(Application $app, $id)
