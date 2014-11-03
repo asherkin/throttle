@@ -29,7 +29,11 @@ class CrashCleanCommand extends Command
         $groups = $app['db']->executeQuery('SELECT owner, ip FROM crash WHERE processed = 1 GROUP BY owner, ip HAVING COUNT(*) > 100');
 
         while ($group = $groups->fetch()) {
-            $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner = ? AND ip = ? AND processed = 1 ORDER BY timestamp DESC LIMIT 1000 OFFSET 100', array($group['owner'], $group['ip']));
+            if ($group['owner']) {
+                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner = ? AND ip = ? AND processed = 1 ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['owner'], $group['ip']));
+            } else {
+                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner IS NULL AND ip = ? AND processed = 1 ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['ip']));
+            }
 
             $crashes = array();
             while ($id = $query->fetchColumn(0)) {
@@ -39,10 +43,46 @@ class CrashCleanCommand extends Command
             if ($input->getOption('dry-run')) {
                 $count = count($crashes);
             } else {
-                $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) LIMIT 1000', array($crashes), array(\Doctrine\DBAL\Connection::PARAM_INT_ARRAY));
+                $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) LIMIT 100', array($crashes), array(\Doctrine\DBAL\Connection::PARAM_INT_ARRAY));
             }
 
             $output->writeln('Deleted ' . $count . ' crash dumps for server: ' . $group['owner'] . ', ' . long2ip($group['ip']));
+        }
+
+        if ($input->getOption('dry-run')) {
+            return;
+        }
+
+        $count = $app['db']->executeUpdate('DELETE FROM crash WHERE timestamp < DATE_SUB(NOW(), INTERVAL 90 DAY) LIMIT 100');
+        if ($count > 0) {
+            $output->writeln('Deleted ' . $count . ' old crash dumps.');
+        }
+
+        $query = $app['db']->executeQuery('SELECT id FROM crash');
+
+        $crashes = array();
+        while ($id = $query->fetchColumn(0)) {
+            $crashes[$id] = true;
+        }
+
+        $count = 0;
+        $buckets = \Filesystem::listDirectory($app['root'] . '/dumps', false);
+        foreach ($buckets as $bucket) {
+            $dumps = \Filesystem::listDirectory($app['root'] . '/dumps/' . $bucket, false);
+            foreach ($dumps as $dump) {
+                $filename = explode('.', $dump, 2);
+                
+		if (isset($crashes[$filename[0]])) {
+                    continue;
+                }
+
+                \Filesystem::remove($app['root'] . '/dumps/' . $bucket . '/' . $dump);
+                $count++;
+            }
+        }
+
+        if ($count > 0) {
+            $output->writeln('Deleted ' . $count . ' orphan crash dumps.');
         }
     }
 }
