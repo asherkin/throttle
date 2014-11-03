@@ -13,7 +13,17 @@ class SymbolsDownloadCommand extends Command
     protected function configure()
     {
         $this->setName('symbols:download')
-            ->setDescription('Download missing symbol files from the Microsoft Symbol Server.');
+            ->setDescription('Download missing symbol files from the Microsoft Symbol Server.')
+            ->addArgument(
+                'name',
+                InputArgument::OPTIONAL,
+                'Module Name'
+            )
+            ->addArgument(
+                'identifier',
+                InputArgument::OPTIONAL,
+                'Module Identifier'
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -27,8 +37,21 @@ class SymbolsDownloadCommand extends Command
         // Initialize the wine environment.
         execx('WINEPREFIX=%s WINEDEBUG=-all wine regsvr32 %s', $app['root'] . '/.wine', $app['root'] . '/bin/msdia80.dll');
 
-        // Find all Windows modules missing symbols
-        $modules = $app['db']->executeQuery('SELECT DISTINCT name, identifier FROM module WHERE name LIKE \'%.pdb\' AND present = 0')->fetchAll();
+        $manualName = $input->getArgument('name');
+        $manualIdentifier = $input->getArgument('identifier');
+
+        $modules = Array();
+
+        if ($manualName) {
+            if (!$manualIdentifier) {
+                throw new \RuntimeException('Specifying \'name\' requires specifying \'identifier\' as well.');
+            }
+
+            $modules[] = Array('name' => $manualName, 'identifier' => $manualIdentifier);
+        } else {
+            // Find all Windows modules missing symbols
+            $modules = $app['db']->executeQuery('SELECT DISTINCT name, identifier FROM module WHERE name LIKE \'%.pdb\' AND present = 0')->fetchAll();
+        }
 
         // Prepare HTTPSFutures for downloading compressed PDBs.
         $futures = array();
