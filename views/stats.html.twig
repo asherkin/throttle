@@ -34,8 +34,8 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="http://code.highcharts.com/highcharts.js"></script>
-<script src="http://code.highcharts.com/modules/data.js"></script>
+<script src="{{ app.request.baseUrl }}/js/highcharts.js"></script>
+<script src="{{ app.request.baseUrl }}/js/highcharts.data.js"></script>
 <script type="text/javascript">
 $(function() {
   $.get('{{ path('stats_daily', {module: module, function: function}) }}', function(csv) {

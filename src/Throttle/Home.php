@@ -33,7 +33,7 @@ class Home
     public function login(Application $app)
     {
         if (!$app['openid']->mode) {
-            $app['openid']->identity = 'http://steamcommunity.com/openid';
+            $app['openid']->identity = 'https://steamcommunity.com/openid';
 
             return $app->redirect($app['openid']->authUrl());
         } elseif ($app['openid']->mode == 'cancel' || !$app['openid']->validate()) {
