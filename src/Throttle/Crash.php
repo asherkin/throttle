@@ -255,19 +255,21 @@ class Crash
     {
         $user = $app['session']->get('user');
 
-        if (!$user) {
+        if (!$user || !$user['id']) {
             return $app->redirect($app['url_generator']->generate('login'));
         }
+
+        $userid = $user['admin'] ? $app['request']->get('user', null) : $user['id'];
 
         $where = '';
         $params = array();
 
-        if ($offset || !$user['admin']) {
+        if ($offset || $userid) {
             $where .= 'WHERE ';
 
-            if (!$user['admin']) {
+            if ($userid) {
                 $where .= 'owner = ?';
-                $params[] = $user['id'];
+                $params[] = $userid;
 
                 if ($offset) {
                     $where .= ' AND ';
