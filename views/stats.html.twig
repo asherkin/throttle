@@ -27,8 +27,8 @@
 </div>
 <h2>Latest Crash Dumps</h2>
 <div class="well well-tight">
-  <table id="table_latest" class="table table-stacktrace">
-    <thead><tr><th></th><th>Function</th></tr></thead>
+  <table id="table_latest" class="table">
+    <thead><tr><th></th><th></th><th>Function</th></tr></thead>
   </table>
 </div>
 {% endblock %}
@@ -105,11 +105,25 @@ $(function() {
     $('#table_top').append(table_body);
   });
 
+  function identicon(hash) {
+    return 'https://secure.gravatar.com/avatar/' + hash + '?s=40&r=any&default=identicon&forcedefault=1';
+  }
+
   $.getJSON('{{ path('stats_latest', {module: module, function: function}) }}', function(data) {
     var table_body = '';
 
     for (var i = 0; i < data.length; i++) {
-      table_body += '<tr><th class="monospace"><a href="/'+data[i][0]+'">'+(data[i][0].toUpperCase().match(/.{4}/g).join('-'))+'</a></th><td class="monospace">';
+      table_body += '<tr><td><div class="column-iconstack">';
+
+      if (data[i][2]) {
+        table_body += '<img class="column-identicon" src="'+identicon(data[i][2])+'" width="20" height="20">';
+      }
+
+      if (data[i][3]) {
+        table_body += '<img class="column-identicon" src="'+data[i][3]+'" width="20" height="20">';
+      }
+
+      table_body += '</div></td><th class="monospace"><a href="/'+data[i][0]+'">'+(data[i][0].toUpperCase().match(/.{4}/g).join('-'))+'</a></th><td class="monospace">';
 
       if (data[i][1]) {
         table_body += data[i][1];

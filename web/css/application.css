@@ -246,3 +246,16 @@ td.column-actions .btn {
     text-align: center;
 }
 
+.column-iconstack {
+    position: relative;
+}
+
+.column-iconstack img:last-child:not(:first-child) {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 14px;
+    height: 14px;
+    box-shadow: -1px -1px 0 rgba(255,255,255,0.8);
+}
+
