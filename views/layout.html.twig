@@ -38,7 +38,11 @@
         </a>
         <ul class="dropdown-menu pull-right">
             <li><a href="{{ path('dashboard') }}"><i class="icon-fixed-width icon-reorder"></i> Dashboard</a></li>
+{% if logout_to_index|default(false) %}
+            <li><a href="{{ path('logout') }}"><i class="icon-fixed-width icon-signout"></i> Logout</a></li>
+{% else %}
             <li><a href="{{ path('logout', {'return': app.request.pathInfo}) }}"><i class="icon-fixed-width icon-signout"></i> Logout</a></li>
+{% endif %}
         </ul>
     </li>
 </ul>
