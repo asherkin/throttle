@@ -72,6 +72,14 @@ class Crash
             \Filesystem::remove($metapath);
         }
 
+        try {
+            $app['queue']->putInTube('carburetor', json_encode(array(
+                'id' => $id,
+                'owner' => $owner,
+                'ip' => $ip,
+            )));
+        } catch (\Exception $e) {}
+
         // Special code for handling breakpad-uploaded minidumps.
         // FIXME: This is mainly a hack for testing Electron.
         if ($app['request']->request->get('prod')) {

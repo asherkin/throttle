@@ -40,7 +40,8 @@
         "symfony/debug": "~2.3.0",
         "facebook/libphutil": "dev-master",
         "fp/lightopenid": "dev-master",
-        "enygma/yubikey": "~3.2"
+        "enygma/yubikey": "~3.2",
+        "pda/pheanstalk": "^3.1"
     },
     "autoload": {
         "psr-0": { "Throttle": "src/" }

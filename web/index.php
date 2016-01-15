@@ -149,6 +149,10 @@ if (isset($app['config']['yubicloud-api-key']) && isset($app['config']['yubiclou
     });
 }
 
+$app['queue'] = $app->share(function() use ($app) {
+    return new Pheanstalk\Pheanstalk('127.0.0.1');
+});
+
 list($err, $stdout, $stderr) = $changesetFuture->resolve();
 
 if (!$err) {
