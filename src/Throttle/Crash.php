@@ -129,7 +129,7 @@ class Crash
             'notices' => $notices,
             'stack' => $stack,
             'modules' => $modules,
-            'sys_error' => (isset($stack[0]['rendered']) ? (preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1) : false),
+            'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^(engine(_srv)?\\.so!Sys_Error(_Internal)?\\(|libtier0\\.so!Plat_ExitProcess|KERNELBASE\\.dll!RaiseException)/', $stack[0]['rendered']) === 1) : false),
         ));
     }
 
@@ -257,10 +257,17 @@ class Crash
 
     public function error(Application $app, $id)
     {
-        $thread = $app['db']->executeQuery('SELECT thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetchColumn(0);
+        $query = $app['db']->executeQuery('SELECT owner, thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id));
 
-        if ($thread === null) {
+        $thread = $query->fetchColumn(1);
+        if ($thread === false) {
             $app->abort(404);
+        }
+
+        $user = $app['session']->get('user');
+        $owner = $query->fetchColumn(0);
+        if ($user === null || (!$user['admin'] && $user['id'] !== $owner)) {
+            $app->abort(403);
         }
 
         $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
@@ -275,10 +282,15 @@ class Crash
 
         $output['header'] = $header = unpack('A4magic/Lversion/Lstream_count/Lstream_offset', $minidump);
 
-        $output['stream'] = $stream = unpack('Ltype/Lsize/Loffset', substr($minidump, $header['stream_offset'], 16));
+        $stream_offset = $header['stream_offset'];
+        $stream = false;
+        do {
+            $output['stream'] = $stream = unpack('Ltype/Lsize/Loffset', substr($minidump, $stream_offset, 16));
+            $stream_offset += 16;
+        } while ($stream !== false && $stream['type'] !== 3);
 
-        if ($stream['type'] !== 3) {
-            throw new \RuntimeException('Bad stream type.');
+        if ($stream === false) {
+            throw new \RuntimeException('Missing MD_THREAD_LIST_STREAM');
         }
 
         $output['thread'] = $thread = unpack('Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, $stream['offset'] + 4 + ($thread * 48), 48));
@@ -295,31 +307,43 @@ class Crash
         }
 
         $output['register_esp'] = $register_esp = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 196);
-        $output['register_ebp'] = $register_ebp = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 180);
 
-        $error_offset = 0;
-        for ($i = 0; $i < 6; $i++) {
-            $output['register_offset_'.$i] = $register_offset = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 156 + ($i * 4));
-            if ($register_offset >= $register_esp && $register_offset <= $register_ebp) {
-                $output['error_offset'] = $error_offset = $register_offset;
+        $string = '';
+        $strings = array();
+        $min_string_len = 40;
+
+        for ($i = 0; $i < $thread['stack_size']; $i++) {
+            $char = $minidump[$thread['stack_offset'] + $register_esp + $i];
+            $charnum = ord($char);
+
+            if ($charnum === 9 || $charnum === 10 || $charnum === 13 || ($charnum >= 32 && $charnum < 127)) {
+                $string .= $char;
+            } else {
+                if ($charnum === 0 && strlen($string) >= $min_string_len) {
+                    $strings[] = array('offset' => $i - strlen($string), 'string' => trim($string));
+                }
+                $string = '';
+            }
+
+            if (count($strings) > 0) {
+                //TODO: Just return the first string for now.
                 break;
             }
         }
 
-        if ($error_offset === 0) {
-            throw new \RuntimeException('Failed to find error string.' . PHP_EOL . print_r($output, true));
+        //TODO: Handle multiple strings by ranking them by length (longer), alphanumericness (more), and distance from top of stack (closer).
+        //usort($strings, function($a, $b) {
+        //    return strlen($b['string']) - strlen($a['string']);
+        //});
+
+        $output['strings'] = $strings;
+
+        //TODO: Just replace entire output with the string we've found for now.
+        if (count($strings) > 0) {
+            $output = $strings[0];
+        } else {
+            $output = array('offset' => -1, 'string' => '');
         }
-
-        $output['string_start'] = $string_start = $thread['stack_offset'] + $error_offset;
-        $string_length = 0;
-
-        while (ord($minidump[$string_start + $string_length]) != 0 && $string_length < 256) {
-            $string_length++;
-        }
-
-        $output['string_length'] = $string_length;
-
-        $output['error_string'] = $error_string = substr($minidump, $string_start, $string_length);
 
         return $app->json($output);
     }

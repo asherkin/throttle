@@ -54,8 +54,9 @@
 <div class="alert alert-block alert-{{ notice.severity }}">{{ notice.text|raw }}</div>
 {% endfor %}
 
-{% if sys_error %}
-<div id="error-details" class="alert alert-block alert-warning"><i class="icon-spinner icon-spin"></i> Loading...</div>
+{% if has_error_string and user and (user.admin or user.id == crash.owner) %}
+<div id="error-details" class="alert alert-block alert-warning"><i class="icon-spinner icon-spin"></i></div>
+{% endif %}
 {% endif %}
 
 <h2>Stack Trace</h2>
@@ -126,11 +127,11 @@
         });
     });
 </script>
-{% if sys_error %}
+{% if has_error_string %}
 <script type="text/javascript">
     $.getJSON('{{ path('error', {id: crash.id}) }}', function(data) {
-        if (data.error_string) {
-            $('#error-details').text('Fatal Error: ' + data.error_string);
+        if (data.string) {
+            $('#error-details').text(data.string);
         }
     });
 </script>
