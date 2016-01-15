@@ -39,7 +39,8 @@
         "silex/web-profiler": "~1.0.0@dev",
         "symfony/debug": "~2.3.0",
         "facebook/libphutil": "dev-master",
-        "fp/lightopenid": "dev-master"
+        "fp/lightopenid": "dev-master",
+        "enygma/yubikey": "~3.2"
     },
     "autoload": {
         "psr-0": { "Throttle": "src/" }

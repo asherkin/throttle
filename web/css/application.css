@@ -294,6 +294,14 @@ dl.dl-minidump div.alert {
     box-shadow: -1px -1px 0 rgba(255,255,255,0.8);
 }
 
+.input-group-yubikey {
+    background-color: #9aca3c;
+}
+
+.input-group-yubikey img {
+    height: 20px;
+}
+
 .error-page {
     text-align: center;
     font-size: 1.5em;

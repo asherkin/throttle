@@ -90,6 +90,72 @@ class Home
         return $app->redirect($app['url_generator']->generate('dashboard'));
     }
 
+    public function login_yubikey(Application $app)
+    {
+        if (!isset($app['yubikey'])) {
+            return $app->abort(404);
+        }
+
+        return $app['twig']->render('yubikey.html.twig', array(
+            'return' => $app['request']->get('return', null),
+            'errors' => $app['session']->getFlashBag()->get('error'),
+        ));
+    }
+
+    public function login_yubikey_post(Application $app)
+    {
+        if (!isset($app['yubikey'])) {
+            return $app->abort(404);
+        }
+
+        $otp = $app['request']->get('otp', null);
+        if ($otp === null) {
+            $app['session']->getFlashBag()->add('error', 'Missing OTP in request');
+
+            return $app->redirect($app['url_generator']->generate('yubikey', array(
+                'return' => $app['request']->get('return', null),
+            )));
+        }
+
+        //$app['session']->getFlashBag()->add('error', 'Failed to authenticate');
+
+        $response = false;
+        try {
+            $response = $app['yubikey']->check($otp);
+        } catch (\InvalidArgumentException $e) {
+            $app['session']->getFlashBag()->add('error', $e->getMessage());
+
+            return $app->redirect($app['url_generator']->generate('yubikey', array(
+                'return' => $app['request']->get('return', null),
+            )));
+        }
+
+        if ($response->success() !== true) {
+            $app['session']->getFlashBag()->add('error', 'YubiCloud rejected OTP');
+
+            return $app->redirect($app['url_generator']->generate('yubikey', array(
+                'return' => $app['request']->get('return', null),
+            )));
+        }
+
+        $user = substr($otp, 0, 12);
+        $userlen = strlen($user);
+        $userid = '';
+        $modhex = 'cbdefghijklnrtuv';
+        for ($i = 0; $i < $userlen; $i += 2) {
+            $high = strpos($modhex, $user[$i]);
+            $low = strpos($modhex, $user[$i + 1]);
+            $userid .= chr(($high << 4) | $low);
+        }
+        $userid = implode(':', str_split(bin2hex($userid), 2));
+
+        $app['session']->getFlashBag()->add('error', 'Authenticated as ' . $userid);
+
+        return $app->redirect($app['url_generator']->generate('yubikey', array(
+            'return' => $app['request']->get('return', null),
+        )));
+    }
+
     public function logout(Application $app)
     {
         $app['session']->remove('user');

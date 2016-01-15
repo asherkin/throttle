@@ -143,6 +143,12 @@ $app['openid'] = $app->share(function() use ($app) {
     return new LightOpenID($app['config']['hostname']);
 });
 
+if (isset($app['config']['yubicloud-api-key']) && isset($app['config']['yubicloud-client-id'])) {
+    $app['yubikey'] = $app->share(function() use ($app) {
+        return new Yubikey\Validate($app['config']['yubicloud-api-key'], $app['config']['yubicloud-client-id']);
+    });
+}
+
 list($err, $stdout, $stderr) = $changesetFuture->resolve();
 
 if (!$err) {
@@ -175,6 +181,12 @@ if (!$app['debug']) {
         ));
     });
 }
+
+$app->get('/login/yubikey', 'Throttle\Home::login_yubikey')
+    ->bind('yubikey');
+
+$app->post('/login/yubikey', 'Throttle\Home::login_yubikey_post')
+    ->bind('yubikey_post');
 
 $app->get('/login', 'Throttle\Home::login')
     ->bind('login');
