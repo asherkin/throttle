@@ -240,6 +240,14 @@ $app->get('/{id}/logs', 'Throttle\Crash::logs')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('logs');
 
+$app->get('/{id}/metadata', 'Throttle\Crash::metadata')
+    ->assert('id', '[0-9a-zA-Z]{12}')
+    ->bind('metadata');
+
+$app->get('/{id}/console', 'Throttle\Crash::console')
+    ->assert('id', '[0-9a-zA-Z]{12}')
+    ->bind('console');
+
 $app->get('/{id}/error', 'Throttle\Crash::error')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('error');

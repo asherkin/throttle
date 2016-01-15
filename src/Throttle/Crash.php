@@ -62,6 +62,16 @@ class Crash
         \Filesystem::createDirectory($path, 0755, true);
         $minidump->move($path, $id . '.dmp');
 
+        $metadata = $app['request']->files->get('upload_file_metadata');
+    
+        if ($metadata !== null && $metadata->isValid() && $metadata->getClientSize() > 0) {
+            $metadata->move($path, $id . '.meta.txt');
+
+            $metapath = $path . '/' . $id . '.meta.txt';
+            \Filesystem::writeFile($metapath . '.gz', gzencode(\Filesystem::readFile($metapath)));
+            \Filesystem::remove($metapath);
+        }
+
         // Special code for handling breakpad-uploaded minidumps.
         // FIXME: This is mainly a hack for testing Electron.
         if ($app['request']->request->get('prod')) {
@@ -166,6 +176,75 @@ class Crash
         $logs = \Filesystem::pathExists($path) ? gzdecode(\Filesystem::readFile($path)) : null;
 
         return $app['twig']->render('logs.html.twig', array('logs' => $logs));
+    }
+
+    public function metadata(Application $app, $id)
+    {
+        $user = $app['session']->get('user');
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+
+        if ($owner === false) {
+            $app->abort(404);
+        }
+
+        if ($user === null || (!$user['admin'] && $user['id'] !== $owner['owner'])) {
+            $app->abort(403);
+        }
+
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.meta.txt';
+
+        $logs = null;
+        if (\Filesystem::pathExists($path . '.gz')) {
+            $logs = gzdecode(\Filesystem::readFile($path . '.gz'));
+        } else if (\Filesystem::pathExists($path)) {
+            $logs = \Filesystem::readFile($path);
+        }
+
+        return $app['twig']->render('logs.html.twig', array('logs' => $logs));
+    }
+
+    public function console(Application $app, $id)
+    {
+        $user = $app['session']->get('user');
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+
+        if ($owner === false) {
+            $app->abort(404);
+        }
+
+        if ($user === null || (!$user['admin'] && $user['id'] !== $owner['owner'])) {
+            $app->abort(403);
+        }
+
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.meta.txt';
+
+        $metadata = null;
+        if (\Filesystem::pathExists($path . '.gz')) {
+            $metadata = gzdecode(\Filesystem::readFile($path . '.gz'));
+        } else if (\Filesystem::pathExists($path)) {
+            $metadata = \Filesystem::readFile($path);
+        }
+
+        // Extract the console output from the full metadata.
+        $ret = preg_match('/(?<=-------- CONSOLE HISTORY BEGIN --------)[^\\x00]+(?=-------- CONSOLE HISTORY END --------)/i', $metadata, $console);
+
+        if ($ret !== 1) {
+            $app->abort(404);
+        }
+
+        $console = $console[0]; // Get the console output.
+        $console = trim($console); // Remove the extra newlines from the markers.
+        $console = str_replace("\r\n", PHP_EOL, $console); // Normalize line endings.
+
+        // Split the console output into individual prints.
+        preg_match_all('/(\\d+)\\((\\d+\\.?\\d*)\\):  ([^\\x00]*?)(?=(?:\\d+\\(\\d+\\.\\d+\\):  )|$)/', $console, $console);
+
+        $console = $console[3]; // Get just the text output.
+        $console[] = array_pop($console) . PHP_EOL; // Add the missing newline to the last entry.
+        $console = array_reverse($console); // Flip them back into the correct order.
+        $console = implode('', $console); // Join them together again into one string.
+
+        return $app['twig']->render('logs.html.twig', array('logs' => $console));
     }
 
     public function error(Application $app, $id)
