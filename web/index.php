@@ -98,6 +98,10 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
         return implode(' ', preg_split('/(?<=[a-z])(?=[A-Z])/x', ucfirst($string)));
     }));
 
+    $twig->addFilter('address', new \Twig_Filter_Function(function($string) {
+        return sprintf('0x%08s', $string);
+    }));
+
     return $twig;
 }));
 

@@ -84,8 +84,10 @@ class CrashProcessCommand extends Command
         $progress = $this->getHelperSet()->get('progress');
         $progress->start($output, $pending);
 
+        $repoCache = array();
+
         for ($count = 0; $count < $pending; $count++) {
-            $app['db']->transactional(function($db) use ($app, $symbols, $symbolCache) {
+            $app['db']->transactional(function($db) use ($app, $symbols, $symbolCache, &$repoCache) {
                 $id = $app['db']->executeQuery('SELECT id FROM crash WHERE processed = 0 LIMIT 1')->fetchColumn(0);
                 $minidump = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
                 $logs = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt';
@@ -93,38 +95,58 @@ class CrashProcessCommand extends Command
                 try {
                     $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s 2> %s', $minidump, $logs);
 
+                    $foundStack = false;
+                    $addresses = array();
+
                     foreach (new \LinesOfALargeExecFuture($future) as $line) {
                         $data = str_getcsv($line, '|');
 
-                        if ($data[0] != 'Module' || $data[3] === '' || $data[4] === '') {
-                            continue;
-                        }
-
-                        $symname = $data[3];
-                        if (stripos($symname, '.pdb') == strlen($symname) - 4) {
-                            $symname = substr($symname, 0, -4);
-                        }
-
-                        $symdir = $data[3] . '/' . $data[4];
-                        $sympath = $symdir . '/' . $symname . '.sym';
-
-                        if (file_exists($symbolCache . '/' . $sympath)) {
-                            continue;
-                        }
-
-                        foreach ($symbols as $path) {
-                            if (file_exists($path . '/' . $sympath . '.gz')) {
-                                \Filesystem::createDirectory($symbolCache . '/' . $symdir, 0777, true);
-                                \Filesystem::writeFile($symbolCache . '/' . $sympath, gzdecode(str_replace($app['root'], '', \Filesystem::readFile($path . '/' . $sympath . '.gz'))));
-                                break;
+                        if (!$foundStack) {
+                            if ($line == '') {
+                                $foundStack = true;
+                                continue;
                             }
+
+                            if ($data[0] != 'Module' || $data[3] === '' || $data[4] === '') {
+                                continue;
+                            }
+
+                            $symname = $data[3];
+                            if (stripos($symname, '.pdb') == strlen($symname) - 4) {
+                                $symname = substr($symname, 0, -4);
+                            }
+
+                            $symdir = $data[3] . '/' . $data[4];
+                            $sympath = $symdir . '/' . $symname . '.sym';
+
+                            if (file_exists($symbolCache . '/' . $sympath)) {
+                                continue;
+                            }
+
+                            foreach ($symbols as $path) {
+                                if (file_exists($path . '/' . $sympath . '.gz')) {
+                                    \Filesystem::createDirectory($symbolCache . '/' . $symdir, 0777, true);
+                                    \Filesystem::writeFile($symbolCache . '/' . $sympath, gzdecode(\Filesystem::readFile($path . '/' . $sympath . '.gz')));
+                                    break;
+                                }
+                            }
+
+                            continue;
                         }
+
+                        $thread = (int)$data[0];
+                        $frame = (int)$data[1];
+                        $address = hexdec($data[6]);
+
+                        if (!isset($addresses[$thread])) $addresses[$thread] = array();
+                        $addresses[$thread][$frame] = $address;
                     }
 
                     $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s %s 2>> %s', $minidump, $symbolCache, $logs);
 
                     $crashThread = -1;
                     $foundStack = false;
+                    $moduleRepos = array();
 
                     foreach (new \LinesOfALargeExecFuture($future) as $line) {
                         $data = str_getcsv($line, '|');
@@ -140,11 +162,40 @@ class CrashProcessCommand extends Command
                                     $symname = substr($symname, 0, -4);
                                 }
 
-                                $sympath = $data[3] . '/' . $data[4] . '/' . $symname . '.sym';
+                                $sympath = $symbolCache . '/' . $data[3] . '/' . $data[4] . '/' . $symname . '.sym';
 
-                                $hasSymbols = file_exists($symbolCache . '/' . $sympath);
+                                $hasSymbols = file_exists($sympath);
 
-                                $app['db']->executeUpdate('INSERT IGNORE INTO module VALUES (?, ?, ?, ?, ?)', array($id, $data[3], $data[4], $hasSymbols, $hasSymbols));
+                                $app['db']->executeUpdate('INSERT IGNORE INTO module VALUES (?, ?, ?, ?, ?, ?)', array($id, $data[3], $data[4], $hasSymbols, $hasSymbols, hexdec($data[5])));
+
+                                if ($hasSymbols) {
+                                    $repoCacheKey = $data[1] . '-' . $data[3] . '-' . $data[4];
+
+                                    if (!array_key_exists($repoCacheKey, $repoCache)) {
+                                        $symbols = fopen($sympath, 'r');
+
+                                        $repos = array();
+                                        while (($record = fgets($symbols)) !== false) {
+                                            $record = explode(' ', $record, 5);
+                                            if ($record[0] === 'INFO' && $record[1] === 'REPO') {
+                                                $repos[$record[4]] = array('url' => $record[3], 'rev' => $record[2]);
+                                            }
+                                        }
+                                        krsort($repos);
+
+                                        fclose($symbols);
+
+                                        $repoCache[$repoCacheKey] = $repos;
+
+                                        //print('Cache MISS for ' . $repoCacheKey . ' (' . array_key_exists($repoCacheKey, $repoCache) . ')' . PHP_EOL);
+                                    } else {
+                                        //print('Cache HIT for ' . $repoCacheKey . PHP_EOL);
+                                    }
+
+                                    if (!empty($repoCache[$repoCacheKey])) {
+                                        $moduleRepos[$data[1]] = $repoCache[$repoCacheKey];
+                                    }
+                                }
                             }
 
                             continue;
@@ -156,15 +207,33 @@ class CrashProcessCommand extends Command
 
                         $rendered = $data[6];
                         if ($data[4] != '') {
-                            $data[4] = basename(str_replace('\\', '/', $data[4]));
-                            $rendered = $data[2] . '!' . $data[3] . ' [' . $data[4] . ':' . $data[5] . ' + ' . $data[6] . ']';
+                            $filename = basename(str_replace('\\', '/', $data[4]));
+                            $rendered = $data[2] . '!' . $data[3] . ' [' . $filename . ':' . $data[5] . ' + ' . $data[6] . ']';
                         } else if ($data[3] != '') {
                             $rendered = $data[2] . '!' . $data[3] . ' + ' . $data[6];
                         } else if ($data[2] != '') {
                             $rendered = $data[2] . ' + ' . $data[6];
                         }
 
-                        $app['db']->executeUpdate('INSERT INTO frame VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', array($id, $data[0], $data[1], $data[2], $data[3], $data[4], $data[5], $data[6], $rendered));
+                        $url = null;
+                        if ($data[4] != '' && array_key_exists($data[2], $moduleRepos)) {
+                            foreach ($moduleRepos[$data[2]] as $prefix => $repo) {
+                                if (substr($data[4], 0, strlen($prefix)) !== $prefix) {
+                                    continue;
+                                }
+
+                                $path = str_replace('\\', '/', substr($data[4], strlen($prefix)));
+                                $url = $repo['url'] . '/blob/' . $repo['rev'] . $path . '#L' . $data[5];
+
+                                break;
+                            }
+                        }
+
+                        // This stuff unfortunately doesn't work as the stack walker can get a completely different stack with symbols.
+                        // Need to think about it when doing the rewrite.
+                        $address = null;//$addresses[(int)$data[0]][(int)$data[1]];
+                        //print_r(array($data[0], $data[1], $addresses[(int)$data[0]][(int)$data[1]]));
+                        $app['db']->executeUpdate('INSERT INTO frame VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($id, $data[0], $data[1], $data[2], $data[3], $data[4], $data[5], $data[6], $rendered, $url, $address));
                     }
 
                     $future = new \ExecFuture($app['root'] . '/bin/minidump_comment %s 2>> %s', $minidump, $logs);

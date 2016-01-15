@@ -80,7 +80,12 @@
 {% for frame in stack %}
             <tr>
                 <th>{{ frame.frame }}</th>
-                <td class="monospace">{{ frame.rendered }}</td>
+                <td class="monospace">
+                  {{ frame.rendered }}
+{% if frame.url %}
+                  <a href="{{ frame.url }}"><i class="icon-external-link"></i></a>
+{% endif %}
+                </td>
             </tr>
 {% endfor %}
         </tbody>
@@ -100,6 +105,7 @@
             <tr>
                 <th>Name</th>
                 <th>Identifier</th>
+                <th>Base</th>
             </tr>
         </thead>
         <tbody>
@@ -108,12 +114,13 @@
             <tr class="{{ class }}">
                 <td>{{ module.name }}</td>
                 <td class="monospace">{{ module.identifier }}</td>
+                <td class="monospace">{{ module.base|address }}</td>
             </tr>
 {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="2"><i class="icon-ellipsis-horizontal"></i></td>
+                <td colspan="3"><i class="icon-ellipsis-horizontal"></i></td>
             </tr>
         </tfoot>
     </table>

@@ -223,8 +223,12 @@ td.column-notices .btn {
     text-align: right;
 }
 
-.table-modules tbody td:last-child {
+.table-modules tbody td.monospace {
     word-break: break-all;
+}
+
+.table-modules tbody td:last-child, .table-modules thead th:last-child {
+    text-align: right;
 }
 
 .table-modules.table-hidden tfoot tr td {
