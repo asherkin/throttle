@@ -74,10 +74,10 @@
                 <td colspan="{% if user.admin %}7{% else %}5{% endif %}">
                     <ul class="pager">
                         <li class="previous {% if not offset %}disabled{% endif %}">
-                            <a {% if offset %}href="{{ path('list') }}"{% endif %}><i class="icon-double-angle-left"></i> Newest</a>
+                            <a {% if offset %}href="{{ path('list', {user: userid}) }}"{% endif %}><i class="icon-double-angle-left"></i> Newest</a>
                         </li>
                         <li class="next {% if not last %}disabled{% endif %}">
-                            <a {% if last %}href="{{ path('list', {offset: last}) }}"{% endif %}>Older <i class="icon-angle-right"></i></a>
+                            <a {% if last %}href="{{ path('list', {offset: last, user: userid}) }}"{% endif %}>Older <i class="icon-angle-right"></i></a>
                         </li>
                     </ul>
                 </td>
