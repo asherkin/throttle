@@ -244,6 +244,24 @@ $app->get('/{id}', 'Throttle\Crash::details')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('details');
 
+$app->get('/{uuid}', function($uuid) use ($app) {
+    $uuid = substr($uuid, 20, 3) . substr($uuid, 24);
+    $uuid = str_split($uuid);
+    $bid = '';
+    for ($i = 0; $i < 15; $i++) {
+        $bid .= sprintf('%04b', hexdec($uuid[$i]));
+    }
+    $bid = str_split($bid, 5);
+
+    $id = '';
+    $map = array_merge(range('a', 'z'), range('2', '7'));
+    for ($i = 0; $i < 12; $i++) {
+        $id .= $map[bindec($bid[$i])];
+    }
+
+    return $app->redirect($app['url_generator']->generate('details', array('id' => $id)));
+})->assert('uuid', '[0-9a-fA-F-]{36}');
+
 $app->get('/', 'Throttle\Home::index')
     ->bind('index');
 

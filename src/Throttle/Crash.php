@@ -62,6 +62,25 @@ class Crash
         \Filesystem::createDirectory($path, 0755, true);
         $minidump->move($path, $id . '.dmp');
 
+        // Special code for handling breakpad-uploaded minidumps.
+        // FIXME: This is mainly a hack for testing Electron.
+        if ($app['request']->request->get('prod')) {
+            $bid = '1000'; // First 2 bits specify UUID variant
+            $map = array_merge(range('a', 'z'), range('2', '7'));
+            for ($i = 0; $i < 12; $i++) {
+                $bid .= sprintf('%05b', array_search($id[$i], $map));
+            }
+            $bid = str_split($bid, 8);
+
+            $uuid = 'bee0cafe-0000-4000-'; // 4 = UUID version
+            for ($i = 0; $i < 8; $i++) {
+                $uuid .= sprintf('%02x', bindec($bid[$i]));
+                if ($i === 1) $uuid .= '-';
+            }
+
+            return $uuid;
+        }
+
         return $app['twig']->render('submit.txt.twig', array(
             'id' => $id,
         ));
