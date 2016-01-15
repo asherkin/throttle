@@ -11,8 +11,6 @@ class Crash
         //TODO
         //return $app->abort(503);
 
-        $ip = $app['request']->getClientIp();
-
         $minidump = $app['request']->files->get('upload_file_minidump');
 
         if ($minidump === null || !$minidump->isValid() || $minidump->getClientSize() <= 0) {
@@ -22,10 +20,8 @@ class Crash
         $id = \Filesystem::readRandomCharacters(12);
 
         $path = $app['root'] . '/dumps/' . substr($id, 0, 2);
-        \Filesystem::createDirectory($path, 0755, true);
-
         if (file_exists($path . '/' . $id . '.dmp')) {
-            throw new \Exception();
+            throw new \Exception('MINIDUMP COLLISION');
         }
 
         $owner = $app['request']->request->get('UserID');
@@ -50,11 +46,41 @@ class Crash
             }
         }
 
+        $ip = $app['request']->getClientIp();
+
+        //$last = $app['db']->executeQuery('SELECT MAX(timestamp) FROM crash WHERE owner = ? AND ip = ?', array($owner, $ip))->fetchColumn(0);
+
+        $mine = $app['db']->executeQuery('SELECT LN(COUNT(*)) AS count FROM crash WHERE owner = ? AND ip = INET_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($owner, $ip))->fetchColumn(0);
+        $bucketsQuery = $app['db']->executeQuery('SELECT LN(COUNT(*)) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR) GROUP BY owner, ip');
+
+        $buckets = [];
+        while (($bucket = $bucketsQuery->fetchColumn(0)) !== false) {
+            $buckets[] = $bucket;
+        }
+        $count = count($buckets);
+        sort($buckets, SORT_NUMERIC);
+
+        $lq = 0; //$buckets[round(0.25 * ($count + 1)) - 1];
+        $uq = 0; //$buckets[round(0.75 * ($count + 1)) - 1];
+        $iqr = $uq - $lq;
+        //$bound = $uq + ($iqr * 1.5);
+        //if ($bound < 1.8) $bound = 1.8;
+        $bound = log(6);
+        $reject = $mine > $bound;
+
+        //$app['monolog']->addDebug("Reject: $reject, Samples: $count, LQ: $lq, UQ: $uq, IQR: $iqr, Bound: $bound, Mine: $mine", $buckets);
+	file_put_contents($app['root'] . '/web/bound.csv', gmdate('Y/m/d H:i:s') . ',' . implode(',', array($count, exp($lq), exp($uq), exp($bound), exp($mine))) . PHP_EOL, FILE_APPEND | LOCK_EX);
+
+        if ($reject) {
+            return $app['twig']->render('submit-reject.txt.twig');
+        }
+
         $metadata = json_encode($app['request']->request->all());
 
         $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, server) VALUES (?, NOW(), INET_ATON(?), ?, ?, ?)', array($id, $ip, $owner, $metadata, $server));
 
 	// Move after it's in the DB, to avoid a race condition with the cleanup code.
+        \Filesystem::createDirectory($path, 0755, true);
         $minidump->move($path, $id . '.dmp');
 
         return $app['twig']->render('submit.txt.twig', array(
