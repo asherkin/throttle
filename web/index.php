@@ -193,6 +193,10 @@ $app->get('/{id}/download', 'Throttle\Crash::download')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('download');
 
+$app->get('/{id}/view', 'Throttle\Crash::view')
+    ->assert('id', '[0-9a-zA-Z]{12}')
+    ->bind('view');
+
 $app->get('/{id}/logs', 'Throttle\Crash::logs')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('logs');
