@@ -142,7 +142,7 @@ span.divider:after {
 .column-stackframe {
     overflow-x: hidden;
     white-space: nowrap;
-    max-width: 330px;
+    max-width: 295px;
     text-overflow: ellipsis;
     word-break: break-word;
 }
@@ -163,7 +163,7 @@ span.divider:after {
 
 @media (min-width: 992px) {
     .column-stackframe {
-        max-width: 500px;
+        max-width: 515px;
     }
 
     .table-stacktrace tbody td {
@@ -173,7 +173,7 @@ span.divider:after {
 
 @media (min-width: 1200px) {
     .column-stackframe {
-        max-width: 750px;
+        max-width: 715px;
     }
 
     .table-stacktrace tbody td {
@@ -196,6 +196,15 @@ td.column-actions {
 
 td.column-actions .btn {
     margin: 0 2px;
+}
+
+td.column-notices {
+    text-align: right;
+}
+
+td.column-notices .btn {
+    padding: 0 5px;
+    margin-top: -2px;
 }
 
 .button-form {

@@ -12,6 +12,7 @@
             <th class="hidden-xs"></th>
 {% endif %}
             <th class="hidden-xs">Function</th>
+            <th></th>
 {% if user.admin %}
             <th class="hidden-xs"></th>
 {% endif %}
@@ -45,6 +46,12 @@
                 <td title="{{ frame.rendered }}" class="hidden-xs monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
                     {{ frame.rendered }}
                 </td>
+                <td class="column-notices">
+{% if crash.notice is not empty %}
+{% set notice = crash.notice | split('-', 2) %}
+                    <span class="btn btn-xs disabled btn-{{ notice[1] }}">{{ (notice[0] != 1 ? notice[0] : '&ensp;') | raw }}</span>
+{% endif %}
+                </td>
 {% if user.admin %}
                 <td class="column-actions hidden-xs">
                     <form action="{{ path('reprocess', {id: crash.id, return: app.request.pathInfo}) }}" method="post" class="button-form">
@@ -58,13 +65,13 @@
             </tr>
 {% else %}
             <tr>
-                <td class="text-center" colspan="{% if user.admin %}6{% else %}4{% endif %}">No Crashes</td>
+                <td class="text-center" colspan="{% if user.admin %}7{% else %}5{% endif %}">No Crashes</td>
             </tr>
 {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="{% if user.admin %}6{% else %}4{% endif %}">
+                <td colspan="{% if user.admin %}7{% else %}5{% endif %}">
                     <ul class="pager">
                         <li class="previous {% if not offset %}disabled{% endif %}">
                             <a {% if offset %}href="{{ path('list') }}"{% endif %}><i class="icon-double-angle-left"></i> Newest</a>
