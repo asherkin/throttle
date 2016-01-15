@@ -26,13 +26,13 @@ class CrashCleanCommand extends Command
     {
         $app = $this->getApplication()->getContainer();
 
-        $groups = $app['db']->executeQuery('SELECT owner, ip FROM crash WHERE processed = 1 GROUP BY owner, ip HAVING COUNT(*) > 100');
+        $groups = $app['db']->executeQuery('SELECT owner, ip FROM crash GROUP BY owner, ip HAVING COUNT(*) > 100');
 
         while ($group = $groups->fetch()) {
             if ($group['owner']) {
-                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner = ? AND ip = ? AND processed = 1 ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['owner'], $group['ip']));
+                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner = ? AND ip = ? ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['owner'], $group['ip']));
             } else {
-                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner IS NULL AND ip = ? AND processed = 1 ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['ip']));
+                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner IS NULL AND ip = ? ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['ip']));
             }
 
             $crashes = array();
@@ -76,7 +76,9 @@ class CrashCleanCommand extends Command
                     continue;
                 }
 
-                \Filesystem::remove($app['root'] . '/dumps/' . $bucket . '/' . $dump);
+                $path = $app['root'] . '/dumps/' . $bucket . '/' . $dump;
+                \Filesystem::remove($path);
+
                 $count++;
             }
         }
