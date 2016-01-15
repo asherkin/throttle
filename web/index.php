@@ -208,13 +208,10 @@ $app->post('/symbols/submit', 'Throttle\Symbols::submit')
 $app->post('/submit', 'Throttle\Crash::submit')
     ->value('_format', 'txt');
 
-$app->get('/dashboard', 'Throttle\Crash::dashboard')
-    ->bind('dashboard');
-
-$app->get('/dashboard/all/{offset}', 'Throttle\Crash::list_crashes')
+$app->get('/dashboard/{offset}', 'Throttle\Crash::dashboard')
     ->assert('offset', '[0-9]+')
     ->value('offset', null)
-    ->bind('list');
+    ->bind('dashboard');
 
 $app->get('/stats/daily/{module}/{function}', 'Throttle\Stats::daily')
     ->value('module', null)
