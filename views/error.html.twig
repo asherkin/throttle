@@ -1,0 +1,10 @@
+{% extends 'layout.html.twig' %}
+ 
+{% block content %}
+<div class="error-page">
+<i class="icon-{{ icon }}"></i>
+{{ title }}
+<span>{{ comment | nl2br }}</span>
+</div>
+{% endblock %}
+

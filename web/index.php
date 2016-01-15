@@ -149,6 +149,33 @@ if (!$err) {
     $app['version'] = $stdout;
 }
 
+if (!$app['debug']) {
+    $app->error(function(\Exception $e, $code) use ($app) {
+        $icon = 'exclamation-sign';
+        $title = 'An Error Has Occurred';
+        $comment = 'Someone has been dispatched to poke the server with a sharp stick.';
+
+        switch ($code) {
+        case 403:
+            $icon = 'ban-circle';
+            $title = 'Access Denied';
+            $comment = 'Doesn\'t look like you\'re meant to be here.';
+            break;
+        case 404:
+            $icon = 'question-sign';
+            $title = 'Not Found';
+            $comment = 'What you are looking for is not here,'.PHP_EOL.'Unless you were looking for this error page of course.';
+            break;
+        }
+
+        return $app['twig']->render('error.html.twig', array(
+            'icon' => $icon,
+            'title' => $title,
+            'comment' => $comment,
+        ));
+    });
+}
+
 $app->get('/login', 'Throttle\Home::login')
     ->bind('login');
 
