@@ -208,6 +208,13 @@ $app->post('/symbols/submit', 'Throttle\Symbols::submit')
 $app->post('/submit', 'Throttle\Crash::submit')
     ->value('_format', 'txt');
 
+$app->get('/dashboard/all/{offset}', function($offset) use ($app) {
+    $userid = $app['request']->get('user', null);
+    return $app->redirect($app['url_generator']->generate('dashboard', array('offset' => $offset, 'user' => $userid)));
+})
+    ->assert('offset', '[0-9]+')
+    ->value('offset', null);
+
 $app->get('/dashboard/{offset}', 'Throttle\Crash::dashboard')
     ->assert('offset', '[0-9]+')
     ->value('offset', null)
