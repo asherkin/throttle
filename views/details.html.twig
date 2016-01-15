@@ -5,12 +5,6 @@
 <div class="alert alert-block alert-info">If you are the owner of this crash, <a href="{{ path('login', {'return': app.request.pathInfo}) }}">login</a> to see more information.</div>
 {% endif %}
 
-{% if crash.processed == 0 %}
-<div class="alert alert-block alert-info">This crash is pending processing, try again later.</div>
-{% elseif crash.failed == 1 %}
-<div class="alert alert-block alert-danger">An error occurred while processing this crash.</div>
-{% endif %}
-
 <div class="well">
     <dl class="dl-horizontal">
         <dt>Uploaded</dt>
@@ -32,21 +26,14 @@
     </dl>
 </div>
 
-{% if user and (user.admin or user.id == crash.owner) %}
-<div class="well clearfix">
-    <a class="btn btn-primary" href="{{ path('download', {'id': crash.id}) }}"><i class="icon-download"></i> Download</a>
-{% if user.admin %}
-    <div class="pull-right">
-        <a class="btn btn-default" href="{{ path('logs', {id: crash.id}) }}"><i class="icon-cogs"></i> View Logs</a>
-        <form action="{{ path('reprocess', {id: crash.id, return: app.request.pathInfo}) }}" method="post" class="button-form">
-            <button type="submit" class="btn btn-default"><i class="icon-refresh"></i> Reprocess</button>
-        </form>
-        <form action="{{ path('delete', {id: crash.id}) }}" method="post" class="button-form">
-            <button type="submit" class="btn btn-danger"><i class="icon-trash"></i> Delete</button>
-        </form>
-    </div>
+{%if outdated %}
+<div class="alert alert-block alert-info">This crash was submitted using an older version of Accelerator, <a href="https://forums.alliedmods.net/showthread.php?t=277703" class="alert-link">please update to the latest version</a> for full functionality.</div>
 {% endif %}
-</div>
+
+{% if crash.processed == 0 %}
+<div class="alert alert-block alert-info">This crash is pending processing, try again later.</div>
+{% elseif crash.failed == 1 %}
+<div class="alert alert-block alert-danger">An error occurred while processing this crash.</div>
 {% endif %}
 
 {% if crash.processed == 1 and crash.failed == 0 %}
@@ -59,6 +46,27 @@
 {% endif %}
 {% endif %}
 
+{% if user and (user.admin or user.id == crash.owner) %}
+<div class="well clearfix">
+    <a class="btn btn-primary" href="{{ path('download', {'id': crash.id}) }}"><i class="icon-download"></i> Download</a>
+    <div class="pull-right">
+{% if crash.processed == 1 and crash.failed == 0 %}
+        <a class="btn btn-default" href="{{ path('view', {'id': crash.id}) }}"><i class="icon-eye-open"></i> View Raw</a>
+{% endif %}
+        <a class="btn btn-default" href="{{ path('logs', {id: crash.id}) }}"><i class="icon-cogs"></i> View Logs</a>
+{% if user.admin %}
+        <form action="{{ path('reprocess', {id: crash.id, return: app.request.pathInfo}) }}" method="post" class="button-form">
+            <button type="submit" class="btn btn-default"><i class="icon-refresh"></i> Reprocess</button>
+        </form>
+        <form action="{{ path('delete', {id: crash.id}) }}" method="post" class="button-form">
+            <button type="submit" class="btn btn-danger"><i class="icon-trash"></i> Delete</button>
+        </form>
+{% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if crash.processed == 1 and crash.failed == 0 %}
 <h2>Stack Trace</h2>
 <div class="well well-tight">
     <table class="table table-stacktrace table-shown">
@@ -84,6 +92,7 @@
     </table>
 </div>
 
+{% if user and (user.admin or user.id == crash.owner) %}
 <h2>Modules</h2>
 <div class="well well-tight">
     <table class="table table-modules table-shown">
@@ -109,6 +118,7 @@
         </tfoot>
     </table>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}
 

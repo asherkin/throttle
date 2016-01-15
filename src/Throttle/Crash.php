@@ -129,6 +129,7 @@ class Crash
             'notices' => $notices,
             'stack' => $stack,
             'modules' => $modules,
+            'outdated' => (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], '2.2.0', '<') : true),
             'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^(engine(_srv)?\\.so!Sys_Error(_Internal)?\\(|libtier0\\.so!Plat_ExitProcess|KERNELBASE\\.dll!RaiseException)/', $stack[0]['rendered']) === 1) : false),
         ));
     }
