@@ -88,7 +88,7 @@ class CrashProcessCommand extends Command
             $app['db']->transactional(function($db) use ($app, $symbols, $symbolCache) {
                 $id = $app['db']->executeQuery('SELECT id FROM crash WHERE processed = 0 LIMIT 1')->fetchColumn(0);
                 $minidump = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
-                $logs = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt.gz';
+                $logs = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt';
 
                 try {
                     $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s 2> %s', $minidump, $logs);
@@ -190,14 +190,13 @@ class CrashProcessCommand extends Command
 
                     $cmdline = trim(str_replace('\\0', ' ', $cmdline));
                 } catch (\CommandException $e) {
-                    \Filesystem::writeFile($logs, gzencode(str_replace($app['root'], '', \Filesystem::readFile($logs))));
-
                     $app['db']->executeUpdate('UPDATE crash SET processed = TRUE, failed = TRUE WHERE id = ?', array($id));
 
                     return;
+                } finally {
+                    \Filesystem::writeFile($logs . '.gz', gzencode(str_replace($app['root'], '', \Filesystem::readFile($logs))));
+                    \Filesystem::remove($logs);
                 }
-
-                \Filesystem::remove($logs);
 
                 $app['db']->executeUpdate('UPDATE crash SET cmdline = ?, thread = ?, processed = TRUE WHERE id = ?', array($cmdline, $crashThread, $id));
 

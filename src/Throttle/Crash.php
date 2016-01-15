@@ -180,8 +180,14 @@ class Crash
             $app->abort(403);
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt.gz';
-        $logs = \Filesystem::pathExists($path) ? gzdecode(\Filesystem::readFile($path)) : null;
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt';
+
+        $logs = null;
+        if (\Filesystem::pathExists($path . '.gz')) {
+            $logs = gzdecode(\Filesystem::readFile($path . '.gz'));
+        } else if (\Filesystem::pathExists($path)) {
+            $logs = \Filesystem::readFile($path);
+        }
 
         return $app['twig']->render('logs.html.twig', array('logs' => $logs));
     }
