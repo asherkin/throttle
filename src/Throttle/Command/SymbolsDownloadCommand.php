@@ -57,7 +57,7 @@ class SymbolsDownloadCommand extends Command
         $futures = array();
         foreach ($modules as $key => $module) {
             $compressedName = substr($module['name'], 0, -1) . '_';
-            $futures[$key] = id(new \HTTPSFuture('http://msdl.microsoft.com/download/symbols/' . $module['name'] . '/' . $module['identifier'] . '/' . $compressedName))
+            $futures[$key] = id(new \HTTPSFuture('http://msdl.microsoft.com/download/symbols/' . urlencode($module['name']) . '/' . $module['identifier'] . '/' . urlencode($compressedName)))
                 ->addHeader('User-Agent', 'Microsoft-Symbol-Server')->setFollowLocation(false)->setExpectStatus(array(302, 404));
         }
 
