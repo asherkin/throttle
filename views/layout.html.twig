@@ -38,7 +38,7 @@
         </a>
         <ul class="dropdown-menu pull-right">
             <li><a href="{{ path('dashboard') }}"><i class="icon-fixed-width icon-reorder"></i> Dashboard</a></li>
-            <li><a href="{{ path('logout') }}"><i class="icon-fixed-width icon-signout"></i> Logout</a></li>
+            <li><a href="{{ path('logout', {'return': app.request.pathInfo}) }}"><i class="icon-fixed-width icon-signout"></i> Logout</a></li>
         </ul>
     </li>
 </ul>

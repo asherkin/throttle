@@ -148,7 +148,8 @@ class Home
     {
         $app['session']->remove('user');
 
-        return $app->redirect($app['url_generator']->generate('index'));
+        $returnUrl = $app['request']->get('return', $app['url_generator']->generate('index'));
+        return $app->redirect($returnUrl);
     }
 }
 
