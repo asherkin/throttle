@@ -1,8 +1,14 @@
 {% extends 'layout.html.twig' %}
 
 {% block content %}
-{% if not user and crash.owner %}
-<div class="alert alert-block alert-info">If you are the owner of this crash, <a href="{{ path('login', {'return': app.request.pathInfo}) }}">login</a> to see more information.</div>
+{% if not crash.owner %}
+<div class="alert alert-block alert-info">This crash was submitted anonymously. If you are the owner, please configure Accelerator with your Steam ID.</div>
+{% else %}
+{% if not user %}
+<div class="alert alert-block alert-info">If you are the owner of this crash, <a href="{{ path('login', {'return': app.request.pathInfo}) }}" class="alert-link">login</a> to see more information.</div>
+{% elseif not user.admin %}
+<div class="alert alert-block alert-info">You can not see full information about this crash as you are not the owner.</div>
+{% endif %}
 {% endif %}
 
 <div class="well">
