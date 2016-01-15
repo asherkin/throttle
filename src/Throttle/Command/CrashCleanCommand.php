@@ -29,7 +29,7 @@ class CrashCleanCommand extends Command
         $groups = $app['db']->executeQuery('SELECT owner, ip FROM crash GROUP BY owner, ip HAVING COUNT(*) > 100');
 
         while ($group = $groups->fetch()) {
-            if ($group['owner']) {
+            if ($group['owner'] !== null) {
                 $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner = ? AND ip = ? ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['owner'], $group['ip']));
             } else {
                 $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner IS NULL AND ip = ? ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['ip']));

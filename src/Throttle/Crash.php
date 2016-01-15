@@ -48,7 +48,23 @@ class Crash
 
         $ip = $app['request']->getClientIp();
 
-        $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner = ? AND ip = INET_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($owner, $ip))->fetchColumn(0);
+        $count = 0;
+
+        if ($owner !== null) {
+            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner = ? AND ip = INET_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($owner, $ip))->fetchColumn(0);
+        } else {
+            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner IS NULL AND ip = INET_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($ip))->fetchColumn(0);
+        }
+
+        if ($count > 0) {
+            return $app['twig']->render('submit-nosteam.txt.twig');
+        }
+
+        if ($owner !== null) {
+            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner = ? AND ip = INET_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($owner, $ip))->fetchColumn(0);
+        } else {
+            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner IS NULL AND ip = INET_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($ip))->fetchColumn(0);
+        }
 
         if ($count > 6) {
             return $app['twig']->render('submit-reject.txt.twig');
