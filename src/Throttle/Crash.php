@@ -114,6 +114,22 @@ class Crash
         return $app->sendFile($path)->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'crash_' . $id . '.dmp');
     }
 
+    public function view(Application $app, $id)
+    {
+        $user = $app['session']->get('user');
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+
+        if ($owner === false) {
+            $app->abort(404);
+        }
+
+        if ($user === null || (!$user['admin'] && $user['id'] !== $owner['owner'])) {
+            $app->abort(403);
+        }
+
+        return $app['twig']->render('view.html.twig');
+    }
+
     public function logs(Application $app, $id)
     {
         $user = $app['session']->get('user');

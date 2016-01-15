@@ -1,0 +1,16 @@
+{% extends 'layout.html.twig' %}
+ 
+{% block content %}
+<div class="alert alert-info">
+    This page is highly experimental and may not work correctly.
+</div>
+<div id="content" class="well">
+    <div id="loading" class="progress"><div class="progress-bar progress-bar-striped" style="width: 0%"></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ app.request.baseUrl }}/js/jdataview.js"></script>
+<script src="{{ app.request.baseUrl }}/js/minidump.js"></script>
+{% endblock %}
+
