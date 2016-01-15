@@ -22,7 +22,7 @@
     <body>
         <div class="navbar navbar-default navbar-static-top">
             <div class="container">
-                <a class="navbar-brand" href="/">Throttle</a>
+                <a class="navbar-brand" href="/"><i class="icon-dashboard"></i> Throttle</a>
                 <div class="pull-right">
 {% set user = app.session.get('user') %}
 {% if user %}
@@ -37,13 +37,13 @@
             <b class="caret"></b>
         </a>
         <ul class="dropdown-menu pull-right">
-            <li><a href="{{ path('dashboard') }}">Dashboard</a></li>
-            <li><a href="{{ path('logout') }}">Logout</a></li>
+            <li><a href="{{ path('dashboard') }}"><i class="icon-fixed-width icon-reorder"></i> Dashboard</a></li>
+            <li><a href="{{ path('logout') }}"><i class="icon-fixed-width icon-signout"></i> Logout</a></li>
         </ul>
     </li>
 </ul>
 {% else %}
-                    <a href="{{ path('login', {'return': app.request.pathInfo}) }}" class="btn btn-default navbar-btn">Login</a>
+                    <a href="{{ path('login', {'return': app.request.pathInfo}) }}" class="btn btn-success navbar-btn"><i class="icon-signin"></i> Login</a>
 {% endif %}
                 </div>
             </div>

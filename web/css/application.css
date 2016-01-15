@@ -22,6 +22,11 @@ body {
     padding: 0;
 }
 
+.well > hr {
+    margin-left: -20px;
+    margin-right: -20px;
+}
+
 .well > *:first-child {
     margin-top: 0;
 }
@@ -91,6 +96,18 @@ span.divider:after {
 
 .alert {
     padding-right: 14px;
+    text-align: center;
+}
+
+.container > div.alert:first-child {
+    margin-top: 0;
+    border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.container > h2 {
+    margin-left: 10px;
 }
 
 .monospace {
@@ -244,6 +261,15 @@ td.column-actions .btn {
 
 .table .text-center {
     text-align: center;
+}
+
+dl.dl-minidump dd {
+    font-family: Consolas, Lucida Console, monospace;
+    word-wrap: break-word;
+}
+
+dl.dl-minidump div.alert {
+    margin-bottom: 0;
 }
 
 .column-iconstack {
