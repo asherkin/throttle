@@ -25,13 +25,13 @@ class Home
 
         return $app['twig']->render('index.html.twig', array(
             'maintenance_message' => $app['config']['maintenance'],
-            'errors_crash' => $app['session']->getFlashBag()->get('error_crash'),
-            'errors_auth' => $app['session']->getFlashBag()->get('error_auth'),
         ));
     }
 
     public function login(Application $app)
     {
+        $errorReturnUrl = $app['request']->get('return', $app['url_generator']->generate('index'));
+
         if (!$app['openid']->mode) {
             $app['openid']->identity = 'https://steamcommunity.com/openid';
 
@@ -39,31 +39,23 @@ class Home
                 return $app->redirect($app['openid']->authUrl());
             } catch (\ErrorException $e) {
                 $app['session']->getFlashBag()->add('error_auth', 'Unfortunately Steam Community seems to be having trouble staying online.');
-
-                //TODO: Handle the error_auth flash in the layout template, and redirect back to the requesting page.
-                return $app->redirect($app['url_generator']->generate('index'));
+                return $app->redirect($errorReturnUrl);
             }
         }
 
         if ($app['openid']->mode == 'cancel') {
             $app['session']->getFlashBag()->add('error_auth', 'Authentication was cancelled.');
-
-            //TODO: Same as above.
-            return $app->redirect($app['url_generator']->generate('index'));
+            return $app->redirect($errorReturnUrl);
         }
 
         try {
             if (!$app['openid']->validate()) {
                 $app['session']->getFlashBag()->add('error_auth', 'There was a problem during authentication.');
-    
-                //TODO: Same as above.
-                return $app->redirect($app['url_generator']->generate('index'));
+                return $app->redirect($errorReturnUrl);
             }
         } catch (\ErrorException $e) {
             $app['session']->getFlashBag()->add('error_auth', 'Unfortunately Steam Community seems to be having trouble staying online.');
-
-            //TODO: Same as above.
-            return $app->redirect($app['url_generator']->generate('index'));
+            return $app->redirect($errorReturnUrl);
         }
 
         $id = preg_replace('/^http\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);
@@ -82,12 +74,8 @@ class Home
             'admin' => in_array($id, $app['config']['admins']),
         ));
 
-        $return = $app['request']->get('return', null);
-        if ($return) {
-            return $app->redirect($return);
-        }
-
-        return $app->redirect($app['url_generator']->generate('dashboard'));
+        $returnUrl = $app['request']->get('return', $app['url_generator']->generate('dashboard'));
+        return $app->redirect($returnUrl);
     }
 
     public function login_yubikey(Application $app)

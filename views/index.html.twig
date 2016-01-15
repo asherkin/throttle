@@ -7,7 +7,7 @@
         <div class="alert alert-block alert-info">{{ maintenance_message|raw }}</div>
 {% endif %}
         <div class="well">
-{% for error in errors_crash %}
+{% for error in app.session.flashbag.get('error_crash') %}
             <div class="alert alert-danger">{{ error }}</div>
 {% endfor %}
             <form action="" method="get" class="form-crashid form-inline text-center">
@@ -20,9 +20,6 @@
                 </div>
             </form>
             <span class="divider hidden-xs">OR</span>
-{% for error in errors_auth %}
-            <div class="alert alert-danger">{{ error }}</div>
-{% endfor %}
 {% if user %}
             <a href="{{ path('dashboard') }}" class="btn btn-lg btn-primary btn-block">View Dashboard</a>
 {% else %}

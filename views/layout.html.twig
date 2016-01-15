@@ -49,6 +49,9 @@
             </div>
         </div>
         <div class="container">
+{% for error in app.session.flashbag.get('error_auth') %}
+            <div class="alert alert-danger">{{ error }}</div>
+{% endfor %}
 {% block content %}{% endblock %}
         </div>
         <div id="footer" class="container text-center">
