@@ -133,8 +133,13 @@ class Crash
     public function logs(Application $app, $id)
     {
         $user = $app['session']->get('user');
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
 
-        if (!$user || !$user['admin']) {
+        if ($owner === false) {
+            $app->abort(404);
+        }
+
+        if ($user === null || (!$user['admin'] && $user['id'] !== $owner['owner'])) {
             $app->abort(403);
         }
 
