@@ -35,35 +35,59 @@ class Home
         if (!$app['openid']->mode) {
             $app['openid']->identity = 'https://steamcommunity.com/openid';
 
-            return $app->redirect($app['openid']->authUrl());
-        } elseif ($app['openid']->mode == 'cancel' || !$app['openid']->validate()) {
-            $app['session']->getFlashBag()->add('error_auth', 'There was a problem during authentication');
+            try {
+                return $app->redirect($app['openid']->authUrl());
+            } catch (\ErrorException $e) {
+                $app['session']->getFlashBag()->add('error_auth', 'Unfortunately Steam Community seems to be having trouble staying online.');
 
-            return $app->redirect($app['url_generator']->generate('index'));
-        } else {
-            $id = preg_replace('/^http\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);
-
-            $user = $app['db']->executeQuery('SELECT name, avatar FROM user WHERE id = ? LIMIT 1', array($id))->fetch();
-
-            if (!$user) {
-                $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($id));
-                $user = array('name' => null, 'avatar' => null);
+                //TODO: Handle the error_auth flash in the layout template, and redirect back to the requesting page.
+                return $app->redirect($app['url_generator']->generate('index'));
             }
-
-            $app['session']->set('user', array(
-                'id' => $id,
-                'name' => $user['name'],
-                'avatar' => $user['avatar'],
-                'admin' => in_array($id, $app['config']['admins']),
-            ));
-
-            $return = $app['request']->get('return', null);
-            if ($return) {
-                return $app->redirect($return);
-            }
-
-            return $app->redirect($app['url_generator']->generate('dashboard'));
         }
+
+        if ($app['openid']->mode == 'cancel') {
+            $app['session']->getFlashBag()->add('error_auth', 'Authentication was cancelled.');
+
+            //TODO: Same as above.
+            return $app->redirect($app['url_generator']->generate('index'));
+        }
+
+        try {
+            if (!$app['openid']->validate()) {
+                $app['session']->getFlashBag()->add('error_auth', 'There was a problem during authentication.');
+    
+                //TODO: Same as above.
+                return $app->redirect($app['url_generator']->generate('index'));
+            }
+        } catch (\ErrorException $e) {
+            $app['session']->getFlashBag()->add('error_auth', 'Unfortunately Steam Community seems to be having trouble staying online.');
+
+            //TODO: Same as above.
+            return $app->redirect($app['url_generator']->generate('index'));
+        }
+
+        $id = preg_replace('/^http\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);
+
+        $user = $app['db']->executeQuery('SELECT name, avatar FROM user WHERE id = ? LIMIT 1', array($id))->fetch();
+
+        if (!$user) {
+            $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($id));
+            $user = array('name' => null, 'avatar' => null);
+        }
+
+        $app['session']->set('user', array(
+            'id' => $id,
+            'name' => $user['name'],
+            'avatar' => $user['avatar'],
+            'admin' => in_array($id, $app['config']['admins']),
+        ));
+
+        $return = $app['request']->get('return', null);
+        if ($return) {
+            return $app->redirect($return);
+        }
+
+        return $app->redirect($app['url_generator']->generate('dashboard'));
     }
 
     public function logout(Application $app)
