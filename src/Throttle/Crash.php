@@ -280,15 +280,14 @@ class Crash
 
     public function error(Application $app, $id)
     {
-        $query = $app['db']->executeQuery('SELECT owner, thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id));
+        $query = $app['db']->executeQuery('SELECT owner, thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetch();
 
-        $thread = $query->fetchColumn(1);
-        if ($thread === false) {
+        if ($query === false) {
             $app->abort(404);
         }
 
         $user = $app['session']->get('user');
-        $owner = $query->fetchColumn(0);
+        $owner = $query['owner'];
         if ($user === null || (!$user['admin'] && $user['id'] !== $owner)) {
             $app->abort(403);
         }
@@ -316,6 +315,7 @@ class Crash
             throw new \RuntimeException('Missing MD_THREAD_LIST_STREAM');
         }
 
+        $thread = $query['thread'];
         $output['thread'] = $thread = unpack('Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, $stream['offset'] + 4 + ($thread * 48), 48));
 
         $output['context_flags'] = $context_flags = unpack('Lflags', substr($minidump, $thread['context_offset'], 4));

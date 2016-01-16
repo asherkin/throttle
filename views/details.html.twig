@@ -6,7 +6,7 @@
 {% else %}
 {% if not user %}
 <div class="alert alert-block alert-info">If you are the owner of this crash, <a href="{{ path('login', {'return': app.request.pathInfo}) }}" class="alert-link">login</a> to see more information.</div>
-{% elseif not user.admin %}
+{% elseif not user.admin and user.id != crash.owner %}
 <div class="alert alert-block alert-info">You can not see full information about this crash as you are not the owner.</div>
 {% endif %}
 {% endif %}
@@ -33,7 +33,7 @@
 </div>
 
 {%if outdated %}
-<div class="alert alert-block alert-info">This crash was submitted using an older version of Accelerator, <a href="https://forums.alliedmods.net/showthread.php?t=277703" class="alert-link">please update to the latest version</a> for full functionality.</div>
+<div class="alert alert-block alert-info">This crash was submitted using an older version of Accelerator, please <a href="https://forums.alliedmods.net/showthread.php?t=277703" class="alert-link">update to the latest version</a> for full functionality.</div>
 {% endif %}
 
 {% if crash.processed == 0 %}
