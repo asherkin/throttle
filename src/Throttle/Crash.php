@@ -139,12 +139,14 @@ class Crash
         $notices = $app['db']->executeQuery('SELECT severity, text FROM crashnotice JOIN notice ON notice.id = crashnotice.notice WHERE crash = ?', array($id))->fetchAll();
         $stack = $app['db']->executeQuery('SELECT frame, rendered, url FROM frame WHERE crash = ? AND thread = ? ORDER BY frame', array($id, $crash['thread']))->fetchAll();
         $modules = $app['db']->executeQuery('SELECT name, identifier, processed, present, HEX(base) AS base FROM module WHERE crash = ? ORDER BY name', array($id))->fetchAll();
+	$stats = $app['db']->executeQuery('SELECT COUNT(DISTINCT crash.owner) AS owners, COUNT(DISTINCT crash.ip) AS ips, COUNT(*) AS crashes FROM crash, (SELECT owner, stackhash FROM crash WHERE id = ?) AS this WHERE this.stackhash = crash.stackhash', array($id))->fetch();
 
         return $app['twig']->render('details.html.twig', array(
             'crash' => $crash,
             'notices' => $notices,
             'stack' => $stack,
             'modules' => $modules,
+            'stats' => $stats,
             'outdated' => (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], '2.2.0', '<') : true),
             'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^(engine(_srv)?\\.so!Sys_Error(_Internal)?\\(|libtier0\\.so!Plat_ExitProcess|KERNELBASE\\.dll!RaiseException)/', $stack[0]['rendered']) === 1) : false),
         ));

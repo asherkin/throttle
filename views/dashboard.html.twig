@@ -6,17 +6,33 @@
 <div class="well well-tight">
     <table class="table table-striped">
         <thead>
-            <th></th>
-            <th>Crash ID</th>
-            <th>Uploaded</th>
-{% if user.admin %}
-            <th class="hidden-xs"></th>
+{% if false %}
+	    <tr>
+		<td colspan="{% if user.admin %}7{% else %}5{% endif %}">
+		    <ul class="pager">
+			<li class="previous {% if not offset %}disabled{% endif %}">
+			    <a {% if offset %}href="{{ path('dashboard', {user: userid}) }}"{% endif %}><i class="icon-double-angle-left"></i> Newest</a>
+			</li>
+			<li class="next disabled">
+			    <a>Older <i class="icon-angle-right"></i></a>
+			</li>
+		    </ul>
+		</td>
+	    </tr>
 {% endif %}
-            <th class="hidden-xs">Function</th>
-            <th></th>
+            <tr>
+                <th></th>
+                <th>Crash ID</th>
+                <th>Uploaded</th>
 {% if user.admin %}
-            <th class="hidden-xs"></th>
+                <th class="hidden-xs"></th>
 {% endif %}
+                <th class="hidden-xs">Function</th>
+                <th></th>
+{% if user.admin %}
+                <th class="hidden-xs"></th>
+{% endif %}
+            </tr>
         </thead>
         <tbody>
 {% set last = null %}

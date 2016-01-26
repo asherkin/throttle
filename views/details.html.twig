@@ -50,6 +50,14 @@
 {% if has_error_string and user and (user.admin or user.id == crash.owner) %}
 <div id="error-details" class="alert alert-block alert-warning"><i class="icon-spinner icon-spin"></i></div>
 {% endif %}
+
+<div class="alert alert-block alert-success">
+{% if stats['crashes'] != 1 %}
+    {{ stats['crashes'] }} reports share this crash signature. ({{ stats['owners'] }} owner{% if stats['owners'] != 1 %}s{% endif %} / {{ stats['ips'] }} ip{% if stats['ips'] != 1 %}s{% endif %})
+{% else %}
+    This crash signature is unique.
+{% endif %}
+</div>
 {% endif %}
 
 {% if user and (user.admin or user.id == crash.owner) %}
