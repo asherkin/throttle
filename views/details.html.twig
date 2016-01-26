@@ -53,7 +53,7 @@
 
 <div class="alert alert-block alert-success">
 {% if stats['crashes'] != 1 %}
-    {{ stats['crashes'] }} reports share this crash signature. ({{ stats['owners'] }} owner{% if stats['owners'] != 1 %}s{% endif %} / {{ stats['ips'] }} ip{% if stats['ips'] != 1 %}s{% endif %})
+    <a class="alert-link" href="{{ path('stats', {module: crash.stackhash}) }}">{{ stats['crashes'] }} reports share this crash signature.</a> ({{ stats['owners'] }} owner{% if stats['owners'] != 1 %}s{% endif %} / {{ stats['ips'] }} ip{% if stats['ips'] != 1 %}s{% endif %})
 {% else %}
     This crash signature is unique.
 {% endif %}
