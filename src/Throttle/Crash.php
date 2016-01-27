@@ -148,7 +148,7 @@ class Crash
             'modules' => $modules,
             'stats' => $stats,
             'outdated' => (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], '2.2.0', '<') : true),
-            'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^(engine(_srv)?\\.so!Sys_Error(_Internal)?\\(|libtier0\\.so!Plat_ExitProcess|KERNELBASE\\.dll!RaiseException)/', $stack[0]['rendered']) === 1) : false),
+            'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1) : false),
         ));
     }
 
@@ -332,45 +332,33 @@ class Crash
         }
 
         $output['register_esp'] = $register_esp = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 196);
+        $output['register_ebp'] = $register_ebp = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 180);
 
-        $string = '';
-        $strings = array();
-        $min_string_len = 40;
-
-        for ($i = 0; $i < $thread['stack_size']; $i++) {
-            $char = $minidump[$thread['stack_offset'] + $register_esp + $i];
-            $charnum = ord($char);
-
-            if ($charnum === 9 || $charnum === 10 || $charnum === 13 || ($charnum >= 32 && $charnum < 127)) {
-                $string .= $char;
-            } else {
-                if ($charnum === 0 && strlen($string) >= $min_string_len) {
-                    $strings[] = array('offset' => $i - strlen($string), 'string' => trim($string));
-                }
-                $string = '';
-            }
-
-            if (count($strings) > 0) {
-                //TODO: Just return the first string for now.
+        $error_offset = 0;
+        for ($i = 0; $i < 6; $i++) {
+            $output['register_offset_'.$i] = $register_offset = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 156 + ($i * 4));
+            if ($register_offset >= $register_esp && $register_offset <= $register_ebp) {
+                $output['error_offset'] = $error_offset = $register_offset;
                 break;
             }
         }
 
-        //TODO: Handle multiple strings by ranking them by length (longer), alphanumericness (more), and distance from top of stack (closer).
-        //usort($strings, function($a, $b) {
-        //    return strlen($b['string']) - strlen($a['string']);
-        //});
-
-        $output['strings'] = $strings;
-
-        //TODO: Just replace entire output with the string we've found for now.
-        if (count($strings) > 0) {
-            $output = $strings[0];
-        } else {
-            $output = array('offset' => -1, 'string' => '');
+        if ($error_offset === 0) {
+            return $app->json(array('string' => 'Failed to extract error message.'));
         }
 
-        return $app->json($output);
+        $output['string_start'] = $string_start = $thread['stack_offset'] + $error_offset;
+        $string_length = 0;
+
+        while (ord($minidump[$string_start + $string_length]) != 0 && $string_length < 256) {
+            $string_length++;
+        }
+
+        $output['string_length'] = $string_length;
+
+        $output['error_string'] = $error_string = substr($minidump, $string_start, $string_length);
+
+        return $app->json(array('string' => $error_string));
     }
 
     public function reprocess(Application $app, $id)
