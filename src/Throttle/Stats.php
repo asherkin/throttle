@@ -21,7 +21,7 @@ class Stats
         if ($function !== null) {
             $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 30 DAY) AND frame = 0 AND module = ? AND function LIKE ? GROUP BY DATE(timestamp)', array($module, $function.'%'));
         } else if ($module !== null) {
-            if (preg_match('/^(?:[0-9a-fA-F]{2})+$/', $module)) {
+            if (preg_match('/^(?:[0-9a-f]{8})+$/', $module)) {
                 $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 30 DAY) AND stackhash LIKE ? GROUP BY DATE(timestamp)', array($module.'%'));
             } else {
                 $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 30 DAY) AND frame = 0 AND module LIKE ? GROUP BY DATE(timestamp)', array($module.'%'));
@@ -57,7 +57,7 @@ class Stats
                 $output[] = array($app->escape($row['rendered']), $row['count'], false, false);
             }
         } else if ($module !== null) {
-            if (preg_match('/^(?:[0-9a-fA-F]{2})+$/', $module)) {
+            if (preg_match('/^(?:[0-9a-f]{8})+$/', $module)) {
                 $data = $app['db']->executeQuery('SELECT module, function, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread AND stackhash LIKE ? WHERE frame = 0 GROUP BY function ORDER BY count DESC LIMIT 10', array($module.'%'));
             } else {
                 $data = $app['db']->executeQuery('SELECT module, function,  COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? GROUP BY function ORDER BY count DESC LIMIT 10', array($module.'%'));
@@ -93,7 +93,7 @@ class Stats
         if ($function !== null) {
             $query = $app['db']->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 AND module = ? AND function LIKE ? ORDER BY timestamp DESC LIMIT ' . $limit, array($module, $function.'%'));
         } else if ($module !== null) {
-            if (preg_match('/^(?:[0-9a-fA-F]{2})+$/', $module)) {
+            if (preg_match('/^(?:[0-9a-f]{8})+$/', $module)) {
                 $query = $app['db']->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread AND crash.stackhash LIKE ? LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 ORDER BY timestamp DESC LIMIT ' . $limit, array($module.'%'));
             } else {
                 $query = $app['db']->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 AND module LIKE ? ORDER BY timestamp DESC LIMIT ' . $limit, array($module.'%'));

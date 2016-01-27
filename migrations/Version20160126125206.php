@@ -10,7 +10,7 @@ class Version20160126125206 extends AbstractMigration
     public function up(Schema $schema)
     {
         $crash = $schema->getTable('crash');
-        $crash->addColumn('stackhash', 'string', array('length' => 20, 'fixed' => true, 'notnull' => false));
+        $crash->addColumn('stackhash', 'string', array('length' => 80, 'notnull' => false));
 
         $crash->addIndex(array('stackhash'));
     }
