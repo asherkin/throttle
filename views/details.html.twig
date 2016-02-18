@@ -55,7 +55,7 @@
 {% if stats['crashes'] != 1 %}
     <a class="alert-link" href="{{ path('stats', {module: crash.stackhash}) }}">{{ stats['crashes'] }} reports share this crash signature.</a> ({{ stats['owners'] }} owner{% if stats['owners'] != 1 %}s{% endif %} / {{ stats['ips'] }} ip{% if stats['ips'] != 1 %}s{% endif %})
 {% else %}
-    This crash signature is unique.
+    <a class="alert-link" href="{{ path('stats', {module: crash.stackhash}) }}">This crash signature is unique.</a>
 {% endif %}
 </div>
 {% endif %}

@@ -176,7 +176,7 @@ class CrashProcessCommand extends Command
 
                                         $repos = array();
                                         while (($record = fgets($symbols)) !== false) {
-                                            $record = explode(' ', $record, 5);
+                                            $record = explode(' ', trim($record), 5);
                                             if ($record[0] === 'INFO' && $record[1] === 'REPO') {
                                                 $repos[$record[4]] = array('url' => $record[3], 'rev' => $record[2]);
                                             }
@@ -187,12 +187,13 @@ class CrashProcessCommand extends Command
 
                                         $repoCache[$repoCacheKey] = $repos;
 
-                                        //print('Cache MISS for ' . $repoCacheKey . ' (' . array_key_exists($repoCacheKey, $repoCache) . ')' . PHP_EOL);
+                                        //print('Cache MISS for ' . $repoCacheKey . ' (' . array_key_exists($repoCacheKey, $repoCache) . ') (' . count($repos) . ')' . PHP_EOL);
                                     } else {
                                         //print('Cache HIT for ' . $repoCacheKey . PHP_EOL);
                                     }
 
                                     if (!empty($repoCache[$repoCacheKey])) {
+                                        //print($repoCacheKey . ' matched crash dump.' . PHP_EOL);
                                         $moduleRepos[$data[1]] = $repoCache[$repoCacheKey];
                                     }
                                 }
@@ -218,12 +219,22 @@ class CrashProcessCommand extends Command
                         $url = null;
                         if ($data[4] != '' && array_key_exists($data[2], $moduleRepos)) {
                             foreach ($moduleRepos[$data[2]] as $prefix => $repo) {
+                                //print($prefix . ' - ' . $repo['url'] . PHP_EOL);
                                 if (substr($data[4], 0, strlen($prefix)) !== $prefix) {
                                     continue;
                                 }
 
+                                $github = 'https://github.com/';
+                                $url = str_replace('git@github.com:', $github, $repo['url']);
+                                if (substr($url, 0, strlen($github)) !== $github) {
+                                    continue;
+                                }
+                                if (substr($url, -4) === '.git') {
+                                    $url = substr($url, 0, -4);
+                                }
+
                                 $path = str_replace('\\', '/', substr($data[4], strlen($prefix)));
-                                $url = $repo['url'] . '/blob/' . $repo['rev'] . $path . '#L' . $data[5];
+                                $url .= '/blob/' . $repo['rev'] . $path . '#L' . $data[5];
 
                                 break;
                             }
