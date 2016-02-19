@@ -235,6 +235,13 @@ oReq.onload = function(oEvent) {
             }
             break;
         }
+        case 'MD_EXCEPTION_STREAM': {
+            html += '<dt>Exception Thread ID</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+            view.getUint32() // Useless alignment bytes.
+            html += '<dt>Exception Code</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+            html += '<dt>Exception Flags</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+            break;
+        }
         case 'MD_BREAKPAD_INFO_STREAM': {
             html += '<dt>Validity</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
             html += '<dt>Dump Thread ID</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
@@ -245,7 +252,7 @@ oReq.onload = function(oEvent) {
         case 'MD_LINUX_PROC_STATUS':
         case 'MD_LINUX_LSB_RELEASE':
         case 'MD_LINUX_MAPS': {
-            html += '<pre>' + view.getString(streamSize - 1).replace(/\0/g, ' ') + '</pre>';
+            html += '<pre class="well well-sm" style="max-height: 300px; overflow-y: auto;">' + view.getString(streamSize - 1).replace(/\0/g, ' ') + '</pre>';
             break;
         }
         case 'MD_LINUX_CMD_LINE': {

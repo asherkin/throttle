@@ -19,15 +19,15 @@ class Stats
         $query = null;
 
         if ($function !== null) {
-            $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 30 DAY) AND frame = 0 AND module = ? AND function LIKE ? GROUP BY DATE(timestamp)', array($module, $function.'%'));
+            $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND frame = 0 AND module = ? AND function LIKE ? GROUP BY DATE(timestamp)', array($module, $function.'%'));
         } else if ($module !== null) {
             if (preg_match('/^(?:[0-9a-f]{8})+$/', $module)) {
-                $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 30 DAY) AND stackhash LIKE ? GROUP BY DATE(timestamp)', array($module.'%'));
+                $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND stackhash LIKE ? GROUP BY DATE(timestamp)', array($module.'%'));
             } else {
-                $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 30 DAY) AND frame = 0 AND module LIKE ? GROUP BY DATE(timestamp)', array($module.'%'));
+                $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND frame = 0 AND module LIKE ? GROUP BY DATE(timestamp)', array($module.'%'));
             }
         } else {
-            $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY DATE(timestamp)');
+            $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) GROUP BY DATE(timestamp)');
         }
 
         $data = array();
@@ -36,7 +36,7 @@ class Stats
         }
 
         $output = 'Date,Count'.PHP_EOL;
-        for($i = 29; $i >= 0; $i--) {
+        for($i = 89; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime('-'.$i.' days'));
             $count = array_key_exists($date, $data) ? $data[$date] : 0;
             $output .= $date.','.$count.PHP_EOL;
