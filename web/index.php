@@ -78,10 +78,10 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
             if($diff < 86400) return floor($diff / 3600) . ' hours ago';
         }
 
-        if($day_diff == 1) return 'yesterday';
+        if($day_diff == 1) return '1 day ago';
         if($day_diff < 7) return $day_diff . ' days ago';
         if($day_diff < 31) return ceil($day_diff / 7) . ' weeks ago';
-        if($day_diff < 60) return 'last month';
+        if($day_diff < 60) return '1 month ago';
 
         return date('F Y', $ts);
     }));
