@@ -225,6 +225,11 @@ $app->get('/stats/daily/{module}/{function}', 'Throttle\Stats::daily')
     ->value('function', null)
     ->bind('stats_daily');
 
+$app->get('/stats/hourly/{module}/{function}', 'Throttle\Stats::hourly')
+    ->value('module', null)
+    ->value('function', null)
+    ->bind('stats_hourly');
+
 $app->get('/stats/top/{module}/{function}', 'Throttle\Stats::top')
     ->value('module', null)
     ->value('function', null)

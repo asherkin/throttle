@@ -47,10 +47,48 @@ class Stats
         }
 
         return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
+            'Content-Type' => 'text/csv',
             'Access-Control-Allow-Origin' => '*',
         ));
     }
 
+    public function hourly(Application $app, $module = null, $function = null)
+    {
+        $query = null;
+
+        if ($function !== null) {
+            if (preg_match('/^0x[0-9a-f]+$/', $function)) {
+                $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? GROUP BY DATE(timestamp), HOUR(timestamp)', array($module, $function));
+            } else {
+                $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? AND function LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', array($module, $function));
+            }
+        } else if ($module !== null) {
+            if (preg_match('/^%?(?:[0-9a-f]{8})+%?$/', $module)) {
+                $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND stackhash LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', array($module));
+            } else {
+                $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', array($module));
+            }
+        } else {
+            $query = $app['db']->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) GROUP BY DATE(timestamp), HOUR(timestamp)');
+        }
+
+        $data = array();
+        while ($row = $query->fetch()) {
+            $data[$row['date'].'-'.$row['hour']] = $row['count'];
+        }
+
+        $output = 'Date,Count'.PHP_EOL;
+        for($i = 167; $i >= 0; $i--) {
+            $date = date('Y-m-d-G', strtotime('-'.$i.' hours'));
+            $count = array_key_exists($date, $data) ? $data[$date] : 0;
+            $output .= $date.','.$count.PHP_EOL;
+        }
+
+        return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
+            'Content-Type' => 'text/csv',
+            'Access-Control-Allow-Origin' => '*',
+        ));
+    }
     public function top(Application $app, $module = null, $function = null)
     {
         $output = array();
