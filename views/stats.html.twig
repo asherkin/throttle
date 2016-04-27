@@ -31,7 +31,15 @@
     </div>
   </div>
 </div>
-<h2>Top Crashers</h2>
+<h2>
+  Top Crashers
+  <small class="btn-group pull-right">
+    <button id="stats-top-day" type="button" class="btn btn-default btn-stats btn-sm">Day</button>
+    <button id="stats-top-week" type="button" class="btn btn-default btn-stats btn-sm">Week</button>
+    <button id="stats-top-month" type="button" class="btn btn-default btn-stats btn-sm">Month</button>
+    <button id="stats-top-all" type="button" class="btn btn-default btn-stats btn-sm active">All</button>
+  </small>
+</h2>
 <div class="well well-tight">
   <table id="table_top" class="table table-stacktrace">
     <thead><tr><th></th><th>Function</th><th></th></tr></thead>
@@ -148,7 +156,7 @@ $(function() {
     });
   });
 
-  $.getJSON('{{ path('stats_top', {module: module, function: function}) }}', function(data) {
+  function handleStatsTop(data) {
     var table_body = '';
 
     for (var i = 0; i < data.length; i++) {
@@ -180,7 +188,53 @@ $(function() {
     }
 
     $('#table_top tbody').html(table_body);
-  });
+  }
+
+  var tableTop = document.getElementById('table_top');
+  var topPlaceholder = tableTop.innerHTML;
+
+  var btnDay = document.getElementById('stats-top-day');
+  var btnWeek = document.getElementById('stats-top-week');
+  var btnMonth = document.getElementById('stats-top-month');
+  var btnAll = document.getElementById('stats-top-all');
+
+  btnDay.onclick = function() {
+    tableTop.innerHTML = topPlaceholder;
+    btnDay.classList.add('active');
+    btnWeek.classList.remove('active');
+    btnMonth.classList.remove('active');
+    btnAll.classList.remove('active');
+    $.getJSON('{{ path('stats_top', {module: module, function: function, scope: 'day'}) }}', handleStatsTop);
+  };
+
+  btnWeek.onclick = function() {
+    tableTop.innerHTML = topPlaceholder;
+    btnDay.classList.remove('active');
+    btnWeek.classList.add('active');
+    btnMonth.classList.remove('active');
+    btnAll.classList.remove('active');
+    $.getJSON('{{ path('stats_top', {module: module, function: function, scope: 'week'}) }}', handleStatsTop);
+  };
+
+  btnMonth.onclick = function() {
+    tableTop.innerHTML = topPlaceholder;
+    btnDay.classList.remove('active');
+    btnWeek.classList.remove('active');
+    btnMonth.classList.add('active');
+    btnAll.classList.remove('active');
+    $.getJSON('{{ path('stats_top', {module: module, function: function, scope: 'month'}) }}', handleStatsTop);
+  };
+
+  btnAll.onclick = function() {
+    tableTop.innerHTML = topPlaceholder;
+    btnDay.classList.remove('active');
+    btnWeek.classList.remove('active');
+    btnMonth.classList.remove('active');
+    btnAll.classList.add('active');
+    $.getJSON('{{ path('stats_top', {module: module, function: function, scope: 'all'}) }}', handleStatsTop);
+  };
+
+  $.getJSON('{{ path('stats_top', {module: module, function: function, scope: 'all'}) }}', handleStatsTop);
 
   function identicon(hash) {
     return 'https://secure.gravatar.com/avatar/' + hash + '?s=40&r=any&default=identicon&forcedefault=1';

@@ -324,3 +324,8 @@ dl.dl-minidump div.alert {
     font-size: 0.75em;
     color: #777;
 }
+
+.btn-default.btn-stats {
+    background-color: transparent;
+}
+

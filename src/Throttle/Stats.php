@@ -93,11 +93,25 @@ class Stats
     {
         $output = array();
 
+        $scope = '';
+        $requestScope = $app['request']->get('scope', 'all');
+        switch ($requestScope) {
+            case 'day':
+                $scope = 'AND timestamp > DATE_SUB(NOW(), INTERVAL 1 DAY)';
+                break;
+            case 'week':
+                $scope = 'AND timestamp > DATE_SUB(NOW(), INTERVAL 1 WEEK)';
+                break;
+            case 'month':
+                $scope = 'AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)';
+                break;
+        }
+
         if ($function !== null) {
             if (preg_match('/^0x[0-9a-f]+$/', $function)) {
-                $data = $app['db']->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module, $function));
+                $data = $app['db']->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module, $function));
             } else {
-                $data = $app['db']->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? AND function LIKE ? GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module, $function));
+                $data = $app['db']->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? AND function LIKE ? '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module, $function));
             }
 
             while ($row = $data->fetch()) {
@@ -105,20 +119,20 @@ class Stats
             }
         } else if ($module !== null) {
             if (preg_match('/^%?(?:[0-9a-f]{8})+%?$/', $module)) {
-                $data = $app['db']->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread AND stackhash LIKE ? WHERE frame = 0 GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module));
+                $data = $app['db']->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread AND stackhash LIKE ? WHERE frame = 0 '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module));
 
                 while ($row = $data->fetch()) {
                     $output[] = array($app->escape($row['rendered']), $row['count'], false, false);
                 }
             } else {
-                $data = $app['db']->executeQuery('SELECT module, COALESCE(NULLIF(function, \'\'), offset) AS function,  COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? GROUP BY COALESCE(NULLIF(function, \'\'), offset) ORDER BY count DESC LIMIT 10', array($module));
+                $data = $app['db']->executeQuery('SELECT module, COALESCE(NULLIF(function, \'\'), offset) AS function,  COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? '.$scope.' GROUP BY COALESCE(NULLIF(function, \'\'), offset) ORDER BY count DESC LIMIT 10', array($module));
 
                 while ($row = $data->fetch()) {
                     $output[] = array($app->escape($row['function'] ? $row['module'].'!'.$row['function'] : $row['module']), $row['count'], $row['module'], $row['function']);
                 }
             }
         } else {
-            $data = $app['db']->executeQuery('SELECT module, COALESCE(NULLIF(function, \'\'), offset) AS function, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 GROUP BY module, COALESCE(NULLIF(function, \'\'), offset) ORDER BY count DESC LIMIT 10');
+            $data = $app['db']->executeQuery('SELECT module, COALESCE(NULLIF(function, \'\'), offset) AS function, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 '.$scope.' GROUP BY module, COALESCE(NULLIF(function, \'\'), offset) ORDER BY count DESC LIMIT 10');
 
             while ($row = $data->fetch()) {
                 $output[] = array($app->escape($row['function'] ? $row['module'].'!'.$row['function'] : $row['module']), $row['count'], $row['module'], $row['function']);
