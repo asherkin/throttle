@@ -1,0 +1,15 @@
+* {
+  color: black !important;
+  background-color: transparent !important;
+}
+
+.icon-spin {
+  -moz-animation: none;
+  -o-animation: none;
+  -webkit-animation: none;
+  animation: none;
+}
+
+.highcharts-series rect {
+  fill: black;
+}

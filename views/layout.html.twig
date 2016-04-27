@@ -7,6 +7,9 @@
         <link href="{{ app.request.baseUrl }}/css/bootstrap.no-icons.min.css" rel="stylesheet">
         <link href="{{ app.request.baseUrl }}/css/font-awesome.min.css" rel="stylesheet">
         <link href="{{ app.request.baseUrl }}/css/application.css" rel="stylesheet">
+{% if 'Kindle/3.0' in app.request.headers.get('User-Agent') %}
+        <link href="{{ app.request.baseUrl }}/css/kindle.css" rel="stylesheet">
+{% endif %}
     </head>
     <body>
         <div class="navbar navbar-default navbar-static-top">
