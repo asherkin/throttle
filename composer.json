@@ -7,8 +7,8 @@
     "authors": [
         {
             "name": "Asher Baker",
-            "email": "asherkin@limetech.org",
-            "homepage": "http://limetech.org"
+            "email": "asherkin@limetech.io",
+            "homepage": "https://limetech.io"
         }
     ],
     "repositories": [
@@ -16,11 +16,11 @@
             "type": "package",
             "package": {
                 "name": "facebook/libphutil",
-                "version": "dev-master",
+                "version": "dev-stable",
                 "source": {
                     "url": "https://github.com/facebook/libphutil.git",
                     "type": "git",
-                    "reference": "origin/master"
+                    "reference": "origin/stable"
                 }
             }
         }
@@ -34,12 +34,13 @@
         "doctrine/migrations": "dev-master",
         "symfony/twig-bridge": "~2.3.0",
         "twig/twig": "~1.8",
-        "cilex/console-service-provider": "~1.0.0@dev",
-        "symfony/console": "~2.3.0",
-        "silex/web-profiler": "~1.0.0@dev",
+        "cilex/console-service-provider": "~1.0.0",
+        "symfony/console": "2.3.38",
+        "silex/web-profiler": "1.0.2",
+        "symfony/web-profiler-bundle": "~2.3.0",
         "symfony/debug": "~2.3.0",
-        "facebook/libphutil": "dev-master",
-        "fp/lightopenid": "dev-master",
+        "facebook/libphutil": "dev-stable",
+        "lightopenid/lightopenid": "dev-master",
         "enygma/yubikey": "~3.2",
         "pda/pheanstalk": "^3.1"
     },
