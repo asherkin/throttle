@@ -51,7 +51,7 @@
 {% block content %}{% endblock %}
         </div>
         <div id="footer" class="container text-center">
-            <small class="text-muted">Powered by <a href="https://forums.alliedmods.net/showthread.php?t=277703" class="text-muted">Accelerator</a> & <a href="http://steampowered.com" class="text-muted">Steam</a> &nbsp;&ndash;&nbsp; <a href="{{ path('stats') }}">Statistics</a>{% if app.version is defined %} &nbsp;&ndash;&nbsp; Version <a href="https://bitbucket.org/asherkin/throttle/" class="text-muted">{{ app.version }}</a>{% endif %}</small>
+            <small class="text-muted">{% if app.config.apikey or app.config.accelerator %}Powered by {% if app.config.accelerator %}<a href="https://forums.alliedmods.net/showthread.php?t=277703" class="text-muted">Accelerator</a>{% endif %}{% if app.config.apikey and app.config.accelerator %} & {% endif %}{% if app.config.apikey %}<a href="http://steampowered.com" class="text-muted">Steam</a>{% endif %}{% if app.version is defined %} &nbsp;&ndash;&nbsp; {% else %}<br>{% endif %}{% endif %}<a href="{{ path('stats') }}">Statistics</a>{% if app.version is defined %}{% if app.config.apikey or app.config.accelerator %} &nbsp;&ndash;&nbsp; {% else %}<br>{% endif %}Version <a href="https://bitbucket.org/asherkin/throttle/" class="text-muted">{{ app.version }}</a>{% endif %}</small>
         </div>
         <script src="{{ app.request.baseUrl }}/js/jquery.min.js"></script>
         <script src="{{ app.request.baseUrl }}/js/bootstrap.min.js"></script>

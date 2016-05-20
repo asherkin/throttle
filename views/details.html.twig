@@ -2,7 +2,9 @@
 
 {% block content %}
 {% if not crash.owner %}
+{% if app.config.accelerator %}
 <div class="alert alert-block alert-info">This crash was submitted anonymously. If you are the owner, please configure Accelerator with your Steam ID.</div>
+{% endif %}
 {% else %}
 {% if not user %}
 <div class="alert alert-block alert-info">If you are the owner of this crash, <a href="{{ path('login', {'return': app.request.pathInfo}) }}" class="alert-link">login</a> to see more information.</div>
