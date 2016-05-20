@@ -39,7 +39,7 @@ class SymbolsDumpCommand extends Command
         }
 
         $identifiers = array();
-        foreach (\Futures($moduleFutures)->limit(5) as $name => $future) {
+        foreach (id(new \FutureIterator($moduleFutures))->limit(5) as $name => $future) {
             list($stdout, $stderr) = $future->resolvex();
             $identifier = rtrim($stdout);
 
@@ -47,7 +47,7 @@ class SymbolsDumpCommand extends Command
             $table->addRow(array(basename($name), $identifier));
         }
 
-        foreach (\Futures($symbolFutures)->limit(5) as $name => $future) {
+        foreach (id(new \FutureIterator($symbolFutures))->limit(5) as $name => $future) {
             $basename = basename($name);
             $identifier = $identifiers[$name];
 

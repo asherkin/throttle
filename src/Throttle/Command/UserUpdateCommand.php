@@ -37,7 +37,7 @@ class UserUpdateCommand extends Command
         $progress = $this->getHelperSet()->get('progress');
         $progress->start($output, $count);
 
-        foreach (\Futures($futures)->limit(5) as $user => $future) {
+        foreach (id(new \FutureIterator($futures))->limit(5) as $user => $future) {
             list($status, $body, $headers) = $future->resolve();
 
             if ($status->isError()) {

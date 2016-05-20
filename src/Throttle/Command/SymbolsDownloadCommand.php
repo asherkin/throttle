@@ -75,8 +75,8 @@ class SymbolsDownloadCommand extends Command
 
         // Only run 10 concurrent requests.
         // I'm unsure on what MS would consider fair here, 1 might be better but is slooooow.
-        // Futures() returns them in the order they resolve, so running concurrently lets the later stages optimize.
-        foreach (\Futures($futures)->limit(10) as $key => $future) {
+        // FutureIterator returns them in the order they resolve, so running concurrently lets the later stages optimize.
+        foreach (id(new \FutureIterator($futures))->limit(10) as $key => $future) {
             list($status, $body, $headers) = $future->resolve();
 
             if ($status->isError()) {

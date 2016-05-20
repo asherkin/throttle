@@ -16,7 +16,7 @@
 
 ## Virtual Host Configuration
     <VirtualHost *:80>
-        ServerName throttle.example.com:80
+        ServerName throttle.example.com
         DocumentRoot "/path/to/throttle/web"
 
         <Location />
@@ -28,3 +28,7 @@
         </Location>
     </VirtualHost>
 
+## Cron
+    */5 * * * * root /path/to/throttle/app/console.php crash:clean > /dev/null; /path/to/throttle/app/console.php crash:process -l 50 -u > /dev/null
+    0 * * * * root /path/to/throttle/app/console.php user:update > /dev/null
+    10 0 * * * root /path/to/throttle/app/console.php symbols:download > /dev/null
