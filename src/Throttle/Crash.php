@@ -147,7 +147,7 @@ class Crash
             'stack' => $stack,
             'modules' => $modules,
             'stats' => $stats,
-            'outdated' => (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], '2.2.0', '<') : true),
+            'outdated' => ($app['config']['accelerator'] ? (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], $app['config']['accelerator'], '<') : true) : false),
             'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1) : false),
         ));
     }

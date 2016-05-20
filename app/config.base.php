@@ -30,5 +30,6 @@ return array_merge($base, array(
     'admins' => array(),
 
     'apikey' => false,
+    'accelerator' => false,
 ));
 
