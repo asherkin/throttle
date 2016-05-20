@@ -20,7 +20,7 @@ $app->register(new Silex\Provider\TwigServiceProvider(), array(
 ));
 
 $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
-    $twig->addFilter('reldate', new \Twig_Filter_Function(function($secs) {
+    $twig->addFilter(new \Twig_SimpleFilter('reldate', function($secs) {
         $r = "";
 
         if ($secs >= 86400) {
@@ -67,7 +67,7 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
         return $r;
     }));
 
-    $twig->addFilter('diffdate', new \Twig_Filter_Function(function($ts) {
+    $twig->addFilter(new \Twig_SimpleFilter('diffdate', function($ts) {
         $diff = time() - $ts;
         $day_diff = floor($diff / 86400);
 
@@ -88,15 +88,15 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
         return date('F Y', $ts);
     }));
 
-    $twig->addFilter('identicon', new \Twig_Filter_Function(function($string, $size = 20) {
+    $twig->addFilter(new \Twig_SimpleFilter('identicon', function($string, $size = 20) {
         return 'https://secure.gravatar.com/avatar/' . md5($string) . '?s=' . $size . '&r=any&default=identicon&forcedefault=1';
     }));
 
-    $twig->addFilter('crashid', new \Twig_Filter_Function(function($string) {
+    $twig->addFilter(new \Twig_SimpleFilter('crashid', function($string) {
         return implode('-', str_split(strtoupper($string), 4));
     }));
 
-    $twig->addFilter('format_metadata_key', new \Twig_Filter_Function(function($string) {
+    $twig->addFilter(new \Twig_SimpleFilter('format_metadata_key', function($string) {
         $name = implode(' ', array_map(function($d) {
             switch (strtolower($d)) {
             case 'url':
@@ -123,7 +123,7 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
         }
     }));
 
-    $twig->addFilter('address', new \Twig_Filter_Function(function($string) {
+    $twig->addFilter(new \Twig_SimpleFilter('address', function($string) {
         return sprintf('0x%08s', $string);
     }));
 
