@@ -371,7 +371,7 @@ class Crash
                 $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
                 $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
 
-                $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE WHERE id = ?', array($id));
+                $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', array($id));
             });
         }
 
