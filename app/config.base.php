@@ -12,6 +12,7 @@ if (!is_array($base)) {
 return array_merge($base, array(
     'debug' => false,
     'maintenance' => false,
+    'show-version' => true,
 
     'email-errors' => false,
     'email-errors.from' => 'noreply@example.com',

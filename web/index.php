@@ -4,7 +4,9 @@ $app = require_once __DIR__ . '/../app/bootstrap.php';
 
 // Start working on this as soon as possible.
 $changesetFuture = new ExecFuture('hg id -i');
-$changesetFuture->setCWD(__DIR__ . '/..')->setTimeout(5)->start();
+if ($app['config']['show-version']) {
+    $changesetFuture->setCWD(__DIR__ . '/..')->setTimeout(5)->start();
+}
 
 $app->register(new Silex\Provider\ServiceControllerServiceProvider());
 
@@ -180,10 +182,12 @@ $app['queue'] = $app->share(function() use ($app) {
     return new Pheanstalk\Pheanstalk('127.0.0.1');
 });
 
-list($err, $stdout, $stderr) = $changesetFuture->resolve();
+if ($app['config']['show-version']) {
+    list($err, $stdout, $stderr) = $changesetFuture->resolve();
 
-if (!$err) {
-    $app['version'] = $stdout;
+    if (!$err) {
+        $app['version'] = $stdout;
+    }
 }
 
 if (!$app['debug']) {
