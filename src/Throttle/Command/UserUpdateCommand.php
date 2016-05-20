@@ -19,6 +19,10 @@ class UserUpdateCommand extends Command
     {
         $app = $this->getApplication()->getContainer();
 
+        if (!$app['config']['apikey']) {
+            throw new \Exception('Steam Community API Key not configured');
+        }
+
         $users = $app['db']->executeQuery('SELECT id FROM user WHERE updated IS NULL OR updated < DATE_SUB(NOW(), INTERVAL 1 DAY)');
 
         $futures = array();
