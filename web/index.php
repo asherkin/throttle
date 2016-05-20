@@ -94,8 +94,31 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
         return implode('-', str_split(strtoupper($string), 4));
     }));
 
-    $twig->addFilter('decamel', new \Twig_Filter_Function(function($string) {
-        return implode(' ', preg_split('/(?<=[a-z])(?=[A-Z])/x', ucfirst($string)));
+    $twig->addFilter('format_metadata_key', new \Twig_Filter_Function(function($string) {
+        $name = implode(' ', array_map(function($d) {
+            switch (strtolower($d)) {
+            case 'url':
+            case 'lsb':
+            case 'pid':
+            case 'guid':
+                return strtoupper($d);
+            default:
+                return ucfirst($d);
+            }
+        }, preg_split('/(?:(?<=[a-z])(?=[A-Z])|_|-)/x', $string)));
+
+        switch ($name) {
+        case 'Prod':
+            return 'Host Product';
+        case 'Ver':
+            return 'Host Version';
+        case 'Rept':
+            return 'Reporter';
+        case 'Ptime':
+            return 'Process Time';
+        default:
+            return $name;
+        }
     }));
 
     $twig->addFilter('address', new \Twig_Filter_Function(function($string) {

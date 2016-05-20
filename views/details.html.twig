@@ -21,7 +21,7 @@
         <dd>{{ crash.cmdline }}</dd>
 {% endif %}
 {% for key, value in crash.metadata %}
-        <dt>{{ key|decamel }}</dt>
+        <dt>{{ key|format_metadata_key }}</dt>
 {% if value %}
         <dd>{{ value }}</dd>
 {% else %}
