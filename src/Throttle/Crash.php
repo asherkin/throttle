@@ -126,7 +126,7 @@ class Crash
 
         if (empty($crash)) {
             if ($app['session']->getFlashBag()->get('internal')) {
-                $app['session']->getFlashBag()->add('error_crash', 'Invalid Crash ID');
+                $app['session']->getFlashBag()->add('error_crash', 'That Crash ID does not exist.');
 
                 return $app->redirect($app['url_generator']->generate('index'));
             } else {

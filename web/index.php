@@ -324,7 +324,8 @@ $app->get('/{uuid}', function($uuid) use ($app) {
     }
 
     return $app->redirect($app['url_generator']->generate('details', array('id' => $id)));
-})->assert('uuid', '[0-9a-fA-F-]{36}');
+})->assert('uuid', '[0-9a-fA-F-]{36}')
+  ->bind('details_uuid');
 
 $app->get('/', 'Throttle\Home::index')
     ->bind('index');

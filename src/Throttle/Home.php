@@ -10,16 +10,19 @@ class Home
     {
         $id = $app['request']->query->get('id');
         if (isset($id)) {
-            $id = strtolower(str_replace('-', '', $id));
+            $crashid = strtolower(str_replace('-', '', $id));
 
             try {
                 $app['session']->getFlashBag()->set('internal', 'true');
 
-                return $app->redirect($app['url_generator']->generate('details', array('id' => $id)));
+                return $app->redirect($app['url_generator']->generate('details', array('id' => $crashid)));
             } catch (\Exception $e) {
-                $app['session']->getFlashBag()->add('error_crash', 'Invalid Crash ID');
-
-                return $app->redirect($app['url_generator']->generate('index'));
+                try {
+                    return $app->redirect($app['url_generator']->generate('details_uuid', array('uuid' => $id)));
+                } catch (\Exception $e) {
+                    $app['session']->getFlashBag()->add('error_crash', 'Invalid Crash ID.');
+                    return $app->redirect($app['url_generator']->generate('index'));
+                }
             }
         }
 
