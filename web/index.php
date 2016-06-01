@@ -103,6 +103,8 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
             case 'lsb':
             case 'pid':
             case 'guid':
+            case 'id':
+            case 'mvp':
                 return strtoupper($d);
             default:
                 return ucfirst($d);
