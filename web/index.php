@@ -167,6 +167,8 @@ if ($app['debug']) {
     }
 }
 
+Symfony\Component\HttpFoundation\Request::setTrustedProxies($app['config']['trusted-proxies']);
+
 //TODO: Remove crash.steampowered.com when we drop bcompat.
 Symfony\Component\HttpFoundation\Request::setTrustedHosts(array('^' . preg_quote($app['config']['hostname']) . '$', '^crash.steampowered.com$'));
 

@@ -26,6 +26,7 @@ return array_merge($base, array(
     'db.name' => 'throttle',
 
     'hostname' => 'throttle.example.com',
+    'trusted-proxies' => array(),
 
     'admins' => array(),
 
