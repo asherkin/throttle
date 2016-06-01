@@ -18,6 +18,10 @@ body {
     background-color: #FFF;
 }
 
+.well {
+    overflow-x: hidden;
+}
+
 .well-tight {
     padding: 0;
 }
