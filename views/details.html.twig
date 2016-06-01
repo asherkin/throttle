@@ -22,6 +22,10 @@
         <dt>Command Line</dt>
         <dd>{{ crash.cmdline }}</dd>
 {% endif %}
+{% if crash.ip %}
+	<dt>Upload IP</dt>
+	<dd>{{ crash.ip }}</dd>
+{% endif %}
 {% for key, value in crash.metadata %}
         <dt>{{ key|format_metadata_key }}</dt>
 {% if value %}
