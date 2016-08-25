@@ -83,7 +83,7 @@ class SymbolsDownloadCommand extends Command
                 throw $status;
             }
 
-            if ($status instanceof \HTTPFutureResponseStatusHTTP && $status->getStatusCode() === 404) {
+            if ($status instanceof \HTTPFutureHTTPResponseStatus && $status->getStatusCode() === 404) {
                 $progress->advance();
                 continue;
             }
