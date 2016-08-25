@@ -18,13 +18,13 @@
         <dt>Uploaded</dt>
         <dd>{{ crash.timestamp|date }}</dd>
 {% if user and (user.admin or user.id == crash.owner) %}
-{% if crash.cmdline %}
-        <dt>Command Line</dt>
-        <dd>{{ crash.cmdline }}</dd>
-{% endif %}
 {% if crash.ip %}
 	<dt>Upload IP</dt>
 	<dd>{{ crash.ip }}</dd>
+{% endif %}
+{% if crash.cmdline %}
+        <dt>Command Line</dt>
+        <dd>{{ crash.cmdline }}</dd>
 {% endif %}
 {% for key, value in crash.metadata %}
         <dt>{{ key|format_metadata_key }}</dt>
@@ -57,7 +57,11 @@
 <div id="error-details" class="alert alert-block alert-warning"><i class="icon-cog icon-spin"></i></div>
 {% endif %}
 
-<div class="alert alert-block alert-success">
+{% if modules|length == 0 %}
+<div class="alert alert-block alert-warning">This crash is missing a module list and will not have symbol information.</div>
+{% endif %}
+
+<div class="alert alert-block alert-info">
 {% if stats['crashes'] != 1 %}
     <a class="alert-link" href="{{ path('stats', {module: crash.stackhash}) }}">{{ stats['crashes'] }} reports share this crash signature.</a> ({{ stats['owners'] }} owner{% if stats['owners'] != 1 %}s{% endif %} / {{ stats['ips'] }} ip{% if stats['ips'] != 1 %}s{% endif %})
 {% else %}
@@ -119,7 +123,7 @@
     </table>
 </div>
 
-{% if user and (user.admin or user.id == crash.owner) %}
+{% if modules|length > 0 and user and (user.admin or user.id == crash.owner) %}
 <h2>Modules</h2>
 <div class="well well-tight">
     <table class="table table-modules table-shown">
