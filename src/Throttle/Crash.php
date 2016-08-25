@@ -6,6 +6,22 @@ use Silex\Application;
 
 class Crash
 {
+    public function generateId($root)
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $id = \Filesystem::readRandomCharacters(12);
+
+            $path = $root . '/dumps/' . substr($id, 0, 2);
+            if (file_exists($path . '/' . $id . '.dmp')) {
+                continue;
+            }
+
+            return array($id, $path);
+        }
+
+        throw new \Exception('MINIDUMP COLLISION');
+    }
+
     public function submit(Application $app)
     {
         //TODO
@@ -17,12 +33,7 @@ class Crash
             return $app->abort(400);
         }
 
-        $id = \Filesystem::readRandomCharacters(12);
-
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2);
-        if (file_exists($path . '/' . $id . '.dmp')) {
-            throw new \Exception('MINIDUMP COLLISION');
-        }
+        list($id, $path) = $this->generateId($app['root']);
 
         $owner = $app['request']->request->get('UserID');
         $server = null;
