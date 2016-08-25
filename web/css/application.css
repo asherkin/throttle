@@ -333,3 +333,18 @@ dl.dl-minidump div.alert {
     background-color: transparent;
 }
 
+.alert-info {
+    color: #003B61;
+}
+
+.alert-warning {
+    color: #744C07;
+}
+
+.alert-success {
+    color: #003C00;
+}
+
+.alert-danger {
+    color: #6D0000;
+}
