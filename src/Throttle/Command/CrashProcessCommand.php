@@ -64,12 +64,7 @@ class CrashProcessCommand extends Command
             }
 
             if ($outdated > 0) {
-                try {
-                    $redis = new \Redis();
-                    $redis->pconnect('127.0.0.1', 6379, 1);
-                    $redis->hIncrBy('throttle:stats', 'crashes:needs-reprocessing', $outdated);
-                    $redis->close();
-                } catch (\Exception $e) {}
+                $app['redis']->hIncrBy('throttle:stats', 'crashes:needs-reprocessing', $outdated);
             }
 
             $output->writeln('Found ' . $outdated . ' outdated crash dump(s)');
@@ -102,23 +97,15 @@ class CrashProcessCommand extends Command
         $symbolCache = null;
         $repoCache = null;
 
-        try {
-            // Upload the caches to redis to use for the next run.
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
+        list($repoCacheJson, $symbolCacheJson) = $app['redis']->mGet(array('throttle:cache:repo', 'throttle:cache:symbol'));
 
-            list($repoCacheJson, $symbolCacheJson) = $redis->mGet(array('throttle:cache:repo', 'throttle:cache:symbol'));
+        if ($repoCacheJson) {
+            $repoCache = json_decode($repoCacheJson, true);
+        }
 
-            if ($repoCacheJson) {
-                $repoCache = json_decode($repoCacheJson, true);
-            }
-
-            if ($symbolCacheJson) {
-                $symbolCache = json_decode($symbolCacheJson, true);
-            }
-
-            $redis->close();
-        } catch (\Exception $e) {}
+        if ($symbolCacheJson) {
+            $symbolCache = json_decode($symbolCacheJson, true);
+        }
 
         if (!$repoCache) {
             $repoCache = array();
@@ -158,16 +145,11 @@ class CrashProcessCommand extends Command
                             $cacheKey = $data[1] . '-' . $data[3] . '-' . $data[4];
 
                             if (array_key_exists($cacheKey, $symbolCache)) {
-                                try {
-                                    $redis = new \Redis();
-                                    $redis->pconnect('127.0.0.1', 6379, 1);
-                                    if ($symbolCache[$cacheKey]) {
-                                        $redis->hIncrBy('throttle:stats', 'symbols:found-cached', 1);
-                                    } else {
-                                        $redis->hIncrBy('throttle:stats', 'symbols:missing-cached', 1);
-                                    }
-                                    $redis->close();
-                                } catch (\Exception $e) {}
+                                if ($symbolCache[$cacheKey]) {
+                                    $app['redis']->hIncrBy('throttle:stats', 'symbols:found-cached', 1);
+                                } else {
+                                    $app['redis']->hIncrBy('throttle:stats', 'symbols:missing-cached', 1);
+                                }
 
                                 continue;
                             }
@@ -183,12 +165,7 @@ class CrashProcessCommand extends Command
                             if (file_exists($symbolCacheDirectory . '/' . $sympath)) {
                                 $symbolCache[$cacheKey] = true;
 
-                                try {
-                                    $redis = new \Redis();
-                                    $redis->pconnect('127.0.0.1', 6379, 1);
-                                    $redis->hIncrBy('throttle:stats', 'symbols:found', 1);
-                                    $redis->close();
-                                } catch (\Exception $e) {}
+                                $app['redis']->hIncrBy('throttle:stats', 'symbols:found', 1);
 
                                 continue;
                             }
@@ -205,16 +182,11 @@ class CrashProcessCommand extends Command
 
                             $symbolCache[$cacheKey] = $foundSymbolFile;
 
-                            try {
-                                $redis = new \Redis();
-                                $redis->pconnect('127.0.0.1', 6379, 1);
-                                if ($foundSymbolFile) {
-                                    $redis->hIncrBy('throttle:stats', 'symbols:found-compressed', 1);
-                                } else {
-                                    $redis->hIncrBy('throttle:stats', 'symbols:missing', 1);
-                                }
-                                $redis->close();
-                            } catch (\Exception $e) {}
+                            if ($foundSymbolFile) {
+                                $app['redis']->hIncrBy('throttle:stats', 'symbols:found-compressed', 1);
+                            } else {
+                                $app['redis']->hIncrBy('throttle:stats', 'symbols:missing', 1);
+                            }
 
                             continue;
                         }
@@ -277,21 +249,11 @@ class CrashProcessCommand extends Command
 
                                         $repoCache[$cacheKey] = $repos;
 
-                                        try {
-                                            $redis = new \Redis();
-                                            $redis->pconnect('127.0.0.1', 6379, 1);
-                                            $redis->hIncrBy('throttle:stats', 'symbols:repo-cache:miss', 1);
-                                            $redis->close();
-                                        } catch (\Exception $e) {}
+                                        $app['redis']->hIncrBy('throttle:stats', 'symbols:repo-cache:miss', 1);
 
                                         //print('Cache MISS for ' . $cacheKey . ' (' . array_key_exists($cacheKey, $repoCache) . ') (' . count($repos) . ')' . PHP_EOL);
                                     } else {
-                                        try {
-                                            $redis = new \Redis();
-                                            $redis->pconnect('127.0.0.1', 6379, 1);
-                                            $redis->hIncrBy('throttle:stats', 'symbols:repo-cache:hit', 1);
-                                            $redis->close();
-                                        } catch (\Exception $e) {}
+                                        $app['redis']->hIncrBy('throttle:stats', 'symbols:repo-cache:hit', 1);
 
                                         //print('Cache HIT for ' . $cacheKey . PHP_EOL);
                                     }
@@ -376,12 +338,7 @@ class CrashProcessCommand extends Command
                 } catch (\CommandException $e) {
                     $app['db']->executeUpdate('UPDATE crash SET processed = TRUE, failed = TRUE WHERE id = ?', array($id));
 
-                    try {
-                        $redis = new \Redis();
-                        $redis->pconnect('127.0.0.1', 6379, 1);
-                        $redis->hIncrBy('throttle:stats', 'crashes:failed', 1);
-                        $redis->close();
-                    } catch (\Exception $e) {}
+                    $app['redis']->hIncrBy('throttle:stats', 'crashes:failed', 1);
 
                     return;
                 } finally {
@@ -393,12 +350,7 @@ class CrashProcessCommand extends Command
 
                 $app['db']->executeUpdate('UPDATE crash SET stackhash = (SELECT GROUP_CONCAT(SUBSTRING(SHA2(rendered, 256), 1, 8) ORDER BY frame ASC SEPARATOR \'\') AS hash FROM frame WHERE crash = ? AND thread = ? AND frame < 10 AND module != \'\' GROUP BY crash, thread) WHERE id = ?', array($id, $crashThread, $id));
 
-                try {
-                    $redis = new \Redis();
-                    $redis->pconnect('127.0.0.1', 6379, 1);
-                    $redis->hIncrBy('throttle:stats', 'crashes:processed', 1);
-                    $redis->close();
-                } catch (\Exception $e) {}
+                $app['redis']->hIncrBy('throttle:stats', 'crashes:processed', 1);
 
                 // This isn't as important, so do it after we mark the crash as processed.
                 // TODO: We're in a transaction... the above comment makes no sense.
@@ -420,21 +372,14 @@ class CrashProcessCommand extends Command
             $progress->advance();
         }
 
-        try {
-            // Upload the caches to redis to use for the next run.
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
+        // Upload the caches to redis to use for the next run.
+        $ttl = $app['redis']->ttl('throttle:cache:symbol');
+        if ($ttl <= 0) {
+            $ttl = 1800;
+        }
 
-            $ttl = $redis->ttl('throttle:cache:repo');
-            if ($ttl <= 0) {
-                $ttl = 1800;
-            }
-
-            $redis->setEx('throttle:cache:repo', $ttl, json_encode($repoCache));
-            $redis->setEx('throttle:cache:symbol', $ttl, json_encode($symbolCache));
-
-            $redis->close();
-        } catch (\Exception $e) {}
+        $app['redis']->setEx('throttle:cache:repo', $ttl, json_encode($repoCache));
+        $app['redis']->setEx('throttle:cache:symbol', $ttl, json_encode($symbolCache));
 
         $progress->finish();
 

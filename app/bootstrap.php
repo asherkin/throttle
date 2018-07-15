@@ -56,5 +56,17 @@ $app->register(new Silex\Provider\DoctrineServiceProvider(), array(
     ),
 ));
 
+$app['redis'] = $app->share(function() use ($app) {
+    $redis = new \Redis();
+    $redis->connect('127.0.0.1', 6379, 1);
+    return $redis;
+});
+
+/*
+$app['queue'] = $app->share(function() use ($app) {
+    return new Pheanstalk\Pheanstalk('127.0.0.1');
+});
+*/
+
 return $app;
 

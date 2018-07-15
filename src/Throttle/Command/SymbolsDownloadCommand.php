@@ -73,19 +73,11 @@ class SymbolsDownloadCommand extends Command
 
         $blacklist = null;
 
-        try {
-            // Upload the caches to redis to use for the next run.
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
+        $blacklistJson = $app['redis']->get('throttle:cache:blacklist');
 
-            $blacklistJson = $redis->get('throttle:cache:blacklist');
-
-            if ($blacklistJson) {
-                $blacklist = json_decode($blacklistJson, true);
-            }
-
-            $redis->close();
-        } catch (\Exception $e) {}
+        if ($blacklistJson) {
+            $blacklist = json_decode($blacklistJson, true);
+        }
 
         if (!$blacklist) {
             $blacklist = array();
@@ -214,14 +206,7 @@ class SymbolsDownloadCommand extends Command
             $progress->advance();
         }
 
-        try {
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
-
-            $redis->set('throttle:cache:blacklist', json_encode($blacklist));
-
-            $redis->close();
-        } catch (\Exception $e) {}
+        $app['redis']->set('throttle:cache:blacklist', json_encode($blacklist));
 
         $progress->finish();
 
@@ -236,14 +221,7 @@ class SymbolsDownloadCommand extends Command
         $lock = \PhutilFileLock::newForPath($app['root'] . '/cache/process.lck');
         $lock->lock(300);
 
-        try {
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
-
-            $redis->del('throttle:cache:symbol');
-
-            $redis->close();
-        } catch (\Exception $e) {}
+        $app['redis']->del('throttle:cache:symbol');
 
         $output->writeln('Flushed symbol cache');
 

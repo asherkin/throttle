@@ -64,14 +64,7 @@ class SymbolsUpdateCommand extends Command
         $lock = \PhutilFileLock::newForPath($app['root'] . '/cache/process.lck');
         $lock->lock(300);
 
-        try {
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
-
-            $redis->del('throttle:cache:symbol');
-
-            $redis->close();
-        } catch (\Exception $e) {}
+        $app['redis']->del('throttle:cache:symbol');
 
         $output->writeln('Flushed symbol cache');
 

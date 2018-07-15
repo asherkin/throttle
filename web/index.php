@@ -263,12 +263,6 @@ $app['openid'] = $app->share(function() use ($app) {
     return new LightOpenID($app['config']['hostname']);
 });
 
-/*
-$app['queue'] = $app->share(function() use ($app) {
-    return new Pheanstalk\Pheanstalk('127.0.0.1');
-});
-*/
-
 if ($app['config']['show-version']) {
     list($err, $stdout, $stderr) = $changesetFuture->resolve();
 

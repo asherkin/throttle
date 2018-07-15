@@ -40,10 +40,7 @@ class Stats
                 \apcu_add($lukey, $last, 300);
             }
 
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
-            $live = $redis->hGet('throttle:stats', 'crashes:submitted');
-            $redis->close();
+            $live = $app['redis']->hGet('throttle:stats', 'crashes:submitted');
 
             $data = round($historical + ($live - $last));
             \apcu_add($key, $data, 10);
@@ -64,10 +61,7 @@ class Stats
         $key = 'throttle.rrd.lifetime';
         $data = \apcu_fetch($key);
         if ($data === false) {
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
-            $data = $redis->hGet('throttle:stats', 'crashes:submitted');
-            $redis->close();
+            $data = $app['redis']->hGet('throttle:stats', 'crashes:submitted');
 
             \apcu_add($key, $data, 10);
         }

@@ -73,13 +73,8 @@ class UserUpdateCommand extends Command
 
         $progress->finish();
 
-        try {
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
-            $redis->hIncrBy('throttle:stats', 'users:updated', $statsUpdated);
-            $redis->hIncrBy('throttle:stats', 'users:failed', $statsFailed);
-            $redis->close();
-        } catch (\Exception $e) {}
+        $app['redis']->hIncrBy('throttle:stats', 'users:updated', $statsUpdated);
+        $app['redis']->hIncrBy('throttle:stats', 'users:failed', $statsFailed);
     }
 }
 

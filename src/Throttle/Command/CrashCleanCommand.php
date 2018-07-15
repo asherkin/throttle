@@ -47,12 +47,7 @@ class CrashCleanCommand extends Command
                 $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) LIMIT 100', array($crashes), array(\Doctrine\DBAL\Connection::PARAM_INT_ARRAY));
 
                 if ($count > 0) {
-                    try {
-                        $redis = new \Redis();
-                        $redis->pconnect('127.0.0.1', 6379, 1);
-                        $redis->hIncrBy('throttle:stats', 'crashes:cleaned:limit', $count);
-                        $redis->close();
-                    } catch (\Exception $e) {}
+                    $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:limit', $count);
                 }
             }
 
@@ -67,12 +62,7 @@ class CrashCleanCommand extends Command
             $count = $app['db']->executeUpdate('DELETE FROM crash WHERE timestamp < DATE_SUB(NOW(), INTERVAL 90 DAY) LIMIT 100');
 
             if ($count > 0) {
-                try {
-                    $redis = new \Redis();
-                    $redis->pconnect('127.0.0.1', 6379, 1);
-                    $redis->hIncrBy('throttle:stats', 'crashes:cleaned:old', $count);
-                    $redis->close();
-                } catch (\Exception $e) {}
+                $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:old', $count);
             }
         }
 
@@ -120,12 +110,7 @@ class CrashCleanCommand extends Command
         $output->writeln('Matched ' . count($found) . ' minidumps to database.');
 
         if ($count > 0 && !$input->getOption('dry-run')) {
-            try {
-                $redis = new \Redis();
-                $redis->pconnect('127.0.0.1', 6379, 1);
-                $redis->hIncrBy('throttle:stats', 'crashes:cleaned:orphan', $count);
-                $redis->close();
-            } catch (\Exception $e) {}
+            $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:orphan', $count);
         }
 
         $output->writeln('Deleted ' . $count . ' orphaned minidumps.');
@@ -144,12 +129,7 @@ class CrashCleanCommand extends Command
             $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) AND failed = 1 LIMIT 100', array(array_keys($missing)), array(\Doctrine\DBAL\Connection::PARAM_STR_ARRAY));
 
             if ($count > 0) {
-                try {
-                    $redis = new \Redis();
-                    $redis->pconnect('127.0.0.1', 6379, 1);
-                    $redis->hIncrBy('throttle:stats', 'crashes:cleaned:missing', $count);
-                    $redis->close();
-                } catch (\Exception $e) {}
+                $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:missing', $count);
             }
         }
 

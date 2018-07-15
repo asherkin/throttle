@@ -28,22 +28,12 @@ class Crash
         //return $app->abort(503);
         //return 'Sorry, crash submission is currently disabled';
 
-        try {
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
-            $redis->hIncrBy('throttle:stats', 'crashes:submitted', 1);
-            $redis->close();
-        } catch (\Exception $e) {}
+        $app['redis']->hIncrBy('throttle:stats', 'crashes:submitted', 1);
 
         $minidump = $app['request']->files->get('upload_file_minidump');
 
         if ($minidump === null || !$minidump->isValid() || $minidump->getClientSize() <= 0) {
-            try {
-                $redis = new \Redis();
-                $redis->pconnect('127.0.0.1', 6379, 1);
-                $redis->hIncrBy('throttle:stats', 'crashes:rejected:no-minidump', 1);
-                $redis->close();
-            } catch (\Exception $e) {}
+            $app['redis']->hIncrBy('throttle:stats', 'crashes:rejected:no-minidump', 1);
 
             return $app['twig']->render('submit-empty.txt.twig');
         }
@@ -88,12 +78,7 @@ class Crash
         }
 
         if ($count > 0) {
-            try {
-                $redis = new \Redis();
-                $redis->pconnect('127.0.0.1', 6379, 1);
-                $redis->hIncrBy('throttle:stats', 'crashes:rejected:no-steam', 1);
-                $redis->close();
-            } catch (\Exception $e) {}
+            $app['redis']->hIncrBy('throttle:stats', 'crashes:rejected:no-steam', 1);
 
             return $app['twig']->render('submit-nosteam.txt.twig');
         }
@@ -105,12 +90,7 @@ class Crash
         }
 
         if ($count > 12) {
-            try {
-                $redis = new \Redis();
-                $redis->pconnect('127.0.0.1', 6379, 1);
-                $redis->hIncrBy('throttle:stats', 'crashes:rejected:rate-limit', 1);
-                $redis->close();
-            } catch (\Exception $e) {}
+            $app['redis']->hIncrBy('throttle:stats', 'crashes:rejected:rate-limit', 1);
 
             return $app['twig']->render('submit-reject.txt.twig');
         }
@@ -165,12 +145,7 @@ class Crash
             \Filesystem::writeFile($metapath, gzencode($raw_metadata));
         }
 
-        try {
-            $redis = new \Redis();
-            $redis->pconnect('127.0.0.1', 6379, 1);
-            $redis->hIncrBy('throttle:stats', 'crashes:accepted', 1);
-            $redis->close();
-        } catch (\Exception $e) {}
+        $app['redis']->hIncrBy('throttle:stats', 'crashes:accepted', 1);
 
 /*
         try {
