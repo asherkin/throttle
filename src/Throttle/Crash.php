@@ -464,7 +464,7 @@ class Crash
         return $app['twig']->render('carburetor.html.twig', array('id' => $id));
     }
 
-    public function carburetorData(Application $app, $id)
+    public function carburetor_data(Application $app, $id)
     {
         if ($app['user'] === null) {
             $app->abort(401);

@@ -237,21 +237,24 @@ $app['user'] = null;
 
 if ($user) {
     $startTime = microtime(true);
-    $details = $app['db']->executeQuery('SELECT name, avatar FROM user WHERE id = ? LIMIT 1', array($user['id']))->fetch();
+    $details = $app['db']->executeQuery('SELECT name, avatar, (SELECT COUNT(*) FROM share WHERE user = id AND accepted = 0) AS pending FROM user WHERE id = ? LIMIT 1', array($user['id']))->fetch();
     $app['monolog']->info(sprintf('Loaded user details in %fms', (microtime(true) - $startTime) / 1000));
 
     $app['user'] = array(
         'id' => $user['id'],
         'name' => $details ? $details['name'] : null,
         'avatar' => $details ? $details['avatar'] : null,
+        'pending' => $details ? $details['pending'] : 0,
         'admin' => in_array($user['id'], $app['config']['admins']),
     );
 }
 
 // 76561197968573709 psychonic
 // 76561197990940702 Headline
+// 76561197982857344 Dr!fter
 $app['feature'] = array(
     'subscriptions' => $app['user'] && ($developer || in_array($app['user']['id'], array('76561197968573709', '76561197990940702'))),
+    'sharing' => $app['user'] && ($developer || in_array($app['user']['id'], array('76561197968573709', '76561197990940702', '76561197982857344'))),
 );
 
 Symfony\Component\HttpFoundation\Request::setTrustedProxies($app['config']['trusted-proxies']);
@@ -347,6 +350,21 @@ $app->post('/paddle_webhook', 'Throttle\Subscription::webhook')
 $app->get('/subscribe', 'Throttle\Subscription::subscribe')
     ->bind('subscribe');
 
+$app->get('/settings', 'Throttle\Settings::settings')
+    ->bind('settings');
+
+$app->post('/settings/share/accept', 'Throttle\Settings::accept')
+    ->bind('share_accept');
+
+$app->post('/settings/share/revoke', 'Throttle\Settings::revoke')
+    ->bind('share_revoke');
+
+$app->get('/settings/share', 'Throttle\Settings::invite')
+    ->bind('share_invite');
+
+$app->post('/settings/share', 'Throttle\Settings::invite_post')
+    ->bind('share_invite_post');
+
 $app->get('/{id}/download', 'Throttle\Crash::download')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('download');
@@ -375,7 +393,7 @@ $app->get('/{id}/carburetor', 'Throttle\Crash::carburetor')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('carburetor');
 
-$app->get('/{id}/carburetor/data', 'Throttle\Crash::carburetorData')
+$app->get('/{id}/carburetor/data', 'Throttle\Crash::carburetor_data')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('carburetor_data');
 

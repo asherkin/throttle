@@ -197,12 +197,12 @@ tr.stackframe-expand td {
     font-style: oblique;
 }
 
-td.column-actions {
+.column-actions {
     text-align: right;
     padding: 7px 8px !important;
 }
 
-td.column-actions .btn {
+.column-actions .btn {
     margin: 0 2px;
 }
 
@@ -534,4 +534,37 @@ pre.tab-pane {
     word-break: break-word;
     white-space: pre;
     overflow-y: auto;
+}
+
+.table-share {
+    table-layout: fixed;
+}
+
+.table-share tr > *:first-child {
+    width: 28px;
+}
+
+.table-share tr > *:last-child {
+    width: 130px;
+}
+
+.pending-notifications::after {
+    content: '';
+    position: absolute;
+    background-color: #d43f3a;
+    width: 10px;
+    height: 10px;
+    border: 1px solid white;
+    border-radius: 100%;
+    top: 6px;
+    right: 25px;
+}
+
+.dropdown-menu > li.pending-notifications {
+    position: relative;
+}
+
+.dropdown-menu > li.pending-notifications::after {
+    top: calc(50% - 5px);
+    right: 10px;
 }
