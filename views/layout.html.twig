@@ -3,9 +3,13 @@
     <head>
         <meta charset="utf-8">
         <meta content="IE=EDGE" http-equiv="X-UA-Compatible">
+{% if supports_mobile|default(false) %}
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+{% endif %}
         <title>Throttle</title>
         <link href="{{ app.request.baseUrl }}/css/bootstrap.no-icons.min.css" rel="stylesheet">
         <link href="{{ app.request.baseUrl }}/css/font-awesome.min.css" rel="stylesheet">
+{% block stylesheets %}{% endblock %}
         <link href="{{ app.request.baseUrl }}/css/application.css" rel="stylesheet">
 {% if 'Kindle/3.0' in app.request.headers.get('User-Agent') %}
         <link href="{{ app.request.baseUrl }}/css/kindle.css" rel="stylesheet">
@@ -16,13 +20,12 @@
             <div class="container">
                 <a class="navbar-brand" href="/"><i class="icon-dashboard"></i> Throttle</a>
                 <div class="pull-right">
-{% set user = app.session.get('user') %}
-{% if user %}
+{% if app.user %}
 <ul class="nav navbar-nav">
     <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-{% if user.name %}
-            <img src="{{ user.avatar }}" alt="{{ user.name }}'s avatar">
+{% if app.user.name %}
+            <img src="{{ app.user.avatar }}" alt="{{ app.user.name }}'s avatar">
 {% else %}
             Account
 {% endif %}
@@ -30,6 +33,12 @@
         </a>
         <ul class="dropdown-menu pull-right">
             <li><a href="{{ path('dashboard') }}"><i class="icon-fixed-width icon-reorder"></i> Dashboard</a></li>
+{% if app.feature.subscriptions %}
+            <li><a href="{{ path('subscribe') }}"><i class="icon-fixed-width icon-usd"></i> Support</a></li>
+            <li data-toggle="tooltip" data-container="body" data-placement="left" title="Supporter since 2017-10-29"><a href="{{ path('subscribe') }}"><i class="icon-fixed-width icon-usd"></i> 2&#8239;/&#8239;month</a></li>
+            <li class="alert-warning" data-toggle="tooltip" data-container="body" data-placement="left" title="Subscription cancelled, access expires 2017-10-29"><a href="{{ path('subscribe') }}"><i class="icon-fixed-width icon-usd"></i> 2&#8239;/&#8239;month</a></li>
+            <li class="alert-danger" data-toggle="tooltip" data-container="body" data-placement="left" title="Last payment failed, check payment method"><a href="{{ path('subscribe') }}"><i class="icon-fixed-width icon-usd"></i> 2&#8239;/&#8239;month</a></li>
+{% endif %}
 {% if logout_to_index|default(false) %}
             <li><a href="{{ path('logout') }}"><i class="icon-fixed-width icon-signout"></i> Logout</a></li>
 {% else %}
@@ -55,6 +64,11 @@
         </div>
         <script src="{{ app.request.baseUrl }}/js/jquery.min.js"></script>
         <script src="{{ app.request.baseUrl }}/js/bootstrap.min.js"></script>
+        <script type="text/javascript">
+        $(function() {
+            $('[data-toggle="tooltip"]').tooltip();
+        })
+        </script>
 {% block scripts %}{% endblock %}
     </body>
 </html>

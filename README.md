@@ -29,6 +29,8 @@
     </VirtualHost>
 
 ## Cron
-    */5 * * * * root /path/to/throttle/app/console.php crash:clean > /dev/null; /path/to/throttle/app/console.php crash:process -l 50 -u > /dev/null
-    0 * * * * root /path/to/throttle/app/console.php user:update > /dev/null
-    10 0 * * * root /path/to/throttle/app/console.php symbols:download > /dev/null
+    * * * * * root /var/www/throttle/app/console.php crash:clean > /dev/null; /var/www/throttle/app/console.php crash:process -l 250 -u > /dev/null
+    0 * * * * root /var/www/throttle/app/console.php user:update > /dev/null
+    15 */3 * * * root /var/www/throttle/app/console.php symbols:update > /dev/null
+    30 0 * * * root /var/www/throttle/app/console.php symbols:download > /dev/null
+    30 0 * * * root /var/www/throttle/app/console.php symbols:mozilla:download > /dev/null

@@ -31,7 +31,7 @@
         "monolog/monolog": "~1.0",
         "symfony/doctrine-bridge": "~2.3.0",
         "doctrine/dbal": "~2.2",
-        "doctrine/migrations": "dev-master",
+        "doctrine/migrations": "~1.5.0",
         "symfony/twig-bridge": "~2.3.0",
         "twig/twig": "~1.8",
         "cilex/console-service-provider": "~1.0.0",
@@ -41,8 +41,8 @@
         "symfony/debug": "~2.3.0",
         "facebook/libphutil": "dev-stable",
         "lightopenid/lightopenid": "dev-master",
-        "enygma/yubikey": "~3.2",
-        "pda/pheanstalk": "^3.1"
+        "pda/pheanstalk": "^3.1",
+        "sorien/silex-dbal-profiler": "~1.1"
     },
     "autoload": {
         "psr-0": { "Throttle": "src/" }

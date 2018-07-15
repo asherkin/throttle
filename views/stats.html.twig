@@ -14,8 +14,20 @@
 {% endif %}
   </ol>
 </div>
+{% else %}
+<div class="row">
+    <div class="col-sm-4 col-md-3 col-md-push-1-5">
+        <div class="crash-count"><span id="crash-count-servers">&nbsp;</span> Unique servers last 24 hours</div>
+    </div>
+    <div class="col-sm-4 col-md-3 col-md-push-1-5">
+        <div class="crash-count"><span id="crash-count-lifetime">&nbsp;</span> Crash reports received to date</div>
+    </div>
+    <div class="col-sm-4 col-md-3 col-md-push-1-5">
+        <div class="crash-count"><span id="crash-count-today">&nbsp;</span> Last 24 hours (5m average)</div>
+    </div>
+</div>
 {% endif %}
-<h2>Crash Reports / Hour</h2>
+<h2 class="stats-graph-title">Crash Reports / Hour{% if module %} <small>Historical data may be inaccurate due to active filter</small>{% endif %}</h2>
 <div class="well well-sm">
   <div id="chart_hourly" style="width:100%; height:200px;">
     <div class="text-center" style="line-height: 200px;">
@@ -23,7 +35,7 @@
     </div>
   </div>
 </div>
-<h2>Crash Reports / Day</h2>
+<h2 class="stats-graph-title">Crash Reports / Day{% if module %} <small>Historical data may be inaccurate due to active filter</small>{% endif %}</h2>
 <div class="well well-sm">
   <div id="chart_daily" style="width:100%; height:200px;">
     <div class="text-center" style="line-height: 200px;">
@@ -65,13 +77,31 @@
     </tbody>
   </table>
 </div>
+{% if not module %}
+<h2>Processing Performance</h2>
+<div class="well well-sm munin-graphs">
+  <img class="img-responsive" src="/munin-graphs/submitted-day.png">
+  <img class="img-responsive" src="/munin-graphs/submitted-week.png">
+  <img class="img-responsive" src="/munin-graphs/processed-day.png">
+  <img class="img-responsive" src="/munin-graphs/cleaned-day.png">
+  <img class="img-responsive" src="/munin-graphs/symbols_coverage-day.png">
+  <img class="img-responsive" src="/munin-graphs/symbols_coverage-week.png">
+  <img class="img-responsive" src="/munin-graphs/symbols-day.png">
+  <img class="img-responsive" src="/munin-graphs/symbols_pct-day.png">
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
+{% include 'stat-counter.stub.twig' %}
 <script src="{{ app.request.baseUrl }}/js/highcharts.js"></script>
 <script src="{{ app.request.baseUrl }}/js/highcharts.data.js"></script>
 <script type="text/javascript">
 $(function() {
+  bindLiveCounter($('#crash-count-servers'), '{{ path('stats_unique') }}', 60);
+  bindLiveCounter($('#crash-count-lifetime'), '{{ path('stats_lifetime') }}', 10);
+  bindLiveCounter($('#crash-count-today'), '{{ path('stats_today') }}', 300);
+
   $.get('{{ path('stats_daily', {module: module, function: function}) }}', function(csv) {
     $('#chart_daily').highcharts({
       chart: {

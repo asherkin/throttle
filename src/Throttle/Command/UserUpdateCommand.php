@@ -34,23 +34,30 @@ class UserUpdateCommand extends Command
 
         $output->writeln('Found ' . $count . ' stale user(s)');
 
-        if ($count === 0) {
-            return;
-        }
-
         $progress = $this->getHelperSet()->get('progress');
         $progress->start($output, $count);
+
+        $statsUpdated = 0;
+        $statsFailed = 0;
 
         foreach (id(new \FutureIterator($futures))->limit(5) as $user => $future) {
             list($status, $body, $headers) = $future->resolve();
 
+            $progress->advance();
+
             if ($status->isError()) {
+                $statsFailed++;
+
                 continue;
             }
 
             $data = json_decode($body);
 
             if ($data === null || empty($data->response->players)) {
+                $app['db']->executeUpdate('UPDATE user SET updated = NOW() WHERE id = ?', array($user));
+
+                $statsFailed++;
+
                 continue;
             }
 
@@ -61,10 +68,18 @@ class UserUpdateCommand extends Command
 
             $app['db']->executeUpdate('UPDATE user SET name = ?, avatar = ?, updated = NOW() WHERE id = ?', array($data->personaname, $data->avatarfull, $user));
 
-            $progress->advance();
+            $statsUpdated++;
         }
 
         $progress->finish();
+
+        try {
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+            $redis->hIncrBy('throttle:stats', 'users:updated', $statsUpdated);
+            $redis->hIncrBy('throttle:stats', 'users:failed', $statsFailed);
+            $redis->close();
+        } catch (\Exception $e) {}
     }
 }
 

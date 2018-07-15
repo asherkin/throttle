@@ -28,6 +28,10 @@ class SymbolsUpdateCommand extends Command
 
         $symbols = \Filesystem::listDirectory($app['root'] . '/symbols');
         $query = $app['db']->executeQuery('SELECT DISTINCT name, identifier FROM module WHERE identifier != \'000000000000000000000000000000000\'' . ($input->getOption('clean') ? '' : ' AND present = 0'));
+        $count = $query->rowCount();
+
+        $progress = $this->getHelperSet()->get('progress');
+        $progress->start($output, $count);
 
         while (($module = $query->fetch()) !== false) {
             $found = false;
@@ -44,12 +48,34 @@ class SymbolsUpdateCommand extends Command
                 }
             }
 
+            $progress->advance();
+
             if (!$found && !$input->getOption('clean')) {
                 continue;
             }
 
             $app['db']->executeUpdate('UPDATE module SET present = ? WHERE name = ? AND identifier = ?', array($found, $module['name'], $module['identifier']));
         }
+
+        $progress->finish();
+
+        $output->writeln('Waiting for processing lock...');
+
+        $lock = \PhutilFileLock::newForPath($app['root'] . '/cache/process.lck');
+        $lock->lock(300);
+
+        try {
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+
+            $redis->del('throttle:cache:symbol');
+
+            $redis->close();
+        } catch (\Exception $e) {}
+
+        $output->writeln('Flushed symbol cache');
+
+        $lock->unlock();
     }
 }
 

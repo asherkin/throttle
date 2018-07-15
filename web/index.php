@@ -120,6 +120,8 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
             return 'Reporter';
         case 'Ptime':
             return 'Process Time';
+        case 'Source Mod Path':
+            return 'SourceMod Path';
         default:
             return $name;
         }
@@ -143,20 +145,32 @@ if ($app['config'] === false) {
     return;
 }
 
-$app['debug'] = $app['debug'] || (($user = $app['session']->get('user')) && $user['admin']);
+$user = $app['session']->get('user');
+
+// Force a logout if the information stored in the user session has changed.
+if ($user && (!isset($user['version']) || $user['version'] !== Throttle\Home::SESSION_VERSION)) {
+    $app['session']->remove('user');
+    $user = null;
+}
+
+$developer = $user && in_array($user['id'], $app['config']['developers']);
+
+$app['debug'] = $app['debug'] || $developer;
 
 // Catch PHP errors
-Symfony\Component\Debug\ErrorHandler::register();
 Symfony\Component\Debug\ExceptionHandler::register($app['debug']);
+Symfony\Component\Debug\ErrorHandler::register();
 
 // Fatal errors don't hit monolog's regular handler.
-Symfony\Component\Debug\ErrorHandler::setLogger($app['monolog'], 'deprecation');
+//Symfony\Component\Debug\ErrorHandler::setLogger($app['monolog'], 'deprecation');
 Symfony\Component\Debug\ErrorHandler::setLogger($app['monolog'], 'emergency');
 
 if ($app['debug']) {
     $app->register(new Silex\Provider\WebProfilerServiceProvider(), array(
         'profiler.cache_dir' => __DIR__ . '/../cache/profiler',
     ));
+
+    $app->register(new Sorien\Provider\DoctrineProfilerServiceProvider());
 
     // Install the debug handler (register does this earlier for non-debug env)
     if (!$app['config']['debug'] && isset($app['monolog.handler.debug'])) {
@@ -167,24 +181,93 @@ if ($app['debug']) {
     }
 }
 
+$app->error(function(\Exception $e, $code) use ($app) {
+    if ($app['debug']) {
+        return;
+    }
+
+    if ($code == 401) {
+        return $app->redirect($app['url_generator']->generate('login', array('return' => $app['request']->getPathInfo())));
+    }
+
+    $icon = 'exclamation-sign';
+    $title = 'An Error Has Occurred';
+    $comment = 'Someone has been dispatched to poke the server with a sharp stick.';
+
+    if ($code >= 400 && $code < 500) {
+        $icon = 'remove-sign';
+        $title = 'An Error Has Occurred';
+        $comment = 'There was a problem with your request.';
+    }
+
+    if ($code >= 500 && $code < 600) {
+        $app['monolog']->crit(sprintf('Uncaught Exception %s: "%s" at %s line %s', get_class($e), $e->getMessage(), $e->getFile(), $e->getLine()), ['code' => $code, 'exception' => $e, 'trace' => $e->getTraceAsString()]);
+    }
+
+    // Move this to the start if this works...
+    if (get_class($e) === 'Symfony\Component\Debug\Exception\DummyException') {
+        return;
+    }
+
+    switch ($code) {
+    case 403:
+        $icon = 'ban-circle';
+        $title = 'Access Denied';
+        $comment = 'Doesn\'t look like you\'re meant to be here.';
+        break;
+    case 404:
+        $icon = 'question-sign';
+        $title = 'Not Found';
+        $comment = 'What you are looking for is not here,'.PHP_EOL.'Unless you were looking for this error page of course.';
+        break;
+    case 405:
+        //$icon = '';
+        $title = 'Method Not Allowed';
+        //$comment = '';
+    }
+
+    return $app['twig']->render('error.html.twig', array(
+        'icon' => $icon,
+        'title' => $title,
+        'comment' => $comment,
+    ));
+}, -1);
+
+$app['user'] = null;
+
+if ($user) {
+    $startTime = microtime(true);
+    $details = $app['db']->executeQuery('SELECT name, avatar FROM user WHERE id = ? LIMIT 1', array($user['id']))->fetch();
+    $app['monolog']->info(sprintf('Loaded user details in %fms', (microtime(true) - $startTime) / 1000));
+
+    $app['user'] = array(
+        'id' => $user['id'],
+        'name' => $details ? $details['name'] : null,
+        'avatar' => $details ? $details['avatar'] : null,
+        'admin' => in_array($user['id'], $app['config']['admins']),
+    );
+}
+
+// 76561197968573709 psychonic
+// 76561197990940702 Headline
+$app['feature'] = array(
+    'subscriptions' => $app['user'] && ($developer || in_array($app['user']['id'], array('76561197968573709', '76561197990940702'))),
+);
+
 Symfony\Component\HttpFoundation\Request::setTrustedProxies($app['config']['trusted-proxies']);
 
 //TODO: Remove crash.steampowered.com when we drop bcompat.
-Symfony\Component\HttpFoundation\Request::setTrustedHosts(array('^' . preg_quote($app['config']['hostname']) . '$', '^crash.steampowered.com$'));
+Symfony\Component\HttpFoundation\Request::setTrustedHosts(array('^' . preg_quote($app['config']['hostname']) . '\\.?$', '^crash.steampowered.com\\.?$'));
 
 $app['openid'] = $app->share(function() use ($app) {
     return new LightOpenID($app['config']['hostname']);
 });
 
-if (isset($app['config']['yubicloud-api-key']) && isset($app['config']['yubicloud-client-id'])) {
-    $app['yubikey'] = $app->share(function() use ($app) {
-        return new Yubikey\Validate($app['config']['yubicloud-api-key'], $app['config']['yubicloud-client-id']);
-    });
-}
-
+/*
 $app['queue'] = $app->share(function() use ($app) {
     return new Pheanstalk\Pheanstalk('127.0.0.1');
 });
+*/
 
 if ($app['config']['show-version']) {
     list($err, $stdout, $stderr) = $changesetFuture->resolve();
@@ -193,39 +276,6 @@ if ($app['config']['show-version']) {
         $app['version'] = $stdout;
     }
 }
-
-if (!$app['debug']) {
-    $app->error(function(\Exception $e, $code) use ($app) {
-        $icon = 'exclamation-sign';
-        $title = 'An Error Has Occurred';
-        $comment = 'Someone has been dispatched to poke the server with a sharp stick.';
-
-        switch ($code) {
-        case 403:
-            $icon = 'ban-circle';
-            $title = 'Access Denied';
-            $comment = 'Doesn\'t look like you\'re meant to be here.';
-            break;
-        case 404:
-            $icon = 'question-sign';
-            $title = 'Not Found';
-            $comment = 'What you are looking for is not here,'.PHP_EOL.'Unless you were looking for this error page of course.';
-            break;
-        }
-
-        return $app['twig']->render('error.html.twig', array(
-            'icon' => $icon,
-            'title' => $title,
-            'comment' => $comment,
-        ));
-    });
-}
-
-$app->get('/login/yubikey', 'Throttle\Home::login_yubikey')
-    ->bind('yubikey');
-
-$app->post('/login/yubikey', 'Throttle\Home::login_yubikey_post')
-    ->bind('yubikey_post');
 
 $app->get('/login', 'Throttle\Home::login')
     ->bind('login');
@@ -239,6 +289,18 @@ $app->post('/symbols/submit', 'Throttle\Symbols::submit')
 $app->post('/submit', 'Throttle\Crash::submit')
     ->value('_format', 'txt');
 
+$app->get('/submit', function() use ($app) {
+    $icon = 'remove-sign';
+    $title = 'Method Not Allowed';
+    $comment = 'The Acclerator extension must be used to upload crash dumps.';
+
+    return $app['twig']->render('error.html.twig', array(
+        'icon' => $icon,
+        'title' => $title,
+        'comment' => $comment,
+    ));
+});
+
 $app->get('/dashboard/all/{offset}', function($offset) use ($app) {
     $userid = $app['request']->get('user', null);
     return $app->redirect($app['url_generator']->generate('dashboard', array('offset' => $offset, 'user' => $userid)));
@@ -250,6 +312,15 @@ $app->get('/dashboard/{offset}', 'Throttle\Crash::dashboard')
     ->assert('offset', '[0-9]+')
     ->value('offset', null)
     ->bind('dashboard');
+
+$app->get('/stats/today', 'Throttle\Stats::today')
+    ->bind('stats_today');
+
+$app->get('/stats/lifetime', 'Throttle\Stats::lifetime')
+    ->bind('stats_lifetime');
+
+$app->get('/stats/unique', 'Throttle\Stats::unique')
+    ->bind('stats_unique');
 
 $app->get('/stats/daily/{module}/{function}', 'Throttle\Stats::daily')
     ->value('module', null)
@@ -276,6 +347,12 @@ $app->get('/stats/{module}/{function}', 'Throttle\Stats::index')
     ->value('function', null)
     ->bind('stats');
 
+$app->post('/paddle_webhook', 'Throttle\Subscription::webhook')
+    ->bind('paddle_webhook');
+
+$app->get('/subscribe', 'Throttle\Subscription::subscribe')
+    ->bind('subscribe');
+
 $app->get('/{id}/download', 'Throttle\Crash::download')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('download');
@@ -299,6 +376,14 @@ $app->get('/{id}/console', 'Throttle\Crash::console')
 $app->get('/{id}/error', 'Throttle\Crash::error')
     ->assert('id', '[0-9a-zA-Z]{12}')
     ->bind('error');
+
+$app->get('/{id}/carburetor', 'Throttle\Crash::carburetor')
+    ->assert('id', '[0-9a-zA-Z]{12}')
+    ->bind('carburetor');
+
+$app->get('/{id}/carburetor/data', 'Throttle\Crash::carburetorData')
+    ->assert('id', '[0-9a-zA-Z]{12}')
+    ->bind('carburetor_data');
 
 $app->post('/{id}/reprocess', 'Throttle\Crash::reprocess')
     ->assert('id', '[0-9a-zA-Z]{12}')

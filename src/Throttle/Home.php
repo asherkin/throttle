@@ -6,6 +6,8 @@ use Silex\Application;
 
 class Home
 {
+    const SESSION_VERSION = 2;
+
     public function index(Application $app)
     {
         $id = $app['request']->query->get('id');
@@ -61,90 +63,17 @@ class Home
             return $app->redirect($errorReturnUrl);
         }
 
-        $id = preg_replace('/^http\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);
+        $id = preg_replace('/^https?\:\/\/steamcommunity\.com\/openid\/id\//', '', $app['openid']->identity);
 
-        $user = $app['db']->executeQuery('SELECT name, avatar FROM user WHERE id = ? LIMIT 1', array($id))->fetch();
-
-        if (!$user) {
-            $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($id));
-            $user = array('name' => null, 'avatar' => null);
-        }
+        $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($id));
 
         $app['session']->set('user', array(
+            'version' => self::SESSION_VERSION,
             'id' => $id,
-            'name' => $user['name'],
-            'avatar' => $user['avatar'],
-            'admin' => in_array($id, $app['config']['admins']),
         ));
 
         $returnUrl = $app['request']->get('return', $app['url_generator']->generate('dashboard'));
         return $app->redirect($returnUrl);
-    }
-
-    public function login_yubikey(Application $app)
-    {
-        if (!isset($app['yubikey'])) {
-            return $app->abort(404);
-        }
-
-        return $app['twig']->render('yubikey.html.twig', array(
-            'return' => $app['request']->get('return', null),
-            'errors' => $app['session']->getFlashBag()->get('error'),
-        ));
-    }
-
-    public function login_yubikey_post(Application $app)
-    {
-        if (!isset($app['yubikey'])) {
-            return $app->abort(404);
-        }
-
-        $otp = $app['request']->get('otp', null);
-        if ($otp === null) {
-            $app['session']->getFlashBag()->add('error', 'Missing OTP in request');
-
-            return $app->redirect($app['url_generator']->generate('yubikey', array(
-                'return' => $app['request']->get('return', null),
-            )));
-        }
-
-        //$app['session']->getFlashBag()->add('error', 'Failed to authenticate');
-
-        $response = false;
-        try {
-            $response = $app['yubikey']->check($otp);
-        } catch (\InvalidArgumentException $e) {
-            $app['session']->getFlashBag()->add('error', $e->getMessage());
-
-            return $app->redirect($app['url_generator']->generate('yubikey', array(
-                'return' => $app['request']->get('return', null),
-            )));
-        }
-
-        if ($response->success() !== true) {
-            $app['session']->getFlashBag()->add('error', 'YubiCloud rejected OTP');
-
-            return $app->redirect($app['url_generator']->generate('yubikey', array(
-                'return' => $app['request']->get('return', null),
-            )));
-        }
-
-        $user = substr($otp, 0, 12);
-        $userlen = strlen($user);
-        $userid = '';
-        $modhex = 'cbdefghijklnrtuv';
-        for ($i = 0; $i < $userlen; $i += 2) {
-            $high = strpos($modhex, $user[$i]);
-            $low = strpos($modhex, $user[$i + 1]);
-            $userid .= chr(($high << 4) | $low);
-        }
-        $userid = implode(':', str_split(bin2hex($userid), 2));
-
-        $app['session']->getFlashBag()->add('error', 'Authenticated as ' . $userid);
-
-        return $app->redirect($app['url_generator']->generate('yubikey', array(
-            'return' => $app['request']->get('return', null),
-        )));
     }
 
     public function logout(Application $app)

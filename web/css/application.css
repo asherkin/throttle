@@ -6,6 +6,10 @@ body {
     background-color: #F8F8F8;
 }
 
+.text-muted, h1 small, h2 small, h3 small, h4 small, h5 small, h6 small, .h1 small, .h2 small, .h3 small, .h4 small, .h5 small, .h6 small, .breadcrumb>.active {
+    color: #777;
+}
+
 .navbar-static-top {
     margin-bottom: 0;
 }
@@ -347,4 +351,187 @@ dl.dl-minidump div.alert {
 
 .alert-danger {
     color: #6D0000;
+}
+
+.munin-graphs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background-color: #f0f0f0;
+}
+
+.munin-graphs img:nth-child(odd) {
+    margin-left: auto;
+    margin-right: 5%;
+}
+
+.munin-graphs img:nth-child(even) {
+    margin-left: 5%;
+}
+
+.munin-graphs img:nth-child(n+3) {
+    margin-top: 5%;
+}
+
+.supporter-tag {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #dff0d8;
+    padding: 5px 7px;
+    border-bottom-left-radius: 4px;
+    border-left: 1px solid #d6e9c6;
+    border-bottom: 1px solid #d6e9c6;
+    color: #003C00;
+}
+
+a.supporter-tag {
+    color: #003C00;
+    text-decoration: none;
+}
+
+[class^="icon-"].icon-fixed-width, [class*=" icon-"].icon-fixed-width {
+    text-align: center;
+}
+
+.slider.slider-horizontal {
+    width: 100%;
+    height: 34px;
+}
+
+.slider-handle {
+    top: 7px;
+}
+
+.slider-selection {
+    background-image: -webkit-linear-gradient(top, #8ac1ef 0%, #82b3de 100%);
+    background-image: -o-linear-gradient(top, #8ac1ef 0%, #82b3de 100%);
+    background-image: linear-gradient(to bottom, #8ac1ef 0%, #82b3de 100%);
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff8ac1ef', endColorstr='#ff82b3de', GradientType=0);
+}
+
+.subscribe-inputs {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.subscribe-inputs > .price-container {
+    display: inline-block;
+    margin-bottom: 0;
+    font-weight: normal;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    border: 1px solid transparent;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.428571429;
+    border-radius: 4px;
+    color: #333;
+    background-color: #fff;
+    border-color: #ccc;
+}
+
+.subscribe-inputs > .slider-container {
+    display: inline-block;
+    margin: 0 10px 0 20px;
+    flex: 1;
+}
+
+.subscribe-inputs > .btn-group {
+    display: flex;
+    width: 100%;
+    margin-top: 10px;
+}
+
+@media (min-width: 1200px) {
+    .subscribe-inputs {
+        flex-wrap: nowrap;
+    }
+
+    .subscribe-inputs > .slider-container {
+        margin-right: 20px;
+    }
+
+    .subscribe-inputs > .btn-group {
+        width: auto;
+        margin-top: 0;
+    }
+}
+
+.table>tbody:first-child>tr:first-child>td, .table>tbody:first-child>tr:first-child>th {
+    border-top: none;
+}
+
+.table-log>tbody>tr>td {
+    font-family: Consolas, Lucida Console, monospace;
+    white-space: pre-wrap;
+}
+
+.table-log>tbody>tr:not(:first-child)>td, .table-log>tbody>tr:not(:first-child)>th {
+    padding-top: 0;
+    border-top: none;
+}
+
+.table-log>tbody>tr:not(:last-child)>td, .table-log>tbody>tr:not(:last-child)>th {
+    padding-bottom: 0;
+}
+
+.stats-graph-title small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.5em;
+}
+
+@media (min-width: 768px) {
+    .stats-graph-title {
+        position: relative;
+    }
+    .stats-graph-title small {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+    }
+}
+
+.crash-count {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    color: #777;
+    text-align: center;
+}
+
+.crash-count span {
+    font-size: 3em;
+    display: block;
+    color: #333;
+    line-height: 1.1;
+    font-weight: 500;
+}
+
+@media(min-width: 992px) {
+    .col-md-push-1-5 {
+        left: 12.5%
+    }
+}
+
+.nav-tabs {
+    margin: 0 15px;
+    border-bottom: none;
+}
+
+.nav-tabs>li.active>a, .nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus {
+    border-color: #ccc;
+    border-bottom-color: transparent;
+}
+
+.nav-tabs>li>a:hover {
+    border-bottom-color: #ccc;
+}
+
+pre.tab-pane {
+    margin-top: 0;
+    word-break: break-word;
+    white-space: pre;
+    overflow-y: auto;
 }

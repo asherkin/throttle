@@ -29,8 +29,11 @@ return array_merge($base, array(
     'trusted-proxies' => array(),
 
     'admins' => array(),
+    'developers' => array(),
 
     'apikey' => false,
     'accelerator' => false,
+
+    'show-version' => true,
 ));
 

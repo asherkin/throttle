@@ -26,11 +26,26 @@ class Crash
     {
         //TODO
         //return $app->abort(503);
+        //return 'Sorry, crash submission is currently disabled';
+
+        try {
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+            $redis->hIncrBy('throttle:stats', 'crashes:submitted', 1);
+            $redis->close();
+        } catch (\Exception $e) {}
 
         $minidump = $app['request']->files->get('upload_file_minidump');
 
         if ($minidump === null || !$minidump->isValid() || $minidump->getClientSize() <= 0) {
-            return $app->abort(400);
+            try {
+                $redis = new \Redis();
+                $redis->pconnect('127.0.0.1', 6379, 1);
+                $redis->hIncrBy('throttle:stats', 'crashes:rejected:no-minidump', 1);
+                $redis->close();
+            } catch (\Exception $e) {}
+
+            return $app['twig']->render('submit-empty.txt.twig');
         }
 
         list($id, $path) = $this->generateId($app['root']);
@@ -47,6 +62,11 @@ class Crash
                 $owner = explode(':', $owner);
                 $owner = ($owner[2] << 1) | $owner[1];
                 $owner = gmp_add('76561197960265728', $owner);
+            } /* else if (gmp_cmp($owner, '0xFFFFFFFF') < 0) {
+                $owner = gmp_add('76561197960265728', $owner);
+            } */ else if (gmp_cmp(gmp_and($owner, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
+                $app['monolog']->warning('Bad owner provided in submit', array('id' => $id, 'owner' => $owner));
+                $owner = null;
             }
 
             if ($owner !== null) {
@@ -62,43 +82,97 @@ class Crash
         $count = 0;
 
         if ($owner !== null) {
-            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner = ? AND ip = INET_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($owner, $ip))->fetchColumn(0);
+            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner = ? AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($owner, $ip))->fetchColumn(0);
         } else {
-            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner IS NULL AND ip = INET_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($ip))->fetchColumn(0);
+            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner IS NULL AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($ip))->fetchColumn(0);
         }
 
         if ($count > 0) {
+            try {
+                $redis = new \Redis();
+                $redis->pconnect('127.0.0.1', 6379, 1);
+                $redis->hIncrBy('throttle:stats', 'crashes:rejected:no-steam', 1);
+                $redis->close();
+            } catch (\Exception $e) {}
+
             return $app['twig']->render('submit-nosteam.txt.twig');
         }
 
         if ($owner !== null) {
-            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner = ? AND ip = INET_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($owner, $ip))->fetchColumn(0);
+            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner = ? AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($owner, $ip))->fetchColumn(0);
         } else {
-            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner IS NULL AND ip = INET_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($ip))->fetchColumn(0);
+            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner IS NULL AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($ip))->fetchColumn(0);
         }
 
-        if ($count > 6) {
+        if ($count > 12) {
+            try {
+                $redis = new \Redis();
+                $redis->pconnect('127.0.0.1', 6379, 1);
+                $redis->hIncrBy('throttle:stats', 'crashes:rejected:rate-limit', 1);
+                $redis->close();
+            } catch (\Exception $e) {}
+
             return $app['twig']->render('submit-reject.txt.twig');
         }
 
-        $metadata = json_encode($app['request']->request->all());
+        $metadata = $app['request']->request->all();
 
-        $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, server) VALUES (?, NOW(), INET_ATON(?), ?, ?, ?)', array($id, $ip, $owner, $metadata, $server));
+        $raw_metadata = null;
+        $metadata_file = $app['request']->files->get('upload_file_metadata');
+        if ($metadata_file !== null && $metadata_file->isValid() && $metadata_file->getClientSize() > 0) {
+            $raw_metadata = \Filesystem::readFile($metadata_file->getRealPath());
 
-	// Move after it's in the DB, to avoid a race condition with the cleanup code.
+            $has_config = preg_match('/(?<=-------- CONFIG BEGIN --------)[^\\x00]+(?=-------- CONFIG END --------)/i', $raw_metadata, $metadata_config);
+            if ($has_config === 1) {
+                $metadata_config = trim($metadata_config[0]);
+                $metadata_config = phutil_split_lines($metadata_config, false);
+
+                // Merge with the existing metadata, overwrite existing.
+                foreach ($metadata_config as $line) {
+                    list($key, $value) = array_pad(explode('=', $line, 2), 2, '');
+
+                    $key = trim($key);
+                    $value = trim($value);
+
+                    if (strlen($value)) {
+                        $metadata[$key] = $value;
+                    }
+                }
+            }
+
+            $has_console = strpos($raw_metadata, '-------- CONSOLE HISTORY BEGIN --------');
+            if ($has_console !== false) {
+                $metadata['HasConsoleLog'] = true;
+            }
+        }
+
+        $command_line = null;
+        if (isset($metadata['CommandLine'])) {
+            $command_line = $metadata['CommandLine'];
+            unset($metadata['CommandLine']);
+        }
+
+        $metadata = json_encode($metadata);
+
+        $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, cmdline, server) VALUES (?, NOW(), INET6_ATON(?), ?, ?, ?, ?)', array($id, $ip, $owner, $metadata, $command_line, $server));
+
+        // Move after it's in the DB, to avoid a race condition with the cleanup code.
         \Filesystem::createDirectory($path, 0755, true);
         $minidump->move($path, $id . '.dmp');
 
-        $metadata = $app['request']->files->get('upload_file_metadata');
-    
-        if ($metadata !== null && $metadata->isValid() && $metadata->getClientSize() > 0) {
-            $metadata->move($path, $id . '.meta.txt');
-
-            $metapath = $path . '/' . $id . '.meta.txt';
-            \Filesystem::writeFile($metapath . '.gz', gzencode(\Filesystem::readFile($metapath)));
-            \Filesystem::remove($metapath);
+        if ($raw_metadata) {
+            $metapath = $path . '/' . $id . '.meta.txt.gz';
+            \Filesystem::writeFile($metapath, gzencode($raw_metadata));
         }
 
+        try {
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+            $redis->hIncrBy('throttle:stats', 'crashes:accepted', 1);
+            $redis->close();
+        } catch (\Exception $e) {}
+
+/*
         try {
             $app['queue']->putInTube('carburetor', json_encode(array(
                 'id' => $id,
@@ -106,6 +180,7 @@ class Crash
                 'ip' => $ip,
             )));
         } catch (\Exception $e) {}
+*/
 
         // Special code for handling breakpad-uploaded minidumps.
         // FIXME: This is mainly a hack for testing Electron.
@@ -133,7 +208,7 @@ class Crash
 
     public function details(Application $app, $id)
     {
-        $crash = $app['db']->executeQuery('SELECT id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, INET_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash FROM crash WHERE id = ?', array($id))->fetch();
+        $crash = $app['db']->executeQuery('SELECT id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash FROM crash WHERE id = ?', array($id))->fetch();
 
         if (empty($crash)) {
             if ($app['session']->getFlashBag()->get('internal')) {
@@ -147,10 +222,23 @@ class Crash
 
         $crash['metadata'] = json_decode($crash['metadata'], true);
 
+        if (isset($crash['metadata']['HasConsoleLog'])) {
+            $crash['has_console_log'] = $crash['metadata']['HasConsoleLog'];
+            unset($crash['metadata']['HasConsoleLog']);
+        } else {
+            $crash['has_console_log'] = false;
+        }
+
+        if (isset($crash['metadata']['ExtensionBuild'])) {
+            unset($crash['metadata']['ExtensionBuild']);
+        }
+
+        ksort($crash['metadata']);
+
         $notices = $app['db']->executeQuery('SELECT severity, text FROM crashnotice JOIN notice ON notice.id = crashnotice.notice WHERE crash = ?', array($id))->fetchAll();
         $stack = $app['db']->executeQuery('SELECT frame, rendered, url FROM frame WHERE crash = ? AND thread = ? ORDER BY frame', array($id, $crash['thread']))->fetchAll();
         $modules = $app['db']->executeQuery('SELECT name, identifier, processed, present, HEX(base) AS base FROM module WHERE crash = ? ORDER BY name', array($id))->fetchAll();
-	$stats = $app['db']->executeQuery('SELECT COUNT(DISTINCT crash.owner) AS owners, COUNT(DISTINCT crash.ip) AS ips, COUNT(*) AS crashes FROM crash, (SELECT owner, stackhash FROM crash WHERE id = ?) AS this WHERE this.stackhash = crash.stackhash', array($id))->fetch();
+        $stats = $app['db']->executeQuery('SELECT COUNT(DISTINCT crash.owner) AS owners, COUNT(DISTINCT crash.ip) AS ips, COUNT(*) AS crashes FROM crash, (SELECT owner, stackhash FROM crash WHERE id = ?) AS this WHERE this.stackhash = crash.stackhash', array($id))->fetch();
 
         return $app['twig']->render('details.html.twig', array(
             'crash' => $crash,
@@ -165,16 +253,17 @@ class Crash
 
     public function download(Application $app, $id)
     {
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+        if ($app['user'] === null) {
+            $app->abort(401);
+        }
 
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
         if (!file_exists($path)) {
             $app->abort(404);
         }
 
-        $user = $app['session']->get('user');
         $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetchColumn(0);
-
-        if ($user === null || (!$user['admin'] && $user['id'] !== $owner)) {
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner) {
             $app->abort(403);
         }
 
@@ -183,30 +272,34 @@ class Crash
 
     public function view(Application $app, $id)
     {
-        $user = $app['session']->get('user');
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+        if ($app['user'] === null) {
+            $app->abort(401);
+        }
 
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
         if ($owner === false) {
             $app->abort(404);
         }
 
-        if ($user === null || (!$user['admin'] && $user['id'] !== $owner['owner'])) {
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
             $app->abort(403);
         }
 
-        return $app['twig']->render('view.html.twig');
+        return $app['twig']->render('view.html.twig', array('id' => $id));
     }
 
     public function logs(Application $app, $id)
     {
-        $user = $app['session']->get('user');
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+        if ($app['user'] === null) {
+            $app->abort(401);
+        }
 
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
         if ($owner === false) {
             $app->abort(404);
         }
 
-        if ($user === null || (!$user['admin'] && $user['id'] !== $owner['owner'])) {
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
             $app->abort(403);
         }
 
@@ -219,19 +312,21 @@ class Crash
             $logs = \Filesystem::readFile($path);
         }
 
-        return $app['twig']->render('logs.html.twig', array('logs' => $logs));
+        return $app['twig']->render('logs.html.twig', array('id' => $id, 'logs' => $logs));
     }
 
     public function metadata(Application $app, $id)
     {
-        $user = $app['session']->get('user');
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+        if ($app['user'] === null) {
+            $app->abort(401);
+        }
 
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
         if ($owner === false) {
             $app->abort(404);
         }
 
-        if ($user === null || (!$user['admin'] && $user['id'] !== $owner['owner'])) {
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
             $app->abort(403);
         }
 
@@ -244,19 +339,21 @@ class Crash
             $logs = \Filesystem::readFile($path);
         }
 
-        return $app['twig']->render('logs.html.twig', array('logs' => $logs));
+        return $app['twig']->render('logs.html.twig', array('id' => $id, 'logs' => $logs));
     }
 
     public function console(Application $app, $id)
     {
-        $user = $app['session']->get('user');
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+        if ($app['user'] === null) {
+            $app->abort(401);
+        }
 
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
         if ($owner === false) {
             $app->abort(404);
         }
 
-        if ($user === null || (!$user['admin'] && $user['id'] !== $owner['owner'])) {
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
             $app->abort(403);
         }
 
@@ -281,27 +378,26 @@ class Crash
         $console = str_replace("\r\n", PHP_EOL, $console); // Normalize line endings.
 
         // Split the console output into individual prints.
-        preg_match_all('/(\\d+)\\((\\d+\\.?\\d*)\\):  ([^\\x00]*?)(?=(?:\\d+\\(\\d+\\.\\d+\\):  )|$)/', $console, $console);
+        preg_match_all('/(\\d+)\\((\\d+\\.?\\d*)\\):  ([^\\x00]*?)(?=(?:\\d+\\(\\d+\\.\\d+\\):  )|$)/', $console, $console, PREG_SET_ORDER);
 
-        $console = $console[3]; // Get just the text output.
-        $console[] = array_pop($console) . PHP_EOL; // Add the missing newline to the last entry.
-        $console = array_reverse($console); // Flip them back into the correct order.
-        $console = implode('', $console); // Join them together again into one string.
+        $console = array_reverse($console); // Flip them back into chronological order.
 
-        return $app['twig']->render('logs.html.twig', array('logs' => $console));
+        return $app['twig']->render('console.html.twig', array('id' => $id, 'console' => $console));
     }
 
     public function error(Application $app, $id)
     {
-        $query = $app['db']->executeQuery('SELECT owner, thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetch();
+        if ($app['user'] === null) {
+            $app->abort(401);
+        }
 
+        $query = $app['db']->executeQuery('SELECT owner, thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetch();
         if ($query === false) {
             $app->abort(404);
         }
 
-        $user = $app['session']->get('user');
         $owner = $query['owner'];
-        if ($user === null || (!$user['admin'] && $user['id'] !== $owner)) {
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner) {
             $app->abort(403);
         }
 
@@ -369,62 +465,118 @@ class Crash
 
         $output['error_string'] = $error_string = substr($minidump, $string_start, $string_length);
 
+        // Remove non-ASCII chars, this needs a cleanup, but just fix the errors while encoding UTF-8 for now.
+        $error_string = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '?', $error_string);
+
         return $app->json(array('string' => $error_string));
+    }
+
+    public function carburetor(Application $app, $id)
+    {
+        if ($app['user'] === null) {
+            $app->abort(401);
+        }
+
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+        if ($owner === false) {
+            $app->abort(404);
+        }
+
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
+            $app->abort(403);
+        }
+
+        return $app['twig']->render('carburetor.html.twig', array('id' => $id));
+    }
+
+    public function carburetorData(Application $app, $id)
+    {
+        if ($app['user'] === null) {
+            $app->abort(401);
+        }
+
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
+        if ($owner === false) {
+            $app->abort(404);
+        }
+
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
+            $app->abort(403);
+        }
+
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+
+        list($stdout, $stderr) = execx($app['root'].'/bin/carburetor %s %s', $app['root'].'/app/carburetor-config.json', $path);
+
+        return new \Symfony\Component\HttpFoundation\Response($stdout, 200, array(
+            'Content-Type' => 'application/json',
+        ));
     }
 
     public function reprocess(Application $app, $id)
     {
-        $user = $app['session']->get('user');
-
-        if ($user && $user['admin']) {
-            $app['db']->transactional(function($db) use ($id) {
-                $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
-                $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
-                $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
-
-                $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', array($id));
-            });
+        if ($app['user'] === null) {
+            $app->abort(401);
         }
+
+        if (!$app['user']['admin']) {
+            $app->abort(403);
+        }
+
+        $app['db']->transactional(function($db) use ($id) {
+            $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
+            $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
+            $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
+
+            $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', array($id));
+        });
 
         $return = $app['request']->get('return', null);
-        if ($return) {
-            return $app->redirect($return);
+        if (!$return) {
+            $return = $app['url_generator']->generate('dashboard');
         }
 
-        return $app->redirect($app['url_generator']->generate('dashboard'));
+        return $app->redirect($return);
     }
 
     public function delete(Application $app, $id)
     {
-        $user = $app['session']->get('user');
-
-        if ($user && $user['admin']) {
-            $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
-
-            $app['db']->transactional(function($db) use ($id, $path) {
-                \Filesystem::remove($path);
-
-                $db->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
-            });
+        if ($app['user'] === null) {
+            $app->abort(401);
         }
+
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+        if (!file_exists($path)) {
+            $app->abort(404);
+        }
+
+        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetchColumn(0);
+        if (!$app['user']['admin'] && $app['user']['id'] !== $owner) {
+            $app->abort(403);
+        }
+
+        $app['db']->transactional(function($db) use ($id, $path) {
+            $db->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
+
+            // Let the clean up catch these.
+            //\Filesystem::remove($path);
+        });
 
         $return = $app['request']->get('return', null);
-        if ($return) {
-            return $app->redirect($return);
+        if (!$return) {
+            $return = $app['url_generator']->generate('dashboard');
         }
 
-        return $app->redirect($app['url_generator']->generate('dashboard'));
+        return $app->redirect($return);
     }
 
     public function dashboard(Application $app, $offset)
     {
-        $user = $app['session']->get('user');
-
-        if (!$user || !$user['id']) {
-            return $app->redirect($app['url_generator']->generate('login', array('return' => $app['request']->getPathInfo())));
+        if ($app['user'] === null) {
+            $app->abort(401);
         }
 
-        $userid = $user['admin'] ? $app['request']->get('user', null) : $user['id'];
+        $userid = $app['user']['admin'] ? $app['request']->get('user', null) : $app['user']['id'];
 
         $where = '';
         $params = array();
@@ -450,7 +602,7 @@ class Crash
         $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 20', $params)->fetchAll();
 
         return $app['twig']->render('dashboard.html.twig', array(
-            'userid' => ($user['admin'] ? $app['request']->get('user', null) : null),
+            'userid' => ($app['user']['admin'] ? $app['request']->get('user', null) : null),
             'offset' => $offset,
             'crashes' => $crashes,
         ));

@@ -6,6 +6,9 @@ use Silex\Application;
 
 class Stats
 {
+    const METRIC_LAST_24 = 'submitted.submitted';
+    const METRIC_GRAPH = 'submitted.submitted';
+
     public function index(Application $app, $module = null, $function = null)
     {
         return $app['twig']->render('stats.html.twig', array(
@@ -14,8 +17,94 @@ class Stats
         ));
     }
 
+    public function today(Application $app)
+    {
+        $metric = self::METRIC_LAST_24;
+        $key = 'throttle.rrd.today'.$metric;
+        $data = \apcu_fetch($key);
+        if ($data === false) {
+            $historical = self::getRawRrdData('-24hours', 300, $metric);
+            $historical = array_reduce($historical, function ($r, $d) {
+                return $r + $d[1];
+            }, 0);
+
+/*
+            $lukey = 'throttle.rrd.submitted.submitted.lastupdate';
+            $last = \apcu_fetch($lukey);
+            if ($last === false) {
+                list($last,) = \execx('/usr/bin/rrdtool lastupdate %s', '/var/lib/munin/fennec/fennec-throttle_submitted-submitted-d.rrd');
+                $last = \phutil_split_lines($last);
+                $last = array_pop($last);
+                $last = explode(':', $last, 2);
+                $last = trim(array_pop($last));
+                \apcu_add($lukey, $last, 300);
+            }
+
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+            $live = $redis->hGet('throttle:stats', 'crashes:submitted');
+            $redis->close();
+
+            $data = round($historical + ($live - $last));
+            \apcu_add($key, $data, 10);
+*/
+            
+            $data = round($historical);
+            \apcu_add($key, $data, 300);
+        }
+
+        return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
+            'Content-Type' => 'text/plain',
+            'Access-Control-Allow-Origin' => '*',
+        ));
+    }
+
+    public function lifetime(Application $app)
+    {
+        $key = 'throttle.rrd.lifetime';
+        $data = \apcu_fetch($key);
+        if ($data === false) {
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+            $data = $redis->hGet('throttle:stats', 'crashes:submitted');
+            $redis->close();
+
+            \apcu_add($key, $data, 10);
+        }
+
+        return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
+            'Content-Type' => 'text/plain',
+            'Access-Control-Allow-Origin' => '*',
+        ));
+    }
+
+    public function unique(Application $app)
+    {
+        $key = 'throttle.rrd.unique';
+        $data = \apcu_fetch($key);
+        if ($data === false) {
+            $query = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM (SELECT DISTINCT cmdline FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOUR)) AS _');
+            $data = $query->fetchColumn(0);
+
+            \apcu_add($key, $data, 10);
+        }
+
+        return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
+            'Content-Type' => 'text/plain',
+            'Access-Control-Allow-Origin' => '*',
+        ));
+    }
+
     public function daily(Application $app, $module = null, $function = null)
     {
+        if ($module === null && $function === null) {
+            $output = self::getCsvRrdData('-90days', 86400, self::METRIC_GRAPH);
+            return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
+                'Content-Type' => 'text/csv',
+                'Access-Control-Allow-Origin' => '*',
+            ));
+        }
+
         $query = null;
 
         if ($function !== null) {
@@ -39,7 +128,7 @@ class Stats
             $data[$row['date']] = $row['count'];
         }
 
-        $output = 'Date,Count'.PHP_EOL;
+        $output = 'Date,Crash Reports'.PHP_EOL;
         for($i = 89; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime('-'.$i.' days'));
             $count = array_key_exists($date, $data) ? $data[$date] : 0;
@@ -54,6 +143,14 @@ class Stats
 
     public function hourly(Application $app, $module = null, $function = null)
     {
+        if ($module === null && $function === null) {
+            $output = self::getCsvRrdData('-7days', 3600, self::METRIC_GRAPH);
+            return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
+                'Content-Type' => 'text/csv',
+                'Access-Control-Allow-Origin' => '*',
+            ));
+        }
+
         $query = null;
 
         if ($function !== null) {
@@ -77,7 +174,7 @@ class Stats
             $data[$row['date'].'-'.$row['hour']] = $row['count'];
         }
 
-        $output = 'Date,Count'.PHP_EOL;
+        $output = 'Date,Crash Reports'.PHP_EOL;
         for($i = 167; $i >= 0; $i--) {
             $date = date('Y-m-d-G', strtotime('-'.$i.' hours'));
             $count = array_key_exists($date, $data) ? $data[$date] : 0;
@@ -181,5 +278,76 @@ class Stats
         ));
     }
 
+    private static function getRawRrdData($start, $step, $metric)
+    {
+        $key = 'throttle.rrd.'.$metric.'.'.$start.'.'.$step;
+        $data = \apcu_fetch($key);
+        if ($data !== false) {
+            return $data;
+        }
+
+        $metric = str_replace('.', '-', $metric);
+        list($data,) = \execx('/usr/bin/rrdtool graph - --start %s --step %d --imgformat CSV %s %s', $start, $step, 'DEF:value=/var/lib/munin/fennec/fennec-throttle_'.$metric.'-d.rrd:42:AVERAGE', 'LINE1:value#000000:value');
+        $data = \phutil_split_lines($data);
+        array_shift($data);
+        $data = array_map(function($d) use ($step) {
+            $d = str_getcsv($d);
+            $d[0] = ((int)$d[0]) - $step;
+            $d[1] = round(((float)$d[1]) * $step);
+            return $d;
+        }, $data);
+
+        \apcu_add($key, $data, 300);
+        return $data;
+    }
+
+    private static function getRrdData($start, $step, $metric)
+    {
+        $data = self::getRawRrdData($start, $step, $metric);
+        if (!empty($data)) {
+            $last_stamp = end($data)[0] + $step;
+
+            // TODO: Iteratively step down the periods, required for more than one day.
+            $last_period = self::getRawRrdData($last_stamp, 300, $metric);
+            $last_period = array_reduce($last_period, function($r, $d) {
+                return $r + $d[1];
+            }, 0);
+
+            $data[] = [
+                $last_stamp,
+                round($last_period),
+            ];
+        }
+        return $data;
+    }
+
+    private static function getCsvRrdData($start, $step, $metric)
+    {
+        $key = 'throttle.rrd.'.$metric.'.'.$start.'.'.$step.'.csv';
+        $data = \apcu_fetch($key);
+        if ($data !== false) {
+            return $data;
+        }
+
+        $date_format = 'Y-m-d-H-i-s';
+        if ($step >= 86400) {
+            $date_format = 'Y-m-d';
+        } else if ($step >= 3600) {
+            $date_format = 'Y-m-d-H';
+        } else if ($step >= 60) {
+            $date_format = 'Y-m-d-H-i';
+        }
+
+        $data = self::getRrdData($start, $step, $metric);
+        $data = array_map(function($d) use ($date_format) {
+            $date = gmdate($date_format, $d[0]);
+            return $date.','.$d[1];
+        }, $data);
+        array_unshift($data, 'Date,Crash Reports');
+        $data = implode(PHP_EOL, $data).PHP_EOL;
+
+        \apcu_add($key, $data, 300);
+        return $data;
+    }
 }
 

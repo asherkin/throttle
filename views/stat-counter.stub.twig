@@ -1,0 +1,50 @@
+<script type="text/javascript">
+function bindLiveCounter(counter, url, interval) {
+  var current = 0;
+  var target = 0;
+  var animating = false;
+
+  function animateCounter() {
+    if (current === target) {
+        animating = false;
+        return;
+    }
+
+    var velocity = target - current;
+    velocity = velocity / 50;
+    velocity = +Number(velocity).toFixed(2);
+    velocity = velocity * 5;
+    if (velocity === 0) {
+      velocity = (target >= current) ? 0.05 : -0.05;
+    }
+
+    current += velocity;
+    if ((velocity > 0 && current > target) || (velocity < 0 && current < target)) {
+      current = target;
+    }
+
+    var display = current;
+    display = +Number(display).toFixed(0);
+    display = Number(display).toLocaleString();
+    counter.text(display);
+
+    animating = true;
+    requestAnimationFrame(animateCounter);
+  }
+
+  function updateCounter() {
+    $.get(url+'?d='+Date.now(), function(count) {
+      target = +count;
+
+      if (animating) {
+        return;
+      }
+
+      animateCounter();
+    });
+  }
+
+  updateCounter();
+  setInterval(updateCounter, interval * 1000);
+}
+</script>

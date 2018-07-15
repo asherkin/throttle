@@ -1,0 +1,23 @@
+{% extends 'layout.html.twig' %}
+ 
+{% block content %}
+<div class="clearfix" style="margin-bottom: 20px;">
+    <a class="btn btn-default pull-left" href="{{ path('details', {'id': id}) }}"><i class="icon-chevron-left"></i> Back to Details</a>
+</div>
+<div class="well well-tight">
+  <table class="table table-log">
+{% for line in console %}
+    <tr>
+      <td class="text-right">{{ line[1]|trim }}</td>
+      <td class="text-right">{{ line[2]|trim }}</td>
+      <td>{{ line[3]|trim }}</td>
+    </tr>
+{% else %}
+    <tr class="danger">
+      <th>Console output is unavailable for this crash.</th>
+    </tr>
+{% endfor %}
+  </table>
+</div>
+{% endblock %}
+

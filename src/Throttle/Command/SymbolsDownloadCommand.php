@@ -23,6 +23,12 @@ class SymbolsDownloadCommand extends Command
                 'identifier',
                 InputArgument::OPTIONAL,
                 'Module Identifier'
+            )
+            ->addOption(
+                'limit',
+                'l',
+                InputOption::VALUE_REQUIRED,
+                'Limit'
             );
     }
 
@@ -32,6 +38,12 @@ class SymbolsDownloadCommand extends Command
 
         if (\Filesystem::resolveBinary('wine') === null || \Filesystem::resolveBinary('cabextract') === null) {
             throw new \RuntimeException('\'wine\' and \'cabextract\' need to be available in your PATH to use this command');
+        }
+
+        $limit = $input->getOption('limit');
+
+        if ($limit !== null && !ctype_digit($limit)) {
+            throw new \InvalidArgumentException('\'limit\' must be an integer');
         }
 
         // Initialize the wine environment.
@@ -50,19 +62,66 @@ class SymbolsDownloadCommand extends Command
             $modules[] = Array('name' => $manualName, 'identifier' => $manualIdentifier);
         } else {
             // Find all Windows modules missing symbols
-            $modules = $app['db']->executeQuery('SELECT DISTINCT name, identifier FROM module WHERE name LIKE \'%.pdb\' AND present = 0')->fetchAll();
+            $query = 'SELECT DISTINCT name, identifier FROM module WHERE name LIKE \'%.pdb\' AND present = 0';
+
+            if ($limit !== null) {
+                $query .= ' LIMIT ' . $limit;
+            }
+
+            $modules = $app['db']->executeQuery($query)->fetchAll();
         }
+
+        $blacklist = null;
+
+        try {
+            // Upload the caches to redis to use for the next run.
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+
+            $blacklistJson = $redis->get('throttle:cache:blacklist');
+
+            if ($blacklistJson) {
+                $blacklist = json_decode($blacklistJson, true);
+            }
+
+            $redis->close();
+        } catch (\Exception $e) {}
+
+        if (!$blacklist) {
+            $blacklist = array();
+        }
+
+        $output->writeln('Loaded ' . count($blacklist) . ' blacklist entries');
+
+        $count = count($modules);
+        $output->writeln('Found ' . $count . ' missing symbols');
 
         // Prepare HTTPSFutures for downloading compressed PDBs.
         $futures = array();
         foreach ($modules as $key => $module) {
-            $compressedName = substr($module['name'], 0, -1) . '_';
-            $futures[$key] = id(new \HTTPSFuture('http://msdl.microsoft.com/download/symbols/' . urlencode($module['name']) . '/' . $module['identifier'] . '/' . urlencode($compressedName)))
-                ->addHeader('User-Agent', 'Microsoft-Symbol-Server')->setFollowLocation(false)->setExpectStatus(array(302, 404));
+            $name = $module['name'];
+            $identifier = $module['identifier'];
+
+            if (isset($blacklist[$name])) {
+                if ($blacklist[$name]['_total'] >= 9) {
+                    continue;
+                }
+
+                if (isset($blacklist[$name][$identifier])) {
+                    if ($blacklist[$name][$identifier] >= 3) {
+                        continue;
+                    }
+                }
+            }
+
+            $compressedName = substr($name, 0, -1) . '_';
+            $futures[$key] = id(new \HTTPSFuture('http://msdl.microsoft.com/download/symbols/' . urlencode($name) . '/' . $identifier . '/' . urlencode($compressedName)))
+                ->addHeader('User-Agent', 'Microsoft-Symbol-Server')->setFollowLocation(false)->setExpectStatus(array(200, 302, 404));
         }
 
-        $count = count($modules);
-        $output->writeln('Found ' . $count . ' missing symbols');
+        $downloaded = 0;
+        $count = count($futures);
+        $output->writeln('Downloading ' . $count . ' missing symbols');
 
         if ($count === 0) {
             return;
@@ -83,52 +142,112 @@ class SymbolsDownloadCommand extends Command
                 throw $status;
             }
 
+            $module = $modules[$key];
+
+            $name = $module['name'];
+            $identifier = $module['identifier'];
+
             if ($status instanceof \HTTPFutureHTTPResponseStatus && $status->getStatusCode() === 404) {
+                //$output->writeln('');
+                //$output->writeln(json_encode($module));
+
+                if (!isset($blacklist[$name])) {
+                    $blacklist[$name] = [
+                        '_total' => 1,
+                        $identifier => 1,
+                    ];
+                } else {
+                    $blacklist[$name]['_total'] += 1;
+
+                    if (!isset($blacklist[$name][$identifier])) {
+                        $blacklist[$name][$identifier] = 1;
+                    } else {
+                        $blacklist[$name][$identifier] += 1;
+                    }
+                }
+
                 $progress->advance();
                 continue;
             }
 
-            $module = $modules[$key];
-            $prefix = $cache . '/' . $module['name'] . '-' . $module['identifier'];
-            $compressedName = substr($module['name'], 0, -1) . '_';
+            // Reset the total on any successful download.
+            if (isset($blacklist[$name])) {
+                $blacklist[$name]['_total'] = 0;
+            }
+
+            $prefix = $cache . '/' . $name . '-' . $identifier;
+            $compressedName = substr($name, 0, -1) . '_';
 
             // Write the compressed PDB.
             \Filesystem::createDirectory($prefix, 0777, true);
             \Filesystem::writeFile($prefix . '/' . $compressedName, $body);
 
             // Unpack it and removed the compressed copy.
-            execx('cabextract -p %s > %s', $prefix . '/' . $compressedName, $prefix . '/' . $module['name']);
+            execx('cabextract -p %s > %s', $prefix . '/' . $compressedName, $prefix . '/' . $name);
             \Filesystem::remove($prefix . '/' . $compressedName);
 
             // Finally, dump the symbols.
-            $symfile = substr($module['name'], 0, -3) . 'sym.gz';
-            $symdir = \Filesystem::createDirectory($app['root'] . '/symbols/microsoft/' . $module['name'] . '/' . $module['identifier'], 0755, true);
+            $symfile = substr($name, 0, -3) . 'sym.gz';
+            $symdir = \Filesystem::createDirectory($app['root'] . '/symbols/microsoft/' . $name . '/' . $identifier, 0755, true);
             
             $failed = false;
             try {
                 execx('WINEPREFIX=%s WINEDEBUG=-all wine %s %s | gzip > %s',
-                    $app['root'] . '/.wine', $app['root'] . '/bin/dump_syms.exe', $prefix . '/' . $module['name'], $symdir . '/' . $symfile);
+                    $app['root'] . '/.wine', $app['root'] . '/bin/dump_syms.exe', $prefix . '/' . $name, $symdir . '/' . $symfile);
+
+                $downloaded += 1;
             } catch (\CommandException $e) {
                 $failed = true;
-                $output->writeln("\r" . 'Failed to process: ' . $module['name'] . ' ' . $module['identifier']);
+                $output->writeln("\r" . 'Failed to process: ' . $name . ' ' . $identifier);
 
                 // While a bit messy, we need to delete the orphan symbol file to stop it being marked as present.
                 \Filesystem::remove($symdir . '/' . $symfile);
             }
 
             // Delete the PDB and the working dir.
-            \Filesystem::remove($prefix . '/' . $module['name']);
+            \Filesystem::remove($prefix . '/' . $name);
             \Filesystem::remove($prefix);
 
             // And finally mark the module as having symbols present.
-            $app['db']->executeUpdate('UPDATE module SET present = ? WHERE name = ? AND identifier = ?', array(!$failed, $module['name'], $module['identifier']));
+            $app['db']->executeUpdate('UPDATE module SET present = ? WHERE name = ? AND identifier = ?', array(!$failed, $name, $identifier));
 
             $progress->advance();
         }
 
+        try {
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+
+            $redis->set('throttle:cache:blacklist', json_encode($blacklist));
+
+            $redis->close();
+        } catch (\Exception $e) {}
+
         $progress->finish();
 
         \Filesystem::remove($cache);
+
+        if ($downloaded <= 0) {
+            return;
+        }
+
+        $output->writeln('Waiting for processing lock...');
+
+        $lock = \PhutilFileLock::newForPath($app['root'] . '/cache/process.lck');
+        $lock->lock(300);
+
+        try {
+            $redis = new \Redis();
+            $redis->pconnect('127.0.0.1', 6379, 1);
+
+            $redis->del('throttle:cache:symbol');
+
+            $redis->close();
+        } catch (\Exception $e) {}
+
+        $output->writeln('Flushed symbol cache');
+
+        $lock->unlock();
     }
 }
 

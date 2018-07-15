@@ -1,6 +1,9 @@
 {% extends 'layout.html.twig' %}
  
 {% block content %}
+<div class="clearfix" style="margin-bottom: 20px;">
+    <a class="btn btn-default pull-left" href="{{ path('details', {'id': id}) }}"><i class="icon-chevron-left"></i> Back to Details</a>
+</div>
 {% if logs is not empty %}
 <div><pre>{{ logs }}</pre></div>
 {% else %}

@@ -1,11 +1,25 @@
 {% extends 'layout.html.twig' %}
 
+{% set supports_mobile = true %}
+
 {% block content %}
+{% if maintenance_message is not empty %}
 <div class="row">
     <div class="col-sm-8 col-sm-push-2 col-md-6 col-md-push-3">
-{% if maintenance_message is not empty %}
         <div class="alert alert-block alert-info">{{ maintenance_message|raw }}</div>
+    </div>
+</div>
 {% endif %}
+<div class="row">
+    <div class="col-sm-4 col-sm-push-2 col-md-3 col-md-push-3">
+        <div class="crash-count"><span id="crash-count-lifetime">&nbsp;</span> Crash reports received to date</div>
+    </div>
+    <div class="col-sm-4 col-sm-push-2 col-md-3 col-md-push-3">
+        <div class="crash-count"><span id="crash-count-today">&nbsp;</span> Last 24 hours (5m average)</div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-8 col-sm-push-2 col-md-6 col-md-push-3">
         <div class="well">
 {% for error in app.session.flashbag.get('error_crash') %}
             <div class="alert alert-danger">{{ error }}</div>
@@ -20,13 +34,22 @@
                 </div>
             </form>
             <span class="divider hidden-xs">OR</span>
-{% if user %}
+{% if app.user %}
             <a href="{{ path('dashboard') }}" class="btn btn-lg btn-primary btn-block">View Dashboard</a>
 {% else %}
-            <a href="{{ path('login') }}" class="btn btn-lg btn-primary btn-block"><i class="icon-signin"></i> Login</a>
+            <a href="{{ path('login') }}" class="btn btn-lg btn-success btn-block"><i class="icon-signin"></i> Login</a>
 {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
- 
+
+{% block scripts %}
+{% include 'stat-counter.stub.twig' %}
+<script type="text/javascript">
+$(function() {
+  bindLiveCounter($('#crash-count-lifetime'), '{{ path('stats_lifetime') }}', 10);
+  bindLiveCounter($('#crash-count-today'), '{{ path('stats_today') }}', 300);
+});
+</script>
+{% endblock %} 

@@ -18,6 +18,10 @@ StreamType[15] = 'MD_MISC_INFO_STREAM';
 StreamType[16] = 'MD_MEMORY_INFO_LIST_STREAM';
 StreamType[17] = 'MD_THREAD_INFO_LIST_STREAM';
 StreamType[18] = 'MD_HANDLE_OPERATION_LIST_STREAM';
+StreamType[19] = 'MD_TOKEN_STREAM';
+StreamType[20] = 'MD_JAVASCRIPT_DATA_STREAM';
+StreamType[21] = 'MD_SYSTEM_MEMORY_INFO_STREAM';
+StreamType[22] = 'MD_PROCESS_VM_COUNTERS_STREAM';
 StreamType[0x0000ffff] = 'MD_LAST_RESERVED_STREAM';
 StreamType[0x47670001] = 'MD_BREAKPAD_INFO_STREAM';
 StreamType[0x47670002] = 'MD_ASSERTION_INFO_STREAM';
@@ -58,6 +62,32 @@ function hex(n) {
 
 function hex64(n) {
     return (n.hi ? hex(n.hi) : '') + hex(n.lo);
+}
+
+function printString(view) {
+    var offset = view.getUint32();
+
+    var reset = view.tell();
+    view.seek(offset);
+
+    var size = view.getUint32()
+    if ((size % 2) !== 0) {
+        return '[invalid utf-16 string - odd byte length]';
+    }
+
+    var data = [];
+    var low = 0;
+    for (var i = 0; i < size; ++i) {
+        if ((i % 2) === 0) {
+            low = view.getUint8();
+        } else {
+            data.push((view.getUint8() << 8) | low);
+        }
+    }
+
+    view.seek(reset);
+
+    return String.fromCharCode.apply(null, data);
 }
 
 function printMemory(name, view, hasBase) {
@@ -240,6 +270,23 @@ oReq.onload = function(oEvent) {
             view.getUint32() // Useless alignment bytes.
             html += '<dt>Exception Code</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
             html += '<dt>Exception Flags</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+            // Lots of other stuff...
+            break;
+        }
+        case 'MD_SYSTEM_INFO_STREAM': {
+            html += '<dt>processor_architecture</dt><dd>0x' + hex(view.getUint16()) + '</dd>';
+            html += '<dt>processor_level</dt><dd>0x' + hex(view.getUint16()) + '</dd>';
+            html += '<dt>processor_revision</dt><dd>0x' + hex(view.getUint16()) + '</dd>';
+            html += '<dt>number_of_processors</dt><dd>0x' + hex(view.getUint8()) + '</dd>';
+            html += '<dt>product_type</dt><dd>0x' + hex(view.getUint8()) + '</dd>';
+            html += '<dt>major_version</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+            html += '<dt>minor_version</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+            html += '<dt>build_number</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+            html += '<dt>platform_id</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+            html += '<dt>csd_version</dt><dd>' + printString(view) + '</dd>';
+            html += '<dt>suite_mask</dt><dd>0x' + hex(view.getUint16()) + '</dd>';
+            html += '<dt>reserved2</dt><dd>0x' + hex(view.getUint16()) + '</dd>';
+            // CPU info stuff...
             break;
         }
         case 'MD_BREAKPAD_INFO_STREAM': {

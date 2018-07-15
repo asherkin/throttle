@@ -1,5 +1,7 @@
 <?php
 
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../vendor/autoload.php';
 
 // libphutil provides static functions that can't be autoloaded by Composer
@@ -14,7 +16,8 @@ $app['root'] = \Filesystem::resolvePath(__DIR__ . '/..');
 
 $app->register(new Silex\Provider\MonologServiceProvider(), array(
     'monolog.logfile' => $app['root'] . '/logs/main.log',
-    'monolog.level'   => Monolog\Logger::NOTICE,
+    'monolog.handler' => new Monolog\Handler\StreamHandler($app['root'] . '/logs/main.log', Monolog\Logger::NOTICE),
+    'monolog.level'   => Monolog\Logger::DEBUG,
     'monolog.name'    => 'throttle',
 ));
 
