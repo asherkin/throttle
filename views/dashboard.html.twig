@@ -3,23 +3,32 @@
 {% set logout_to_index = true %}
  
 {% block content %}
+{% if app.feature.sharing and shared is not empty %}
+<div class="clearfix">
+    <ul class="pull-left nav nav-tabs nav-tabs-avatars">
+        <li class="{{ userid == null ? 'active' }}" data-toggle="tooltip" data-container="body" data-placement="top" title="All">
+            <a href="{{ path('dashboard') }}" style="text-align: center; padding: 5px 8px; color: #555;">
+                <i class="icon-fixed-width icon-group"></i>
+            </a>
+        </li>
+        <li class="{{ userid == app.user.id ? 'active' }}" data-toggle="tooltip" data-container="body" data-placement="top" title="{{ app.user.name ?? app.user.id }}">
+            <a href="{{ path('dashboard', { user: app.user.id }) }}">
+                <img class="column-identicon" alt="Your crashes" src="{{ app.user.avatar ?? 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg' }}" width="20" height="20">
+            </a>
+        </li>
+{% for user in shared %}
+        <li class="{{ userid == user.id ? 'active' }}" data-toggle="tooltip" data-container="body" data-placement="top" title="{{ user.name ?? user.id }}">
+            <a href="{{ path('dashboard', { user: user.id }) }}">
+                <img class="column-identicon" alt="{{ user.name ?? user.id }}'s crashes" src="{{ user.avatar ?? 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg' }}" width="20" height="20">
+            </a>
+        </li>
+{% endfor %}
+    </ul>
+</div>
+{% endif %}
 <div class="well well-tight">
     <table class="table table-striped">
         <thead>
-{% if false %}
-	    <tr>
-		<td colspan="{% if app.user.admin %}7{% else %}5{% endif %}">
-		    <ul class="pager">
-			<li class="previous {% if not offset %}disabled{% endif %}">
-			    <a {% if offset %}href="{{ path('dashboard', {user: userid}) }}"{% endif %}><i class="icon-double-angle-left"></i> Newest</a>
-			</li>
-			<li class="next disabled">
-			    <a>Older <i class="icon-angle-right"></i></a>
-			</li>
-		    </ul>
-		</td>
-	    </tr>
-{% endif %}
             <tr>
                 <th></th>
                 <th>Crash ID</th>

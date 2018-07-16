@@ -12,8 +12,8 @@ class Settings
             $app->abort(401);
         }
 
-        $sharing = $app['db']->executeQuery('SELECT share.user AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.user = user.id WHERE share.owner = ?', array($app['user']['id']))->fetchAll();
-        $shared = $app['db']->executeQuery('SELECT share.owner AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ?', array($app['user']['id']))->fetchAll();
+        $sharing = $app['db']->executeQuery('SELECT share.user AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.user = user.id WHERE share.owner = ? ORDER BY accepted IS NULL DESC, accepted DESC', array($app['user']['id']))->fetchAll();
+        $shared = $app['db']->executeQuery('SELECT share.owner AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? ORDER BY accepted IS NULL DESC, accepted DESC', array($app['user']['id']))->fetchAll();
 
         return $app['twig']->render('settings.html.twig', [
             'sharing' => $sharing,
@@ -54,7 +54,7 @@ class Settings
 
         $query = $app['db']->executeQuery('SELECT accepted FROM share WHERE owner = ? AND user = ?', array($app['user']['id'], $user))->fetch();
         if ($query !== false) {
-            if ($query['accepted']) {
+            if ($query['accepted'] !== null) {
                 $app['session']->getFlashBag()->add('error_share_invite', 'You have already granted that user access');
             } else {
                 $app['session']->getFlashBag()->add('error_share_invite', 'You have already invited that user, but they have not accepted yet');
@@ -84,7 +84,7 @@ class Settings
             throw new \Exception('Missing or invalid target');
         }
 
-        $app['db']->executeUpdate('UPDATE share SET accepted = 1 WHERE owner = ? AND user = ?', array($owner, $app['user']['id']));
+        $app['db']->executeUpdate('UPDATE share SET accepted = NOW() WHERE owner = ? AND user = ?', array($owner, $app['user']['id']));
 
         $return = $app['request']->get('return', null);
         if (!$return) {

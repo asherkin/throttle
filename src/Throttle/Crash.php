@@ -551,6 +551,8 @@ class Crash
             $app->abort(401);
         }
 
+        $shared = $app['db']->executeQuery('SELECT share.owner AS id, user.name, user.avatar FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? AND accepted IS NOT NULL ORDER BY accepted ASC', array($app['user']['id']))->fetchAll();
+
         $userid = $app['user']['admin'] ? $app['request']->get('user', null) : $app['user']['id'];
 
         $where = '';
@@ -578,6 +580,7 @@ class Crash
 
         return $app['twig']->render('dashboard.html.twig', array(
             'userid' => ($app['user']['admin'] ? $app['request']->get('user', null) : null),
+            'shared' => $shared,
             'offset' => $offset,
             'crashes' => $crashes,
         ));

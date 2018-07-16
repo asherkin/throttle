@@ -253,7 +253,7 @@ if ($user) {
 // 76561197990940702 Headline
 // 76561197982857344 Dr!fter
 $app['feature'] = array(
-    'subscriptions' => $app['user'] && ($developer || in_array($app['user']['id'], array('76561197968573709', '76561197990940702'))),
+    'subscriptions' => false, //$app['user'] && ($developer || in_array($app['user']['id'], array('76561197968573709', '76561197990940702'))),
     'sharing' => $app['user'] && ($developer || in_array($app['user']['id'], array('76561197968573709', '76561197990940702', '76561197982857344'))),
 );
 

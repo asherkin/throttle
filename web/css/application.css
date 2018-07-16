@@ -22,8 +22,16 @@ body {
     background-color: #FFF;
 }
 
+.navbar-default {
+    border-color: #ccc;
+}
+
 .well {
     overflow-x: hidden;
+
+    border: 1px solid #ccc;
+    -webkit-box-shadow: none;
+    box-shadow: none;
 }
 
 .well-tight {
@@ -63,7 +71,7 @@ body {
     }
 }
 
-.nav>li>a>img {
+.navbar .nav>li>a>img {
     height: 30px;
     margin-top: -7px;
     margin-bottom: -5px;
@@ -536,16 +544,22 @@ pre.tab-pane {
     overflow-y: auto;
 }
 
-.table-share {
-    table-layout: fixed;
+.table {
+    white-space: nowrap;
 }
 
-.table-share tr > *:first-child {
-    width: 28px;
+.table-share tr > *:nth-child(2) {
+    width: 100%;
 }
 
-.table-share tr > *:last-child {
-    width: 130px;
+tbody .column-actions span {
+    position: relative;
+    top: 1px;
+}
+
+tbody .column-actions .btn {
+    position: relative;
+    top: -1px;
 }
 
 .pending-notifications::after {
@@ -567,4 +581,8 @@ pre.tab-pane {
 .dropdown-menu > li.pending-notifications::after {
     top: calc(50% - 5px);
     right: 10px;
+}
+
+.nav-tabs-avatars>li>a {
+    padding: 5px;
 }

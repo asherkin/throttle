@@ -13,7 +13,7 @@ class Version20180715160151 extends AbstractMigration
 
         $share->addColumn('owner', 'bigint', array('unsigned' => true));
         $share->addColumn('user', 'bigint', array('unsigned' => true));
-        $share->addColumn('accepted', 'boolean', array('default' => false));
+        $share->addColumn('accepted', 'datetime', array('notnull' => false));
 
         $share->setPrimaryKey(array('owner', 'user'));
 
