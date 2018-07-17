@@ -6,13 +6,13 @@ use Silex\Application;
 
 class Crash
 {
-    public function generateId($root)
+    private static function generateId($app)
     {
         for ($i = 0; $i < 10; $i++) {
             $id = \Filesystem::readRandomCharacters(12);
+            $path = $app['root'] . '/dumps/' . substr($id, 0, 2);
 
-            $path = $root . '/dumps/' . substr($id, 0, 2);
-            if (file_exists($path . '/' . $id . '.dmp')) {
+            if (\Filesystem::pathExists($path . '/' . $id . '.dmp')) {
                 continue;
             }
 
@@ -20,6 +20,36 @@ class Crash
         }
 
         throw new \Exception('MINIDUMP COLLISION');
+    }
+
+    private static function canUserManage($app, $crash)
+    {
+        if (!$app['user']) {
+            // Hacky, but execute a query to check if the crash doesn't exist at all.
+            $query = $app['db']->executeQuery('SELECT 1 FROM crash WHERE crash.id = ?', [$crash])->fetchColumn(0);
+
+            return ($query === false) ? null : false;
+        }
+
+        if ($app['user']['admin']) {
+            return true;
+        }
+
+        $query = $app['db']->executeQuery('SELECT COALESCE(crash.owner = ? OR EXISTS (SELECT TRUE FROM share WHERE share.owner = crash.owner AND share.user = ?), 0) AS manage FROM crash WHERE crash.id = ?', [$app['user']['id'], $app['user']['id'], $crash])->fetchColumn(0);
+
+        if ($query === false) {
+            return null;
+        }
+
+        if ($query === '1') {
+            return true;
+        }
+
+        if ($query === '0') {
+            return false;
+        }
+
+        throw new \Exception('Bad query return in '.__FUNCTION__);
     }
 
     public function submit(Application $app)
@@ -38,7 +68,7 @@ class Crash
             return $app['twig']->render('submit-empty.txt.twig');
         }
 
-        list($id, $path) = $this->generateId($app['root']);
+        list($id, $path) = self::generateId($app);
 
         $owner = $app['request']->request->get('UserID');
         $server = null;
@@ -183,17 +213,18 @@ class Crash
 
     public function details(Application $app, $id)
     {
-        $crash = $app['db']->executeQuery('SELECT id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash FROM crash WHERE id = ?', array($id))->fetch();
-
-        if (empty($crash)) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             if ($app['session']->getFlashBag()->get('internal')) {
                 $app['session']->getFlashBag()->add('error_crash', 'That Crash ID does not exist.');
 
                 return $app->redirect($app['url_generator']->generate('index'));
-            } else {
-                return $app->abort(404);
             }
+    
+            return $app->abort(404);
         }
+
+        $crash = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash, user.name FROM crash LEFT JOIN user ON user.id = crash.owner WHERE crash.id = ?', array($id))->fetch();
 
         $crash['metadata'] = json_decode($crash['metadata'], true);
 
@@ -217,6 +248,7 @@ class Crash
 
         return $app['twig']->render('details.html.twig', array(
             'crash' => $crash,
+            'can_manage' => $can_manage,
             'notices' => $notices,
             'stack' => $stack,
             'modules' => $modules,
@@ -232,14 +264,19 @@ class Crash
             $app->abort(401);
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
-        if (!file_exists($path)) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetchColumn(0);
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner) {
+        if (!$can_manage) {
             $app->abort(403);
+        }
+
+        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+
+        if (!\Filesystem::pathExists($path)) {
+            $app->abort(404);
         }
 
         return $app->sendFile($path)->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'crash_' . $id . '.dmp');
@@ -251,12 +288,12 @@ class Crash
             $app->abort(401);
         }
 
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
-        if ($owner === false) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
+        if (!$can_manage) {
             $app->abort(403);
         }
 
@@ -269,12 +306,12 @@ class Crash
             $app->abort(401);
         }
 
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
-        if ($owner === false) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
+        if (!$can_manage) {
             $app->abort(403);
         }
 
@@ -296,12 +333,12 @@ class Crash
             $app->abort(401);
         }
 
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
-        if ($owner === false) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
+        if (!$can_manage) {
             $app->abort(403);
         }
 
@@ -323,12 +360,12 @@ class Crash
             $app->abort(401);
         }
 
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
-        if ($owner === false) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
+        if (!$can_manage) {
             $app->abort(403);
         }
 
@@ -366,13 +403,12 @@ class Crash
             $app->abort(401);
         }
 
-        $query = $app['db']->executeQuery('SELECT owner, thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetch();
-        if ($query === false) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        $owner = $query['owner'];
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner) {
+        if (!$can_manage) {
             $app->abort(403);
         }
 
@@ -399,7 +435,7 @@ class Crash
             throw new \RuntimeException('Missing MD_THREAD_LIST_STREAM');
         }
 
-        $thread = $query['thread'];
+        $thread = $app['db']->executeQuery('SELECT thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetchColumn(0);
         $output['thread'] = $thread = unpack('Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, $stream['offset'] + 4 + ($thread * 48), 48));
 
         $output['context_flags'] = $context_flags = unpack('Lflags', substr($minidump, $thread['context_offset'], 4));
@@ -452,12 +488,12 @@ class Crash
             $app->abort(401);
         }
 
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
-        if ($owner === false) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
+        if (!$can_manage) {
             $app->abort(403);
         }
 
@@ -470,16 +506,20 @@ class Crash
             $app->abort(401);
         }
 
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetch();
-        if ($owner === false) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner['owner']) {
+        if (!$can_manage) {
             $app->abort(403);
         }
 
         $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+
+        if (!\Filesystem::pathExists($path)) {
+            $app->abort(404);
+        }
 
         list($stdout, $stderr) = execx($app['root'].'/bin/carburetor %s %s', $app['root'].'/app/carburetor-config.json', $path);
 
@@ -520,22 +560,16 @@ class Crash
             $app->abort(401);
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
-        if (!file_exists($path)) {
+        $can_manage = self::canUserManage($app, $id);
+        if ($can_manage === null) {
             $app->abort(404);
         }
 
-        $owner = $app['db']->executeQuery('SELECT owner FROM crash WHERE id = ? LIMIT 1', array($id))->fetchColumn(0);
-        if (!$app['user']['admin'] && $app['user']['id'] !== $owner) {
+        if (!$can_manage) {
             $app->abort(403);
         }
 
-        $app['db']->transactional(function($db) use ($id, $path) {
-            $db->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
-
-            // Let the clean up catch these.
-            //\Filesystem::remove($path);
-        });
+        $app['db']->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
 
         $return = $app['request']->get('return', null);
         if (!$return) {
@@ -553,33 +587,60 @@ class Crash
 
         $shared = $app['db']->executeQuery('SELECT share.owner AS id, user.name, user.avatar FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? AND accepted IS NOT NULL ORDER BY accepted ASC', array($app['user']['id']))->fetchAll();
 
-        $userid = $app['user']['admin'] ? $app['request']->get('user', null) : $app['user']['id'];
+        array_unshift($shared, [
+            'id' => $app['user']['id'],
+            'name' => $app['user']['name'],
+            'avatar' => $app['user']['avatar'],
+        ]);
+
+        $userid = $app['request']->get('user', null);
+
+        $allowed = null;
+        if (!$app['user']['admin']) {
+            foreach ($shared as $user) {
+                $allowed[] = $user['id'];
+            }
+
+            if ($userid !== null && !in_array($userid, $allowed, true)) {
+                $app->abort(403);
+            }
+        }
 
         $where = '';
-        $params = array();
+        $params = [];
+        $types = [];
 
-        if ($offset || $userid) {
+        if ($offset !== null || $userid !== null || $allowed !== null) {
             $where .= 'WHERE ';
 
-            if ($userid) {
-                $where .= 'owner = ?';
-                $params[] = $userid;
 
-                if ($offset) {
+            if ($userid !== null || $allowed !== null) {
+                if ($userid !== null) {
+                    $where .= 'owner = ?';
+                    $params[] = $userid;
+                    $types[] = \PDO::PARAM_INT;
+                } else if ($allowed !== null) {
+                    $where .= 'owner IN (?)';
+                    $params[] = $allowed;
+                    $types[] = \Doctrine\DBAL\Connection::PARAM_INT_ARRAY;
+                }
+
+                if ($offset !== null) {
                     $where .= ' AND ';
                 }
             }
 
-            if ($offset) {
+            if ($offset !== null) {
                 $where .= 'timestamp < FROM_UNIXTIME(?)';
                 $params[] = $offset;
+                $types[] = \PDO::PARAM_INT;
             }
         }
 
-        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 20', $params)->fetchAll();
+        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 20', $params, $types)->fetchAll();
 
         return $app['twig']->render('dashboard.html.twig', array(
-            'userid' => ($app['user']['admin'] ? $app['request']->get('user', null) : null),
+            'userid' => $userid,
             'shared' => $shared,
             'offset' => $offset,
             'crashes' => $crashes,

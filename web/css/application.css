@@ -157,10 +157,14 @@ span.divider:after {
 
 .column-stackframe {
     overflow-x: hidden;
-    white-space: nowrap;
-    max-width: 295px;
     text-overflow: ellipsis;
     word-break: break-word;
+    width: 100%;
+    max-width: 1px;
+}
+
+.table th:empty, .table td:empty {
+    padding: 0 !important;
 }
 
 .table-stacktrace tbody td {
@@ -178,20 +182,12 @@ span.divider:after {
 }
 
 @media (min-width: 992px) {
-    .column-stackframe {
-        max-width: 515px;
-    }
-
     .table-stacktrace tbody td {
         max-width: 800px;
     }
 }
 
 @media (min-width: 1200px) {
-    .column-stackframe {
-        max-width: 715px;
-    }
-
     .table-stacktrace tbody td {
         max-width: 1000px;
     }
@@ -212,15 +208,6 @@ tr.stackframe-expand td {
 
 .column-actions .btn {
     margin: 0 2px;
-}
-
-td.column-notices {
-    text-align: right;
-}
-
-td.column-notices .btn {
-    padding: 0 5px;
-    margin-top: -2px;
 }
 
 .button-form {
@@ -550,6 +537,7 @@ pre.tab-pane {
 
 .table-share tr > *:nth-child(2) {
     width: 100%;
+    max-width: 1px;
 }
 
 tbody .column-actions span {

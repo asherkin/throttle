@@ -89,7 +89,7 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
     }));
 
     $twig->addFilter(new \Twig_SimpleFilter('identicon', function($string, $size = 20) {
-        return 'https://secure.gravatar.com/avatar/' . md5($string) . '?s=' . $size . '&r=any&default=identicon&forcedefault=1';
+        return 'https://secure.gravatar.com/avatar/' . md5($string) . '?s=' . ($size * 2) . '&r=any&default=identicon&forcedefault=1';
     }));
 
     $twig->addFilter(new \Twig_SimpleFilter('crashid', function($string) {
@@ -237,7 +237,7 @@ $app['user'] = null;
 
 if ($user) {
     $startTime = microtime(true);
-    $details = $app['db']->executeQuery('SELECT name, avatar, (SELECT COUNT(*) FROM share WHERE user = id AND accepted = 0) AS pending FROM user WHERE id = ? LIMIT 1', array($user['id']))->fetch();
+    $details = $app['db']->executeQuery('SELECT name, avatar, (SELECT COUNT(*) FROM share WHERE user = id AND accepted IS NULL) AS pending FROM user WHERE id = ? LIMIT 1', array($user['id']))->fetch();
     $app['monolog']->info(sprintf('Loaded user details in %fms', (microtime(true) - $startTime) / 1000));
 
     $app['user'] = array(
@@ -249,12 +249,8 @@ if ($user) {
     );
 }
 
-// 76561197968573709 psychonic
-// 76561197990940702 Headline
-// 76561197982857344 Dr!fter
 $app['feature'] = array(
-    'subscriptions' => false, //$app['user'] && ($developer || in_array($app['user']['id'], array('76561197968573709', '76561197990940702'))),
-    'sharing' => $app['user'] && ($developer || in_array($app['user']['id'], array('76561197968573709', '76561197990940702', '76561197982857344'))),
+    'subscriptions' => false, //$app['user'] && ($developer || in_array($app['user']['id'], ['...'])),
 );
 
 Symfony\Component\HttpFoundation\Request::setTrustedProxies($app['config']['trusted-proxies']);
@@ -297,13 +293,6 @@ $app->get('/submit', function() use ($app) {
         'comment' => $comment,
     ));
 });
-
-$app->get('/dashboard/all/{offset}', function($offset) use ($app) {
-    $userid = $app['request']->get('user', null);
-    return $app->redirect($app['url_generator']->generate('dashboard', array('offset' => $offset, 'user' => $userid)));
-})
-    ->assert('offset', '[0-9]+')
-    ->value('offset', null);
 
 $app->get('/dashboard/{offset}', 'Throttle\Crash::dashboard')
     ->assert('offset', '[0-9]+')

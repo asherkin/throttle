@@ -3,17 +3,12 @@
 {% set logout_to_index = true %}
  
 {% block content %}
-{% if app.feature.sharing and shared is not empty %}
+{% if shared|length > 1 %}
 <div class="clearfix">
     <ul class="pull-left nav nav-tabs nav-tabs-avatars">
         <li class="{{ userid == null ? 'active' }}" data-toggle="tooltip" data-container="body" data-placement="top" title="All">
-            <a href="{{ path('dashboard') }}" style="text-align: center; padding: 5px 8px; color: #555;">
+            <a href="{{ path('dashboard') }}" style="text-align: center; padding: 5px 8px; color: #333;">
                 <i class="icon-fixed-width icon-group"></i>
-            </a>
-        </li>
-        <li class="{{ userid == app.user.id ? 'active' }}" data-toggle="tooltip" data-container="body" data-placement="top" title="{{ app.user.name ?? app.user.id }}">
-            <a href="{{ path('dashboard', { user: app.user.id }) }}">
-                <img class="column-identicon" alt="Your crashes" src="{{ app.user.avatar ?? 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg' }}" width="20" height="20">
             </a>
         </li>
 {% for user in shared %}
@@ -33,14 +28,9 @@
                 <th></th>
                 <th>Crash ID</th>
                 <th>Uploaded</th>
-{% if app.user.admin %}
                 <th class="hidden-xs"></th>
-{% endif %}
                 <th class="hidden-xs">Function</th>
                 <th></th>
-{% if app.user.admin %}
-                <th class="hidden-xs"></th>
-{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -55,15 +45,15 @@
                 </td>
                 <td class="monospace"><a href="{{ path('details', {id: crash.id}) }}">{{ crash.id|crashid }}<a></td>
                 <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
-{% if app.user.admin %}
+{% spaceless %}
                 <td class="hidden-xs">
-{% if crash.owner and crash.name %}
+{% if userid == null and shared|length > 1 and crash.owner and crash.name %}
                     <a href="http://steamcommunity.com/profiles/{{ crash.owner }}">
                         <img class="column-identicon" title="{{ crash.name }}" src="{{ crash.avatar }}" width="20" height="20">
                     </a>
 {% endif %}
                 </td>
-{% endif %}
+{% endspaceless %}
 {% if crash.module is not empty or crash.module2 is empty %}
 {% set frame = {rendered: crash.rendered, first: true} %}
 {% else %}
@@ -72,14 +62,13 @@
                 <td title="{{ frame.rendered }}" class="hidden-xs monospace column-stackframe {% if not frame.first %}column-stackframe-fallback{% endif %}">
                     {{ frame.rendered }}
                 </td>
-                <td class="column-notices">
+{% spaceless %}
+                <td class="column-actions hidden-xs">
 {% if crash.notice is not empty %}
 {% set notice = crash.notice | split('-', 2) %}
                     <span class="btn btn-xs disabled btn-{{ notice[1] }}">{{ (notice[0] != 1 ? notice[0] : '&ensp;') | raw }}</span>
 {% endif %}
-                </td>
 {% if app.user.admin %}
-                <td class="column-actions hidden-xs">
 {% if crash.processed == 1 %}
                     <form action="{{ path('reprocess', {id: crash.id, return: app.request.pathInfo}) }}" method="post" class="button-form">
                         <button type="submit" class="btn btn-xs btn-default"><i class="icon-refresh"></i></button>
@@ -88,18 +77,19 @@
                     <form action="{{ path('delete', {id: crash.id, return: app.request.pathInfo}) }}" method="post" class="button-form">
                         <button type="submit" class="btn btn-xs btn-danger"><i class="icon-trash"></i></button>
                     </form>
-                </td>
 {% endif %}
+                </td>
+{% endspaceless %}
             </tr>
 {% else %}
             <tr>
-                <td class="text-center" colspan="{% if app.user.admin %}7{% else %}5{% endif %}">No Crashes</td>
+                <td class="text-center" colspan="6">No Crashes</td>
             </tr>
 {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="{% if app.user.admin %}7{% else %}5{% endif %}">
+                <td colspan="6">
                     <ul class="pager">
                         <li class="previous {% if not offset %}disabled{% endif %}">
                             <a {% if offset %}href="{{ path('dashboard', {user: userid}) }}"{% endif %}><i class="icon-double-angle-left"></i> Newest</a>

@@ -8,7 +8,7 @@
 {% else %}
 {% if not app.user %}
 <div class="alert alert-block alert-info">If you are the owner of this crash, <a href="{{ path('login', {'return': app.request.pathInfo}) }}" class="alert-link">login</a> to see more information.</div>
-{% elseif not app.user.admin and app.user.id != crash.owner %}
+{% elseif not can_manage %}
 <div class="alert alert-block alert-info">You can not see full information about this crash as you are not the owner.</div>
 {% endif %}
 {% endif %}
@@ -21,14 +21,14 @@
     <dl class="dl-horizontal" style="margin: 0;">
         <dt>Uploaded</dt>
         <dd>{{ crash.timestamp|date }}</dd>
-{% if app.user and (app.user.admin or app.user.id == crash.owner) %}
+{% if can_manage %}
 {% if crash.ip %}
 	<dt>Upload IP</dt>
 	<dd>{{ crash.ip }}</dd>
 {% endif %}
-{% if app.user.admin and crash.owner %}
+{% if can_manage and crash.owner and crash.owner != app.user.id %}
     <dt>Owner</dt>
-    <dd><a  href="{{ path('dashboard', {'user': crash.owner}) }}">{{ crash.owner }}</a></dd>
+    <dd><a  href="{{ path('dashboard', {'user': crash.owner}) }}">{{ crash.name ?? crash.owner }}</a></dd>
 {% endif %}
 {% if crash.cmdline %}
         <dt>Command Line</dt>
@@ -60,7 +60,7 @@
 <div class="alert alert-block alert-{{ notice.severity }}">{{ notice.text|raw }}</div>
 {% endfor %}
 
-{% if has_error_string and app.user and (app.user.admin or app.user.id == crash.owner) %}
+{% if has_error_string and can_manage %}
 <div id="error-details" class="alert alert-block alert-warning"><i class="icon-cog icon-spin"></i></div>
 {% endif %}
 
@@ -77,7 +77,7 @@
 </div>
 {% endif %}
 
-{% if app.user and (app.user.admin or app.user.id == crash.owner) %}
+{% if can_manage %}
 <div class="well clearfix">
     <a class="btn btn-primary" href="{{ path('download', {'id': crash.id}) }}"><i class="icon-download"></i> Download Minidump</a>
 {% if crash.has_console_log %}
@@ -129,7 +129,7 @@
     </table>
 </div>
 
-{% if modules|length > 0 and app.user and (app.user.admin or app.user.id == crash.owner) %}
+{% if modules|length > 0 and can_manage %}
 <h2>Modules</h2>
 <div class="well well-tight">
     <table class="table table-modules table-shown">

@@ -49,7 +49,7 @@ class CrashProcessCommand extends Command
 
         if ($input->getOption('update')) {
             $outdated = 0;
-            $reprocess = $app['db']->executeQuery('SELECT module.crash FROM module JOIN crash ON module.crash = crash.id WHERE module.processed = FALSE AND module.present = TRUE GROUP BY module.crash ORDER BY crash.timestamp DESC LIMIT 100');
+            $reprocess = $app['db']->executeQuery('SELECT DISTINCT crash FROM module WHERE processed = FALSE AND present = TRUE LIMIT 100');
 
             while (($id = $reprocess->fetchColumn(0)) !== false) {
                 $app['db']->transactional(function($db) use ($id) {
