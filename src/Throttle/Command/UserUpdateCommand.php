@@ -63,6 +63,14 @@ class UserUpdateCommand extends Command
 
             $data = $data->response->players[0];
 
+            if (!isset($data->avatarfull) || !isset($data->personaname)) {
+                $app['db']->executeUpdate('UPDATE user SET updated = NOW() WHERE id = ?', array($user));
+
+                $statsFailed++;
+
+                continue;
+            }
+
             // Valve don't know how to HTTPS.
             $data->avatarfull = str_replace('http://cdn.akamai.steamstatic.com/', 'https://steamcdn-a.akamaihd.net/', $data->avatarfull);
 
