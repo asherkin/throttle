@@ -52,11 +52,65 @@ class Crash
         throw new \Exception('Bad query return in '.__FUNCTION__);
     }
 
+    public function presubmit(Application $app, $signature)
+    {
+        $app['redis']->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
+
+        $signature = array_reverse(explode('|', $signature));
+        $version = (int)array_pop($signature);
+        if ($version !== 1) {
+            return 'E|bad version';
+        }
+
+        $crashed = (int)array_pop($signature);
+        $crash_reason = array_pop($signature);
+        $crash_address = intval(array_pop($signature), 16);
+        $requesting_thread = (int)array_pop($signature);
+
+        $modules = [];
+        $frames = [];
+
+        while (!empty($signature)) {
+            $type = array_pop($signature);
+            switch ($type) {
+                case 'M':
+                    $modules[] = (object)[
+                        'file' => array_pop($signature),
+                        'identifier' => array_pop($signature),
+                    ];
+                    break;
+                case 'F':
+                    $fames[] = (object)[
+                        'module' => (int)array_pop($signature),
+                        'offset' => intval(array_pop($signature), 16),
+                    ];
+                    break;
+                default:
+                    return 'E|unknown field '.$type;
+            }
+        }
+
+        // TODO: Determine whether we want the crash dump...
+        $return = 'Y|';
+        foreach ($modules as $module) {
+            // TODO: N query problem...
+            $exists = $app['db']->executeQuery('SELECT TRUE FROM module WHERE name = ? AND identifier = ? AND present = 1 LIMIT 1', [$module->file, $module->identifier])->fetchColumn(0);
+            $return .= ($exists === false) ? 'Y' : 'N';
+        }
+
+        return $return;
+    }
+
     public function submit(Application $app)
     {
         //TODO
         //return $app->abort(503);
         //return 'Sorry, crash submission is currently disabled';
+
+        $presubmit = $app['request']->get('CrashSignature');
+        if ($presubmit !== null) {
+            return $this->presubmit($app, $presubmit);
+        }
 
         $app['redis']->hIncrBy('throttle:stats', 'crashes:submitted', 1);
 
