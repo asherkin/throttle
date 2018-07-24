@@ -57,7 +57,7 @@ class CrashProcessCommand extends Command
                     $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
                     $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
 
-                    $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE WHERE id = ?', array($id));
+                    $db->executeUpdate('UPDATE crash SET thread = NULL, processed = FALSE WHERE id = ?', array($id));
                 });
 
                 $outdated += 1;
@@ -312,29 +312,6 @@ class CrashProcessCommand extends Command
                         //print_r(array($data[0], $data[1], $addresses[(int)$data[0]][(int)$data[1]]));
                         $app['db']->executeUpdate('INSERT INTO frame VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($id, $data[0], $data[1], $data[2], $data[3], $data[4], $data[5], $data[6], $rendered, $url, $address));
                     }
-
-                    $future = new \ExecFuture($app['root'] . '/bin/minidump_comment %s 2>> %s', $minidump, $logs);
-
-                    $foundCmdline = false;
-                    $cmdline = '';
-
-                    foreach (new \LinesOfALargeExecFuture($future) as $line) {
-                        if (!$foundCmdline) {
-                            if (stripos($line, 'MD_LINUX_CMD_LINE') !== FALSE) {
-                                $foundCmdline = true;
-                            }
-
-                            continue;
-                        }
-
-                        if ($line == '') {
-                            break;
-                        }
-
-                        $cmdline .= $line;
-                    }
-
-                    $cmdline = trim(str_replace('\\0', ' ', $cmdline));
                 } catch (\CommandException $e) {
                     $app['db']->executeUpdate('UPDATE crash SET processed = TRUE, failed = TRUE WHERE id = ?', array($id));
 
@@ -346,7 +323,7 @@ class CrashProcessCommand extends Command
                     \Filesystem::remove($logs);
                 }
 
-                $app['db']->executeUpdate('UPDATE crash SET cmdline = COALESCE(cmdline, ?), thread = ?, processed = TRUE WHERE id = ?', array($cmdline, $crashThread, $id));
+                $app['db']->executeUpdate('UPDATE crash SET thread = ?, processed = TRUE WHERE id = ?', array($crashThread, $id));
 
                 $app['db']->executeUpdate('UPDATE crash SET stackhash = (SELECT GROUP_CONCAT(SUBSTRING(SHA2(rendered, 256), 1, 8) ORDER BY frame ASC SEPARATOR \'\') AS hash FROM frame WHERE crash = ? AND thread = ? AND frame < 10 AND module != \'\' GROUP BY crash, thread) WHERE id = ?', array($id, $crashThread, $id));
 
