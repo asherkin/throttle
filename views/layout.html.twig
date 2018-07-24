@@ -40,7 +40,7 @@
             <li class="alert-warning" data-toggle="tooltip" data-container="body" data-placement="left" title="Subscription cancelled, access expires 2017-10-29"><a href="{{ path('subscribe') }}"><i class="icon-fixed-width icon-usd"></i> 2&#8239;/&#8239;month</a></li>
             <li class="alert-danger" data-toggle="tooltip" data-container="body" data-placement="left" title="Last payment failed, check payment method"><a href="{{ path('subscribe') }}"><i class="icon-fixed-width icon-usd"></i> 2&#8239;/&#8239;month</a></li>
 {% endif %}
-            <li {% if app.user.pending > 0 %}class="pending-notifications"{% endif %}><a href="{{ path('settings') }}"><i class="icon-fixed-width icon-cog"></i> Settings</a></li>
+            <li {% if app.user.pending > 0 %}class="pending-notifications"{% endif %}><a href="{{ path('share') }}"><i class="icon-fixed-width icon-inbox"></i> Sharing</a></li>
 {% if logout_to_index|default(false) %}
             <li><a href="{{ path('logout') }}"><i class="icon-fixed-width icon-signout"></i> Logout</a></li>
 {% else %}

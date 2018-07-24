@@ -339,20 +339,24 @@ $app->post('/paddle_webhook', 'Throttle\Subscription::webhook')
 $app->get('/subscribe', 'Throttle\Subscription::subscribe')
     ->bind('subscribe');
 
-$app->get('/settings', 'Throttle\Settings::settings')
-    ->bind('settings');
+$app->get('/settings', function() use ($app) {
+    return $app->redirect($app['url_generator']->generate('share'));
+})->bind('settings');
 
-$app->post('/settings/share/accept', 'Throttle\Settings::accept')
-    ->bind('share_accept');
+$app->get('/settings/share', 'Throttle\Sharing::share')
+    ->bind('share');
 
-$app->post('/settings/share/revoke', 'Throttle\Settings::revoke')
-    ->bind('share_revoke');
-
-$app->get('/settings/share', 'Throttle\Settings::invite')
+$app->get('/settings/share/invite', 'Throttle\Sharing::invite')
     ->bind('share_invite');
 
-$app->post('/settings/share', 'Throttle\Settings::invite_post')
+$app->post('/settings/share/invite', 'Throttle\Sharing::invite_post')
     ->bind('share_invite_post');
+
+$app->post('/settings/share/accept', 'Throttle\Sharing::accept')
+    ->bind('share_accept');
+
+$app->post('/settings/share/revoke', 'Throttle\Sharing::revoke')
+    ->bind('share_revoke');
 
 $app->get('/{id}/download', 'Throttle\Crash::download')
     ->assert('id', '[0-9a-zA-Z]{12}')

@@ -4,9 +4,9 @@ namespace Throttle;
 
 use Silex\Application;
 
-class Settings
+class Sharing
 {
-    public function settings(Application $app)
+    public function share(Application $app)
     {
         if (!$app['user']) {
             $app->abort(401);
@@ -15,7 +15,7 @@ class Settings
         $sharing = $app['db']->executeQuery('SELECT share.user AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.user = user.id WHERE share.owner = ? ORDER BY accepted IS NULL DESC, accepted DESC', array($app['user']['id']))->fetchAll();
         $shared = $app['db']->executeQuery('SELECT share.owner AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? ORDER BY accepted IS NULL DESC, accepted DESC', array($app['user']['id']))->fetchAll();
 
-        return $app['twig']->render('settings.html.twig', [
+        return $app['twig']->render('share.html.twig', [
             'sharing' => $sharing,
             'shared' => $shared,
         ]);
@@ -67,7 +67,7 @@ class Settings
 
         $return = $app['request']->get('return', null);
         if (!$return) {
-            $return = $app['url_generator']->generate('settings');
+            $return = $app['url_generator']->generate('share');
         }
 
         return $app->redirect($return);
@@ -88,7 +88,7 @@ class Settings
 
         $return = $app['request']->get('return', null);
         if (!$return) {
-            $return = $app['url_generator']->generate('settings');
+            $return = $app['url_generator']->generate('share');
         }
 
         return $app->redirect($return);
@@ -122,7 +122,7 @@ class Settings
 
         $return = $app['request']->get('return', null);
         if (!$return) {
-            $return = $app['url_generator']->generate('settings');
+            $return = $app['url_generator']->generate('share');
         }
 
         return $app->redirect($return);
