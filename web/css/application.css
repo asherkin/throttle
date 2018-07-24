@@ -334,18 +334,22 @@ dl.dl-minidump div.alert {
 
 .alert-info {
     color: #003B61;
+    border-color: #3a87ad;
 }
 
 .alert-warning {
     color: #744C07;
+    border-color: #C09858;
 }
 
 .alert-success {
     color: #003C00;
+    border-color: #468847;
 }
 
 .alert-danger {
     color: #6D0000;
+    border-color: #b94a48;
 }
 
 .munin-graphs {
@@ -460,16 +464,23 @@ a.supporter-tag {
 
 .table-log>tbody>tr>td {
     font-family: Consolas, Lucida Console, monospace;
+    text-align: right;
+}
+
+.table-log>tbody>tr>td:last-child {
     white-space: pre-wrap;
+    text-align: left;
+    width: 100%;
+    max-width: 1px;
 }
 
 .table-log>tbody>tr:not(:first-child)>td, .table-log>tbody>tr:not(:first-child)>th {
-    padding-top: 0;
+    padding-top: 2px;
     border-top: none;
 }
 
 .table-log>tbody>tr:not(:last-child)>td, .table-log>tbody>tr:not(:last-child)>th {
-    padding-bottom: 0;
+    padding-bottom: 2px;
 }
 
 .stats-graph-title small {

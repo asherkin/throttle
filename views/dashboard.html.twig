@@ -3,7 +3,7 @@
 {% set logout_to_index = true %}
  
 {% block content %}
-{% if shared|length > 1 %}
+{% if shared|length > 1 or app.user.admin %}
 <div class="clearfix">
     <ul class="pull-left nav nav-tabs nav-tabs-avatars">
         <li class="{{ userid == null ? 'active' }}" data-toggle="tooltip" data-container="body" data-placement="top" title="All">
@@ -47,7 +47,7 @@
                 <td><span title="{{ crash.timestamp|date }}">{{ crash.timestamp|diffdate }}</span></td>
 {% spaceless %}
                 <td class="hidden-xs">
-{% if userid == null and shared|length > 1 and crash.owner and crash.name %}
+{% if userid == null and (shared|length > 1 or app.user.admin) and crash.owner and crash.name %}
                     <a href="http://steamcommunity.com/profiles/{{ crash.owner }}">
                         <img class="column-identicon" title="{{ crash.name }}" src="{{ crash.avatar }}" width="20" height="20">
                     </a>

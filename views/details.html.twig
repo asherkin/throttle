@@ -1,5 +1,7 @@
 {% extends 'layout.html.twig' %}
 
+{% set supports_mobile = true %}
+
 {% block content %}
 {% if not crash.owner %}
 {% if app.config.accelerator %}
