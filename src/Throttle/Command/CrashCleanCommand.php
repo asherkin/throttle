@@ -44,7 +44,7 @@ class CrashCleanCommand extends Command
 
             $count = count($crashes);
             if (!$input->getOption('dry-run') && $count > 0) {
-                $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) LIMIT 100', array($crashes), array(\Doctrine\DBAL\Connection::PARAM_INT_ARRAY));
+                $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) LIMIT 100', array($crashes), array(\Doctrine\DBAL\Connection::PARAM_STR_ARRAY));
 
                 if ($count > 0) {
                     $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:limit', $count);
@@ -117,30 +117,32 @@ class CrashCleanCommand extends Command
 
         $missing = array_diff_key($crashes, $found);
 
-        $query = $app['db']->executeQuery('SELECT id FROM crash WHERE id IN (?) AND failed = 1', array(array_keys($missing)), array(\Doctrine\DBAL\Connection::PARAM_STR_ARRAY));
+        if (count($missing) > 0) {
+            $query = $app['db']->executeQuery('SELECT id FROM crash WHERE id IN (?) AND failed = 1', array(array_keys($missing)), array(\Doctrine\DBAL\Connection::PARAM_STR_ARRAY));
 
-        $missing_errored = array();
-        while ($id = $query->fetchColumn(0)) {
-            $missing_errored[$id] = true;
-        }
-
-        $count = count($missing_errored);
-        if (!$input->getOption('dry-run')) {
-            $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) AND failed = 1 LIMIT 100', array(array_keys($missing)), array(\Doctrine\DBAL\Connection::PARAM_STR_ARRAY));
-
-            if ($count > 0) {
-                $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:missing', $count);
+            $missing_errored = array();
+            while ($id = $query->fetchColumn(0)) {
+                $missing_errored[$id] = true;
             }
-        }
 
-        $output->writeln('Deleted ' . $count . ' failed crash reports missing minidumps.');
+            $count = count($missing_errored);
+            if (!$input->getOption('dry-run')) {
+                $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) AND failed = 1 LIMIT 100', array(array_keys($missing)), array(\Doctrine\DBAL\Connection::PARAM_STR_ARRAY));
 
-        $anomalous = array_diff_key($missing, $missing_errored);
+                if ($count > 0) {
+                    $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:missing', $count);
+                }
+            }
 
-        if (count($anomalous) > 0) {
-            $output->writeln('Found ' . count($anomalous) . ' crash reports missing minidumps that need investigating:');
+            $output->writeln('Deleted ' . $count . ' failed crash reports missing minidumps.');
 
-            print_r($anomalous);
+            $anomalous = array_diff_key($missing, $missing_errored);
+
+            if (count($anomalous) > 0) {
+                $output->writeln('Found ' . count($anomalous) . ' crash reports missing minidumps that need investigating:');
+
+                print_r($anomalous);
+            }
         }
     }
 }
