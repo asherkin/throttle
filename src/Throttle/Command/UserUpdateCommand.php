@@ -71,6 +71,10 @@ class UserUpdateCommand extends Command
                 continue;
             }
 
+            // Valve don't know how to unicode.
+            $data->personaname = mb_convert_encoding($data->personaname, 'utf-8', 'utf-8');
+            $data->personaname = preg_replace('/[\x{10000}-\x{10FFFF}]/u', "\xEF\xBF\xBD", $data->personaname);
+
             // Valve don't know how to HTTPS.
             $data->avatarfull = str_replace('http://cdn.akamai.steamstatic.com/', 'https://steamcdn-a.akamaihd.net/', $data->avatarfull);
 

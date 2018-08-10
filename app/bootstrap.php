@@ -50,6 +50,7 @@ $app->register(new Silex\Provider\DoctrineServiceProvider(), array(
         'user'          => $app['config']['db.user'],
         'password'      => $app['config']['db.password'],
         'dbname'        => $app['config']['db.name'],
+        'charset'       => 'utf8',
         'driverOptions' => array(
             1002 => 'SET NAMES utf8',
         ),
