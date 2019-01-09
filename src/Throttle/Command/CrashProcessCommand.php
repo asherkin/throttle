@@ -272,6 +272,51 @@ class CrashProcessCommand extends Command
                             continue;
                         }
 
+                        // Iteratively replace deeply nested angle bracket contents until the name is short enough.
+                        while (strlen($data[3]) > 512) {
+                            $function = '';
+                            $cursor = 0;
+                            $watermark = 0;
+                            $depth = 0;
+                            for ($i = 0; $i < strlen($data[3]); ++$i) {
+                                $c = $data[3][$i];
+                                if ($c === '<') {
+                                    $depth++;
+                                    if ($depth > $watermark) {
+                                        $watermark = $depth;
+                                    }
+                                } else if ($c === '>') {
+                                    $depth--;
+                                }
+                            }
+                            for ($i = 0; $i < strlen($data[3]); ++$i) {
+                                $c = $data[3][$i];
+                                if ($c === '<') {
+                                    $depth++;
+                                    $function .= substr($data[3], $cursor, $i - $cursor);
+                                    $cursor = $i;
+                                } else if ($c === '>') {
+                                    if ($depth >= $watermark) {
+                                        $function .= '[...]';
+                                        $cursor = $i + 1;
+                                    }
+                                    $depth--;
+                                }
+                            }
+                            $function .= substr($data[3], $cursor);
+                            if ($function === $data[3]) {
+                                // Nothing more to remove, throw out the function name and abort.
+                                $data[3] = '[...]';
+                                break;
+                            }
+                            $data[3] = $function;
+                        }
+
+                        // Put the angle brackets back around the placeholders
+                        if ($data[3] !== '[...]') {
+                            $data[3] = str_replace('[...]', '<[...]>', $data[3]);
+                        }
+
                         $rendered = $data[6];
                         if ($data[4] != '') {
                             $filename = basename(str_replace('\\', '/', $data[4]));
