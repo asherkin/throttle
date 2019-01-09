@@ -8,7 +8,7 @@
     <a class="btn btn-default pull-left" href="{{ path('details', {'id': id}) }}"><i class="icon-chevron-left"></i> Back to Details</a>
     <a class="btn btn-default pull-right" href="{{ path('view', {'id': id}) }}"><i class="icon-chevron-right"></i> Go to old View Raw page</a>
 </div>
-<div id="loading" class="progress" style="background-color: #fff; border: 1px solid #ccc; height: 40px;"><div class="progress-bar progress-bar-striped" style="width: 0%"></div></div>
+<div id="loading" class="progress" style="background-color: #fff; border: 1px solid #ccc; height: 40px;"><div class="progress-bar" style="width: 0%"></div></div>
 <div id="content" class="hidden">
     <ul class="nav nav-tabs">
         <li class="active"><a href="#tab-stack" data-toggle="tab">Stack</a></li>
@@ -36,14 +36,24 @@ var tabMemory = $('#tab-memory');
 var tabRaw = $('#tab-raw');
 
 var oReq = new XMLHttpRequest();
-oReq.open('GET', 'carburetor/data', true);
+oReq.open('GET', '{{ path('carburetor_data', { id: id, symbols: symbols }) }}', true);
+
+oReq.onerror = function(oEvent) {
+    loading.removeClass('active');
+    loading.removeClass('progress-striped');
+    progress.addClass('progress-bar-danger');
+};
 
 oReq.onprogress = function(oEvent) {
+    console.log(oEvent.lengthComputable, oEvent.loaded, oEvent.total);
     if (oEvent.lengthComputable) {
         progress.css('width', ((oEvent.loaded / oEvent.total) * 100) + '%');
+        loading.removeClass('progress-striped');
+        loading.removeClass('active');
     } else {
         progress.css('width', '100%');
-        progress.addClass('active');
+        loading.addClass('progress-striped');
+        loading.addClass('active');
     }
 };
 

@@ -551,7 +551,10 @@ class Crash
             $app->abort(403);
         }
 
-        return $app['twig']->render('carburetor.html.twig', array('id' => $id));
+        return $app['twig']->render('carburetor.html.twig', array(
+            'id' => $id,
+            'symbols' => $app['request']->get('symbols', null),
+        ));
     }
 
     public function carburetor_data(Application $app, $id)
@@ -569,13 +572,20 @@ class Crash
             $app->abort(403);
         }
 
+        $config = $app['root'].'/app/carburetor-config.json';
+        if ($app['request']->get('symbols', null) === 'no') {
+            $config = $app['root'].'/app/carburetor-config-no-symbols.json';
+        }
+
         $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
         if (!\Filesystem::pathExists($path)) {
             $app->abort(404);
         }
 
-        list($stdout, $stderr) = execx($app['root'].'/bin/carburetor %s %s', $app['root'].'/app/carburetor-config.json', $path);
+        set_time_limit(120);
+
+        list($stdout, $stderr) = execx($app['root'].'/bin/carburetor %s %s', $config, $path);
 
         return new \Symfony\Component\HttpFoundation\Response($stdout, 200, array(
             'Content-Type' => 'application/json',
