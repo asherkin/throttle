@@ -28,13 +28,13 @@ class CrashCleanCommand extends Command
 
         $total_count = 0;
 
-        $groups = $app['db']->executeQuery('SELECT owner, ip, INET6_NTOA(ip) AS display_ip FROM crash GROUP BY owner, ip HAVING (owner IS NULL AND COUNT(*) > 50) OR (owner IS NOT NULL AND COUNT(*) > 100)');
+        $groups = $app['db']->executeQuery('SELECT owner, ip, INET6_NTOA(ip) AS display_ip FROM crash WHERE lastview IS NULL OR lastview < DATE_SUB(NOW(), INTERVAL 90 DAY) GROUP BY owner, ip HAVING (owner IS NULL AND COUNT(*) > 50) OR (owner IS NOT NULL AND COUNT(*) > 100)');
 
         while ($group = $groups->fetch()) {
             if ($group['owner'] !== null) {
-                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner = ? AND ip = ? ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['owner'], $group['ip']));
+                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner = ? AND ip = ? AND (lastview IS NULL OR lastview < DATE_SUB(NOW(), INTERVAL 90 DAY)) ORDER BY timestamp DESC LIMIT 100 OFFSET 100', array($group['owner'], $group['ip']));
             } else {
-                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner IS NULL AND ip = ? ORDER BY timestamp DESC LIMIT 100 OFFSET 50', array($group['ip']));
+                $query = $app['db']->executeQuery('SELECT id FROM crash WHERE owner IS NULL AND ip = ? AND (lastview IS NULL OR lastview < DATE_SUB(NOW(), INTERVAL 90 DAY)) ORDER BY timestamp DESC LIMIT 100 OFFSET 50', array($group['ip']));
             }
 
             $crashes = array();
@@ -57,9 +57,9 @@ class CrashCleanCommand extends Command
 
         $count = 0;
         if ($input->getOption('dry-run')) {
-            $count = $app['db']->executeQuery('SELECT LEAST(COUNT(*), 100) FROM crash WHERE timestamp < DATE_SUB(NOW(), INTERVAL 90 DAY)')->fetchColumn(0);
+            $count = $app['db']->executeQuery('SELECT LEAST(COUNT(*), 100) FROM crash WHERE COALESCE(lastview, timestamp) < DATE_SUB(NOW(), INTERVAL 90 DAY)')->fetchColumn(0);
         } else {
-            $count = $app['db']->executeUpdate('DELETE FROM crash WHERE timestamp < DATE_SUB(NOW(), INTERVAL 90 DAY) LIMIT 100');
+            $count = $app['db']->executeUpdate('DELETE FROM crash WHERE COALESCE(lastview, timestamp) < DATE_SUB(NOW(), INTERVAL 90 DAY) LIMIT 100');
 
             if ($count > 0) {
                 $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:old', $count);
@@ -96,8 +96,14 @@ class CrashCleanCommand extends Command
                     continue;
                 }
 
+                $path = $app['root'] . '/dumps/' . $bucket . '/' . $dump;
+
+                if (time() - filemtime($path) < 24 * 3600) {
+                    // Wait until the file is 24hrs old before removing it, just in case we're racing submission.
+                    continue;
+                }
+
                 if (!$input->getOption('dry-run')) {
-                    $path = $app['root'] . '/dumps/' . $bucket . '/' . $dump;
                     \Filesystem::remove($path);
                 }
 
@@ -127,7 +133,7 @@ class CrashCleanCommand extends Command
 
             $count = count($missing_errored);
             if (!$input->getOption('dry-run')) {
-                $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) AND failed = 1 LIMIT 100', array(array_keys($missing)), array(\Doctrine\DBAL\Connection::PARAM_STR_ARRAY));
+                $count = $app['db']->executeUpdate('DELETE FROM crash WHERE id IN (?) AND failed = 1 AND timestamp < DATE_SUB(NOW(), INTERVAL 1 DAY) LIMIT 100', array(array_keys($missing)), array(\Doctrine\DBAL\Connection::PARAM_STR_ARRAY));
 
                 if ($count > 0) {
                     $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:missing', $count);

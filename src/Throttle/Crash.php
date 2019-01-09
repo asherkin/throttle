@@ -318,7 +318,11 @@ class Crash
             return $app->abort(404);
         }
 
-        $crash = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash, user.name FROM crash LEFT JOIN user ON user.id = crash.owner WHERE crash.id = ?', array($id))->fetch();
+        $crash = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) AS timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash, UNIX_TIMESTAMP(crash.lastview) AS lastview, user.name FROM crash LEFT JOIN user ON user.id = crash.owner WHERE crash.id = ?', array($id))->fetch();
+
+        if ($crash['lastview'] === null || (time() - $crash['lastview']) > (60 * 60 * 24)) {
+            $app['db']->executeUpdate('UPDATE crash SET lastview = NOW() WHERE id = ?', array($id));
+        }
 
         if ($crash['thread'] == -1) {
             $crash['thread'] = 0;
