@@ -24,15 +24,11 @@ class Crash
 
     private static function canUserManage($app, $crash)
     {
-        if (!$app['user']) {
+        if (!$app['user'] || $app['user']['admin']) {
             // Hacky, but execute a query to check if the crash doesn't exist at all.
             $query = $app['db']->executeQuery('SELECT 1 FROM crash WHERE crash.id = ?', [$crash])->fetchColumn(0);
 
-            return ($query === false) ? null : false;
-        }
-
-        if ($app['user']['admin']) {
-            return true;
+            return ($query === false) ? null : !!$app['user']['admin'];
         }
 
         $query = $app['db']->executeQuery('SELECT COALESCE(crash.owner = ? OR EXISTS (SELECT TRUE FROM share WHERE share.owner = crash.owner AND share.user = ?), 0) AS manage FROM crash WHERE crash.id = ?', [$app['user']['id'], $app['user']['id'], $crash])->fetchColumn(0);
@@ -279,6 +275,10 @@ class Crash
         }
 
         $crash = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash, user.name FROM crash LEFT JOIN user ON user.id = crash.owner WHERE crash.id = ?', array($id))->fetch();
+
+        if ($crash['thread'] == -1) {
+            $crash['thread'] = 0;
+        }
 
         $crash['metadata'] = json_decode($crash['metadata'], true);
 
