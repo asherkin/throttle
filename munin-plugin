@@ -9,7 +9,11 @@ graph_period minute
 graph_args --lower-limit 0
 graph_vlabel crashes per ${graph_period}
 graph_category throttle
-graph_order accepted rejected_no_minidump rejected_no_steam rejected_rate_limit submitted
+graph_order accepted rejected_no_minidump rejected_no_steam rejected_rate_limit presubmitted submitted
+presubmitted.label presubmitted
+presubmitted.type DERIVE
+presubmitted.min 0
+presubmitted.colour COLOUR4
 submitted.label submitted
 submitted.type DERIVE
 submitted.min 0
@@ -157,6 +161,7 @@ $redis->close();
 
 echo <<<EOT
 multigraph throttle_submitted
+presubmitted.value {$stats['crashes:presubmitted']}
 submitted.value {$stats['crashes:submitted']}
 accepted.value {$stats['crashes:accepted']}
 rejected_no_minidump.value {$stats['crashes:rejected:no-minidump']}

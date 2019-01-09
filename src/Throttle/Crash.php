@@ -48,14 +48,21 @@ class Crash
         throw new \Exception('Bad query return in '.__FUNCTION__);
     }
 
-    public function presubmit(Application $app, $signature)
+    public static function parsePresubmitSignature($signature)
     {
-        $app['redis']->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
-
         $signature = array_reverse(explode('|', $signature));
         $version = (int)array_pop($signature);
-        if ($version !== 1) {
-            return 'E|bad version';
+        if ($version < 0 || $version > 2) {
+            throw new \Exception('bad version');
+        }
+
+        $timestamp = time();
+        $platform = '';
+        $architecture = 'x86';
+        if ($version > 1) {
+            $timestamp = (int)array_pop($signature);
+            $platform = array_pop($signature);
+            $architecture = array_pop($signature);
         }
 
         $crashed = (int)array_pop($signature);
@@ -70,29 +77,61 @@ class Crash
             $type = array_pop($signature);
             switch ($type) {
                 case 'M':
+                    $file = array_pop($signature);
+                    if (!strlen($platform)) {
+                        switch (pathinfo($file, PATHINFO_EXTENSION)) {
+                            case 'pdb':
+                                $platform = 'windows';
+                                break;
+                            case 'dylib':
+                                $platform = 'mac';
+                                break;
+                            case 'so':
+                                $platform = 'linux';
+                                break;
+                        }
+                    }
                     $modules[] = (object)[
-                        'file' => array_pop($signature),
+                        'file' => $file,
                         'identifier' => array_pop($signature),
                     ];
                     break;
                 case 'F':
-                    $fames[] = (object)[
+                    $frames[] = (object)[
                         'module' => (int)array_pop($signature),
                         'offset' => intval(array_pop($signature), 16),
                     ];
                     break;
                 default:
-                    return 'E|unknown field '.$type;
+                    throw new \Exception('unknown field '.$type);
             }
+        }
+
+        return (object)compact('timestamp', 'platform', 'architecture', 'crashed', 'crash_reason', 'crash_address', 'requesting_thread', 'modules', 'frames');
+    }
+
+    public function presubmit(Application $app, $signature)
+    {
+        $app['redis']->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
+
+        $app['monolog']->warning('Presubmit: '.$signature);
+
+        try {
+            $signature = self::parsePresubmitSignature($signature);
+        } catch (\Exception $e) {
+            return 'E|'.$e->getMessage();
         }
 
         // TODO: Determine whether we want the crash dump...
         $return = 'Y|';
-        foreach ($modules as $module) {
+        foreach ($signature->modules as $module) {
             // TODO: N query problem...
             $exists = $app['db']->executeQuery('SELECT TRUE FROM module WHERE name = ? AND identifier = ? AND present = 1 LIMIT 1', [$module->file, $module->identifier])->fetchColumn(0);
             $return .= ($exists === false) ? 'Y' : 'N';
         }
+
+        // Stick a random presubmit token on the end for testing.
+        $return .= '|'.md5($return);
 
         return $return;
     }
@@ -210,6 +249,11 @@ class Crash
         if (isset($metadata['CommandLine'])) {
             $command_line = $metadata['CommandLine'];
             unset($metadata['CommandLine']);
+        }
+
+        // Strip any presubmit token, until we're ready to do something with them
+        if (isset($metadata['PresubmitToken'])) {
+            unset($metadata['PresubmitToken']);
         }
 
         $metadata = json_encode($metadata);
