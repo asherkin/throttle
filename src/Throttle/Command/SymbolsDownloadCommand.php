@@ -64,10 +64,6 @@ class SymbolsDownloadCommand extends Command
             // Find all Windows modules missing symbols
             $query = 'SELECT DISTINCT name, identifier FROM module WHERE name LIKE \'%.pdb\' AND present = 0';
 
-            if ($limit !== null) {
-                $query .= ' LIMIT ' . $limit;
-            }
-
             $modules = $app['db']->executeQuery($query)->fetchAll();
         }
 
@@ -85,30 +81,42 @@ class SymbolsDownloadCommand extends Command
 
         $output->writeln('Loaded ' . count($blacklist) . ' blacklist entries');
 
-        $count = count($modules);
-        $output->writeln('Found ' . $count . ' missing symbols');
-
-        // Prepare HTTPSFutures for downloading compressed PDBs.
-        $futures = array();
         foreach ($modules as $key => $module) {
             $name = $module['name'];
             $identifier = $module['identifier'];
 
-            if (isset($blacklist[$name])) {
+            if (!$manualName && isset($blacklist[$name])) {
                 if ($blacklist[$name]['_total'] >= 9) {
+                    unset($modules[$key]);
                     continue;
                 }
 
                 if (isset($blacklist[$name][$identifier])) {
                     if ($blacklist[$name][$identifier] >= 3) {
+                        unset($modules[$key]);
                         continue;
                     }
                 }
             }
+        }
 
-            $compressedName = substr($name, 0, -1) . '_';
-            $futures[$key] = id(new \HTTPSFuture('http://msdl.microsoft.com/download/symbols/' . urlencode($name) . '/' . $identifier . '/' . urlencode($compressedName)))
-                ->addHeader('User-Agent', 'Microsoft-Symbol-Server')->setFollowLocation(false)->setExpectStatus(array(200, 302, 404));
+        shuffle($modules);
+
+        if ($limit) {
+            $modules = array_slice($modules, 0, $limit);
+        }
+
+        $count = count($modules);
+        $output->writeln('Found ' . $count . ' missing symbols');
+
+        // Prepare HTTPSFutures for downloading PDBs.
+        $futures = array();
+        foreach ($modules as $key => $module) {
+            $name = $module['name'];
+            $identifier = $module['identifier'];
+
+            $futures[$key] = id(new \HTTPSFuture('http://msdl.microsoft.com/download/symbols/' . urlencode($name) . '/' . $identifier . '/' . urlencode($name)))
+                ->addHeader('User-Agent', 'Microsoft-Symbol-Server')->setExpectStatus(array(200, 404));
         }
 
         $downloaded = 0;
@@ -140,9 +148,6 @@ class SymbolsDownloadCommand extends Command
             $identifier = $module['identifier'];
 
             if ($status instanceof \HTTPFutureHTTPResponseStatus && $status->getStatusCode() === 404) {
-                //$output->writeln('');
-                //$output->writeln(json_encode($module));
-
                 if (!isset($blacklist[$name])) {
                     $blacklist[$name] = [
                         '_total' => 1,
@@ -158,6 +163,12 @@ class SymbolsDownloadCommand extends Command
                     }
                 }
 
+                if ($manualName) {
+                    $output->writeln("\r" . 'Failed to download: ' . $name . ' ' . $identifier);
+                }
+
+                $app['redis']->set('throttle:cache:blacklist', json_encode($blacklist));
+
                 $progress->advance();
                 continue;
             }
@@ -165,18 +176,18 @@ class SymbolsDownloadCommand extends Command
             // Reset the total on any successful download.
             if (isset($blacklist[$name])) {
                 $blacklist[$name]['_total'] = 0;
+                if (isset($blacklist[$name][$identifier])) {
+                    $blacklist[$name][$identifier] = 0;
+                }
             }
 
+            $app['redis']->set('throttle:cache:blacklist', json_encode($blacklist));
+
             $prefix = $cache . '/' . $name . '-' . $identifier;
-            $compressedName = substr($name, 0, -1) . '_';
 
-            // Write the compressed PDB.
+            // Write the PDB.
             \Filesystem::createDirectory($prefix, 0777, true);
-            \Filesystem::writeFile($prefix . '/' . $compressedName, $body);
-
-            // Unpack it and removed the compressed copy.
-            execx('cabextract -p %s > %s', $prefix . '/' . $compressedName, $prefix . '/' . $name);
-            \Filesystem::remove($prefix . '/' . $compressedName);
+            \Filesystem::writeFile($prefix . '/' . $name, $body);
 
             // Finally, dump the symbols.
             $symfile = substr($name, 0, -3) . 'sym.gz';
