@@ -166,8 +166,17 @@
 {% block scripts %}
 <script src="{{ app.request.baseUrl }}/js/jquery.hoverIntent.min.js"></script>
 <script type="text/javascript">
+    var hasShownWarning = false;
     $(/*'.table-stacktrace'*/document).on('copy', function() {
-        alert('If you are copying the stack trace to share, please link this page instead.\n\nHaving the full report makes it a lot easier to help you, and only non-sensitive information is visible publicly.\n\nYou can verify this yourself by logging out or using an Incognito / Private Browsing window.');
+        if (hasShownWarning) {
+            return;
+        }
+
+        hasShownWarning = true;
+
+        setTimeout(function() {
+            alert('If you are copying the stack trace to share, please link this page instead.\n\nHaving the full report makes it a lot easier to help you, and only non-sensitive information is visible publicly.\n\nYou can verify this yourself by logging out or using an Incognito / Private Browsing window.');
+        }, 0);
     });
 
     $('.table-stacktrace tbody tr').hoverIntent(function() { $(this).toggleClass('stackframe-expand'); });
