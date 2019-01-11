@@ -59,7 +59,9 @@ class CrashCleanCommand extends Command
         if ($input->getOption('dry-run')) {
             $count = $app['db']->executeQuery('SELECT LEAST(COUNT(*), 100) FROM crash WHERE COALESCE(lastview, timestamp) < DATE_SUB(NOW(), INTERVAL 90 DAY)')->fetchColumn(0);
         } else {
-            $count = $app['db']->executeUpdate('DELETE FROM crash WHERE COALESCE(lastview, timestamp) < DATE_SUB(NOW(), INTERVAL 90 DAY) LIMIT 100');
+            // Using COALESCE for this query locks every single row for writing.
+            // $count = $app['db']->executeUpdate('DELETE FROM crash WHERE COALESCE(lastview, timestamp) < DATE_SUB(NOW(), INTERVAL 90 DAY) LIMIT 100');
+            $count = $app['db']->executeUpdate('DELETE FROM crash WHERE (lastview IS NOT NULL AND lastview < DATE_SUB(NOW(), INTERVAL 90 DAY)) OR (lastview IS NULL AND timestamp < DATE_SUB(NOW(), INTERVAL 90 DAY)) LIMIT 100');
 
             if ($count > 0) {
                 $app['redis']->hIncrBy('throttle:stats', 'crashes:cleaned:old', $count);
