@@ -585,3 +585,38 @@ tbody .column-actions .btn {
 .nav-tabs-avatars>li>a {
     padding: 5px;
 }
+
+.well-stream:not(.missing-stream) > :first-child {
+    position: relative;
+    cursor: pointer;
+}
+
+.well-stream:not(.missing-stream):not(.well-open) > :first-child {
+    margin-bottom: 0;
+}
+
+.well-stream:not(.missing-stream):not(.well-open) > :not(:first-child) {
+    display: none;
+}
+
+.well-stream:not(.missing-stream) > :first-child:after {
+    position: absolute;
+    left: 0;
+    top: 0;
+
+    font-family: FontAwesome;
+    font-weight: normal;
+    font-style: normal;
+    text-decoration: inherit;
+    -webkit-font-smoothing: antialiased;
+    *margin-right: .3em;
+    speak: none;
+}
+
+.well-stream:not(.missing-stream):not(.well-open) > :first-child:after {
+    content: '\f067';
+}
+
+.well-stream:not(.missing-stream).well-open > :first-child:after {
+    content: '\f068';
+}

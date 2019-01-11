@@ -1,3 +1,5 @@
+// https://chromium.googlesource.com/breakpad/breakpad/+/master/src/google_breakpad/common/minidump_format.h
+
 var StreamType = [];
 StreamType[0] = 'MD_UNUSED_STREAM';
 StreamType[1] = 'MD_RESERVED_STREAM_0';
@@ -56,6 +58,51 @@ MinidumpFlags[0x00010000] = 'MD_WITH_PRIVATE_WRITE_COPY_MEMORY';
 MinidumpFlags[0x00020000] = 'MD_IGNORE_INACCESSIBLE_MEMORY';
 MinidumpFlags[0x00040000] = 'MD_WITH_TOKEN_INFORMATION';
 
+var AuxvNames = [];
+AuxvNames[0] = 'AT_NULL';
+AuxvNames[1] = 'AT_IGNORE';
+AuxvNames[2] = 'AT_EXECFD';
+AuxvNames[3] = 'AT_PHDR';
+AuxvNames[4] = 'AT_PHENT';
+AuxvNames[5] = 'AT_PHNUM';
+AuxvNames[6] = 'AT_PAGESZ';
+AuxvNames[7] = 'AT_BASE';
+AuxvNames[8] = 'AT_FLAGS';
+AuxvNames[9] = 'AT_ENTRY';
+AuxvNames[10] = 'AT_NOTELF';
+AuxvNames[11] = 'AT_UID';
+AuxvNames[12] = 'AT_EUID';
+AuxvNames[13] = 'AT_GID';
+AuxvNames[14] = 'AT_EGID';
+AuxvNames[17] = 'AT_CLKTCK';
+AuxvNames[15] = 'AT_PLATFORM';
+AuxvNames[16] = 'AT_HWCAP';
+AuxvNames[18] = 'AT_FPUCW';
+AuxvNames[19] = 'AT_DCACHEBSIZE';
+AuxvNames[20] = 'AT_ICACHEBSIZE';
+AuxvNames[21] = 'AT_UCACHEBSIZE';
+AuxvNames[22] = 'AT_IGNOREPPC';
+AuxvNames[23] = 'AT_SECURE';
+AuxvNames[24] = 'AT_BASE_PLATFORM';
+AuxvNames[25] = 'AT_RANDOM';
+AuxvNames[26] = 'AT_HWCAP2';
+AuxvNames[31] = 'AT_EXECFN';
+AuxvNames[32] = 'AT_SYSINFO';
+AuxvNames[33] = 'AT_SYSINFO_EHDR';
+AuxvNames[34] = 'AT_L1I_CACHESHAPE';
+AuxvNames[35] = 'AT_L1D_CACHESHAPE';
+AuxvNames[36] = 'AT_L2_CACHESHAPE';
+AuxvNames[37] = 'AT_L3_CACHESHAPE';
+AuxvNames[40] = 'AT_L1I_CACHESIZE';
+AuxvNames[41] = 'AT_L1I_CACHEGEOMETRY';
+AuxvNames[42] = 'AT_L1D_CACHESIZE';
+AuxvNames[43] = 'AT_L1D_CACHEGEOMETRY';
+AuxvNames[44] = 'AT_L2_CACHESIZE';
+AuxvNames[45] = 'AT_L2_CACHEGEOMETRY';
+AuxvNames[46] = 'AT_L3_CACHESIZE';
+AuxvNames[47] = 'AT_L3_CACHEGEOMETRY';
+AuxvNames[51] = 'AT_MINSIGSTKSZ';
+
 function hex(n) {
     return ('0000000' + ((n|0)+4294967296).toString(16)).substr(-8);
 }
@@ -72,7 +119,7 @@ function printString(view) {
 
     var size = view.getUint32()
     if ((size % 2) !== 0) {
-        return '[invalid utf-16 string - odd byte length]';
+        return '[invalid utf-16 string - odd byte length: ' + size + ']';
     }
 
     var data = [];
@@ -219,7 +266,8 @@ oReq.onload = function(oEvent) {
             continue;
         }
 
-        html = '<div class="well"><dl class="dl-horizontal dl-minidump">';
+        var containerClasslist = 'well well-stream';
+        html = '<dl class="dl-horizontal dl-minidump">';
         html += '<dt>Stream Type</dt><dd>' + streamType + '</dd>';
         streamSize = view.getUint32(); //html += '<dt>Stream Size</dt><dd>0x' + hex(streamSize = view.getUint32()) + '</dd>';
         streamOffset = view.getUint32(); //html += '<dt>Stream Offset</dt><dd>0x' + hex(streamOffset = view.getUint32()) + '</dd>';
@@ -265,12 +313,98 @@ oReq.onload = function(oEvent) {
             }
             break;
         }
+        case 'MD_MODULE_LIST_STREAM': {
+            var moduleCount;
+            html += '<dt>Module Count</dt><dd>' + (moduleCount = view.getUint32()) + '</dd>';
+            html += '</dl><dl>';
+            for (var j = 0; j < moduleCount; ++j) {
+                html += '<dt>Module ' + j + '</dt><dd><div class="well well-sm"><dl class="dl-horizontal dl-minidump">';
+                html += '<dt>Base</dt><dd>0x' + hex64(view.getUint64()) + '</dd>';
+                html += '<dt>Size</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>Checksum</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>Time Stamp</dt><dd>' + new Date(view.getUint32() * 1000) + '</dd>';
+                html += '<dt>Name</dt><dd>' + printString(view) + '</dd>';
+
+                html += '<dt>Signature</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>Struct Version</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>File Version</dt><dd>' + view.getUint16() + '.' + view.getUint16() + '.' + view.getUint16() + '.' + view.getUint16() + '</dd>';
+                html += '<dt>Product Version</dt><dd>' + view.getUint16() + '.' + view.getUint16() + '.' + view.getUint16() + '.' + view.getUint16() + '</dd>';
+                html += '<dt>File Flags Mask</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>File Flags</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>File OS</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>File Type</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>File Subtype</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                html += '<dt>File Date</dt><dd>0x' + hex64(view.getUint64()) + '</dd>';
+
+                var cvRecordSize = view.getUint32();
+                var cvRecordOffset = view.getUint32();
+                if (cvRecordSize > 0) {
+                    var cvRecordReset = view.tell();
+                    view.seek(cvRecordOffset);
+
+                    var cvSignature = view.getUint32();
+                    switch (cvSignature) {
+                        case 0x4270454c: { // MD_CVINFOELF_SIGNATURE
+                            var buildIdLength = cvRecordSize - 4;
+                            var buildId = '';
+                            if ((buildIdLength % 4) !== 0) throw new Error();
+                            for (var k = 0; k < (buildIdLength / 4); ++k) {
+                                buildId += hex(view.getUint32());
+                            }
+
+                            html += '<dt>Build ID</dt><dd>' + buildId + '</dd>';
+                            break;
+                        }
+                        case 0x53445352: { // MD_CVINFOPDB70_SIGNATURE
+                            var guid = '';
+                            for (var k = 0; k < 4; ++k) {
+                                guid += hex(view.getUint32());
+                            }
+                            html += '<dt>GUID</dt><dd>' + guid + '</dd>';
+                            html += '<dt>Age</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
+                            var pdbName = '';
+                            for (var k = 0; k < (cvRecordSize - 20); ++k) {
+                                var c = view.getUint8();
+                                if (c === 0) break;
+                                pdbName += String.fromCharCode(c);
+                            }
+                            html += '<dt>PDB Name</dt><dd>' + pdbName + '</dd>';
+                            break;
+                        }
+                        default:
+                            html += '<dt>CodeView Type</dt><dd>0x' + hex(cvSignature) + '</dd>';
+                    }
+
+                    view.seek(cvRecordReset);
+                }
+
+                var miscRecordSize = view.getUint32();
+                var miscRecordOffset = view.getUint32();
+                if (miscRecordSize > 0) {
+                    var miscRecordReset = view.tell();
+                    view.seek(miscRecordOffset);
+
+                    view.seek(miscRecordReset);
+                }
+
+                view.getUint64(); // Useless alignment bytes.
+                view.getUint64(); // Useless alignment bytes.
+                html += '</dl></div></dd>';
+            }
+            break;
+        }
         case 'MD_EXCEPTION_STREAM': {
             html += '<dt>Exception Thread ID</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
             view.getUint32() // Useless alignment bytes.
             html += '<dt>Exception Code</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
             html += '<dt>Exception Flags</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
-            // Lots of other stuff...
+            html += '<dt>Exception Record</dt><dd>0x' + hex64(view.getUint64()) + '</dd>';
+            html += '<dt>Exception Address</dt><dd>0x' + hex64(view.getUint64()) + '</dd>';
+            var exceptionParamCount = view.getUint32();
+            view.getUint32() // Useless alignment bytes.
+            for (var k = 0; k < exceptionParamCount; ++k) {
+                html += '<dt>Param ' + k + '</dt><dd>0x' + hex64(view.getUint64()) + '</dd>';
+            }
             break;
         }
         case 'MD_SYSTEM_INFO_STREAM': {
@@ -314,15 +448,36 @@ oReq.onload = function(oEvent) {
             }
             break;
         }
+        case 'MD_LINUX_AUXV': {
+            var count = streamSize / 8;
+            for (var j = 0; j < count; ++j) {
+                var auxvId = view.getUint32();
+                if (auxvId === 0) break;
+                var auxvName = AuxvNames[auxvId] || hex(auxvId);
+                html += '<dt>' + auxvName + '</dt><dd>' + hex(view.getUint32()) + '</dd>';
+            }
+            break;
+        }
         default:
+            containerClasslist += ' missing-stream';
             html += '<div class="alert alert-warning">This stream is currently unhandled.</div>';
         }
 
         html += '</dl>';
         view.seek(reset);
 
+        html = '<div class="' + containerClasslist + '">' + html;
         html += '</div>';
         content.parent().append(html);
+    }
+
+    function toggleWell(e) {
+        this.parentElement.classList.toggle('well-open');
+    }
+
+    var wells = document.getElementsByClassName('well-stream');
+    for (var j = 0; j < wells.length; ++j) {
+        wells[j].firstElementChild.onclick = toggleWell;
     }
 };
 
