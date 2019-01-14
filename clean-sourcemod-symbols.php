@@ -13,6 +13,43 @@ if (!is_dir($root)) {
   exit();
 }
 
+$used_file = './used_symbols.txt';
+if ($argc > 2) {
+    $used_file = $argv[2];
+}
+
+if (!is_readable($used_file)) {
+  error_log('Not readable: ' . $used_file);
+  exit();
+}
+
+$used = file($used_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+$usedMap = [];
+foreach ($used as $line) {
+    $line = preg_split('/\\s+/', $line, null, PREG_SPLIT_NO_EMPTY);
+
+    if ($line[1] == '(deleted)') {
+        continue;
+    }
+
+    if (count($line) !== 2) {
+      error_log('Failed to parse used_symbols, too many: ' . print_r($line, true));
+      exit();
+    }
+
+    if ($line[1] == '000000000000000000000000000000000') {
+        continue;
+    }
+
+    list($name, $identifier) = $line;
+
+    if (!isset($usedMap[$name])) {
+        $usedMap[$name] = [];
+    }
+
+    $usedMap[$name][$identifier] = true;
+}
+
 if (substr($root, -1) !== '/') {
   $root .= '/';
 }
@@ -64,6 +101,10 @@ foreach ($moduleIterator as $module) {
   foreach ($symbols as $mtime => $symbolName) {
     if ($mtime > $cutoff) {
       break;
+    }
+
+    if (isset($usedMap[$moduleName]) && isset($usedMap[$moduleName][$symbolName])) {
+        continue;
     }
 
     $symbolFileDir = $root . $moduleName . '/' . $symbolName;
