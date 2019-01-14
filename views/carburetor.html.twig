@@ -45,7 +45,6 @@ oReq.onerror = function(oEvent) {
 };
 
 oReq.onprogress = function(oEvent) {
-    console.log(oEvent.lengthComputable, oEvent.loaded, oEvent.total);
     if (oEvent.lengthComputable) {
         progress.css('width', ((oEvent.loaded / oEvent.total) * 100) + '%');
         loading.removeClass('progress-striped');
@@ -58,7 +57,16 @@ oReq.onprogress = function(oEvent) {
 };
 
 oReq.onload = function(oEvent) {
-	const data = JSON.parse(oReq.response);
+    if (oReq.status !== 200) {
+        return oReq.onerror();
+    }
+
+    let data = null;
+    try {
+        data = JSON.parse(oReq.response);
+    } catch (e) {
+        return oReq.onerror();
+    }
 
     loading.remove();
     content.removeClass('hidden');

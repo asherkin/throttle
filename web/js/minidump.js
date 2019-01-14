@@ -215,22 +215,31 @@ var oReq = new XMLHttpRequest();
 oReq.open('GET', 'download', true);
 oReq.responseType = 'arraybuffer';
 
+oReq.onerror = function(oEvent) {
+    loading.removeClass('active');
+    loading.removeClass('progress-striped');
+    progress.addClass('progress-bar-danger');
+};
+
 oReq.onprogress = function(oEvent) {
     if (oEvent.lengthComputable) {
         progress.css('width', ((oEvent.loaded / oEvent.total) * 100) + '%');
+        loading.removeClass('progress-striped');
+        loading.removeClass('active');
     } else {
         progress.css('width', '100%');
-        progress.addClass('active');
+        loading.addClass('progress-striped');
+        loading.addClass('active');
     }
 };
 
 oReq.onload = function(oEvent) {
-    loading.remove();
-
     var arrayBuffer = oReq.response;
-    if (!arrayBuffer) {
-        return;
+    if (oReq.status !== 200 || !arrayBuffer) {
+        return oReq.onerror();
     }
+
+    loading.remove();
 
     var view = new jDataView(arrayBuffer, 0, arrayBuffer.byteLength, true);
 
