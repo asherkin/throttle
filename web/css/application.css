@@ -620,3 +620,15 @@ tbody .column-actions .btn {
 .well-stream:not(.missing-stream).well-open > :first-child:after {
     content: '\f068';
 }
+
+
+@media screen and (min-width: 768px) {
+    #copy-warning .modal-dialog {
+        width: 550px;
+    }
+}
+
+#copy-warning .modal-body .btn-block {
+    margin-top: 20px;
+}
+

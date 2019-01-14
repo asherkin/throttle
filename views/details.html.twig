@@ -161,6 +161,18 @@
 </div>
 {% endif %}
 {% endif %}
+<div class="modal fade" id="copy-warning" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <p>If you are copying the stack trace to share, please link this page instead.</p>
+        <p>Having the full report makes it a lot easier to help you, and only non-sensitive information is visible publicly.</p>
+        <p>You can verify this yourself by logging out or using an Incognito / Private Browsing window.</p>
+        <button type="button" class="btn btn-block btn-sm btn-info" data-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -175,8 +187,8 @@
         hasShownWarning = true;
 
         setTimeout(function() {
-            alert('If you are copying the stack trace to share, please link this page instead.\n\nHaving the full report makes it a lot easier to help you, and only non-sensitive information is visible publicly.\n\nYou can verify this yourself by logging out or using an Incognito / Private Browsing window.');
-        }, 0);
+            $('#copy-warning').modal();
+        }, 100);
     });
 
     $('.table-stacktrace tbody tr').hoverIntent(function() { $(this).toggleClass('stackframe-expand'); });
