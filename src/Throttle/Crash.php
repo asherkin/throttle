@@ -157,11 +157,13 @@ class Crash
             return $app['twig']->render('submit-empty.txt.twig');
         }
 
+        $app['redis']->hIncrBy('throttle:stats', 'crashes:submitted:bytes', $minidump->getClientSize());
+
         list($id, $path) = self::generateId($app);
 
-        $owner = $app['request']->request->get('UserID');
-        $server = null;
+        $ip = $app['request']->getClientIp();
 
+        $owner = $app['request']->request->get('UserID');
         if ($owner !== null) {
             $app['request']->request->remove('UserID');
 
@@ -179,14 +181,16 @@ class Crash
             }
 
             if ($owner !== null) {
-                //TODO As we don't need to query this until servers and permissions are added, just blindly inserting saves us a query.
                 $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($owner));
-                $app['db']->executeUpdate('INSERT IGNORE INTO server (owner) VALUES (?)', array($owner));
-                $server = '';
             }
         }
 
-        $ip = $app['request']->getClientIp();
+        $server = $app['request']->request->get('ServerID');
+        if ($server !== null) {
+            $app['request']->request->remove('ServerID');
+
+            // TODO: Validate ID, then insert, just like above.
+        }
 
         $count = 0;
 
@@ -239,8 +243,8 @@ class Crash
                 }
             }
 
-            $has_console = strpos($raw_metadata, '-------- CONSOLE HISTORY BEGIN --------');
-            if ($has_console !== false) {
+            $has_console = preg_match('/(?<=-------- CONSOLE HISTORY BEGIN --------)[^\\x00]+(?=-------- CONSOLE HISTORY END --------)/i', $raw_metadata, $metadata_console);
+            if ($has_console === 1 && strlen(trim($metadata_console[0]))) {
                 $metadata['HasConsoleLog'] = true;
             }
         }
@@ -256,9 +260,9 @@ class Crash
             unset($metadata['PresubmitToken']);
         }
 
-        $metadata = json_encode($metadata);
+        $metadata = json_encode($metadata, JSON_FORCE_OBJECT|JSON_UNESCAPED_SLASHES);
 
-        $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, cmdline, server) VALUES (?, NOW(), INET6_ATON(?), ?, ?, ?, ?)', array($id, $ip, $owner, $metadata, $command_line, $server));
+        $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, cmdline) VALUES (?, NOW(), INET6_ATON(?), ?, ?, ?)', array($id, $ip, $owner, $metadata, $command_line));
 
         // Move after it's in the DB, to avoid a race condition with the cleanup code.
         \Filesystem::createDirectory($path, 0755, true);
@@ -655,7 +659,7 @@ class Crash
             $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
             $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
 
-            $db->executeUpdate('UPDATE crash SET cmdline = NULL, thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', array($id));
+            $db->executeUpdate('UPDATE crash SET thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', array($id));
         });
 
         $return = $app['request']->get('return', null);

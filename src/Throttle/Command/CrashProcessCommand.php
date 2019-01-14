@@ -57,7 +57,7 @@ class CrashProcessCommand extends Command
                     $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
                     $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
 
-                    $db->executeUpdate('UPDATE crash SET thread = NULL, processed = FALSE WHERE id = ?', array($id));
+                    $db->executeUpdate('UPDATE crash SET thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', array($id));
                 });
 
                 $outdated += 1;
@@ -126,83 +126,69 @@ class CrashProcessCommand extends Command
                 try {
                     $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s 2> %s', $minidump, $logs);
 
-                    $foundStack = false;
-                    $addresses = array();
-
                     foreach (new \LinesOfALargeExecFuture($future) as $line) {
                         $data = str_getcsv($line, '|');
 
-                        if (!$foundStack) {
-                            if ($line == '') {
-                                $foundStack = true;
-                                continue;
-                            }
+                        if ($line == '') {
+                            break;
+                        }
 
-                            if ($data[0] != 'Module' || $data[3] === '' || $data[4] === '') {
-                                continue;
-                            }
+                        if ($data[0] != 'Module' || $data[3] === '' || $data[4] === '') {
+                            continue;
+                        }
 
-                            $cacheKey = $data[1] . '-' . $data[3] . '-' . $data[4];
+                        $cacheKey = $data[1] . '-' . $data[3] . '-' . $data[4];
 
-                            if (array_key_exists($cacheKey, $symbolCache)) {
-                                if ($symbolCache[$cacheKey]) {
-                                    $app['redis']->hIncrBy('throttle:stats', 'symbols:found-cached', 1);
-                                } else {
-                                    $app['redis']->hIncrBy('throttle:stats', 'symbols:missing-cached', 1);
-                                }
-
-                                continue;
-                            }
-
-                            $symname = $data[3];
-                            if (stripos($symname, '.pdb') == strlen($symname) - 4) {
-                                $symname = substr($symname, 0, -4);
-                            }
-
-                            $symdir = $data[3] . '/' . $data[4];
-                            $sympath = $symdir . '/' . $symname . '.sym';
-
-                            if (file_exists($symbolCacheDirectory . '/' . $sympath)) {
-                                $symbolCache[$cacheKey] = true;
-
-                                $app['redis']->hIncrBy('throttle:stats', 'symbols:found', 1);
-
-                                continue;
-                            }
-
-                            $foundSymbolFile = false;
-                            foreach ($symbols as $path) {
-                                if (file_exists($path . '/' . $sympath . '.gz')) {
-                                    $foundSymbolFile = true;
-                                    \Filesystem::createDirectory($symbolCacheDirectory . '/' . $symdir, 0777, true);
-                                    \Filesystem::writeFile($symbolCacheDirectory . '/' . $sympath, gzdecode(\Filesystem::readFile($path . '/' . $sympath . '.gz')));
-                                    break;
-                                }
-                            }
-
-                            $symbolCache[$cacheKey] = $foundSymbolFile;
-
-                            if ($foundSymbolFile) {
-                                $app['redis']->hIncrBy('throttle:stats', 'symbols:found-compressed', 1);
+                        if (array_key_exists($cacheKey, $symbolCache)) {
+                            if ($symbolCache[$cacheKey]) {
+                                $app['redis']->hIncrBy('throttle:stats', 'symbols:found-cached', 1);
                             } else {
-                                $app['redis']->hIncrBy('throttle:stats', 'symbols:missing', 1);
+                                $app['redis']->hIncrBy('throttle:stats', 'symbols:missing-cached', 1);
                             }
 
                             continue;
                         }
 
-                        $thread = (int)$data[0];
-                        $frame = (int)$data[1];
-                        $address = hexdec($data[6]);
+                        $symname = $data[3];
+                        if (stripos($symname, '.pdb') == strlen($symname) - 4) {
+                            $symname = substr($symname, 0, -4);
+                        }
 
-                        if (!isset($addresses[$thread])) $addresses[$thread] = array();
-                        $addresses[$thread][$frame] = $address;
+                        $symdir = $data[3] . '/' . $data[4];
+                        $sympath = $symdir . '/' . $symname . '.sym';
+
+                        if (file_exists($symbolCacheDirectory . '/' . $sympath)) {
+                            $symbolCache[$cacheKey] = true;
+
+                            $app['redis']->hIncrBy('throttle:stats', 'symbols:found', 1);
+
+                            continue;
+                        }
+
+                        $foundSymbolFile = false;
+                        foreach ($symbols as $path) {
+                            if (file_exists($path . '/' . $sympath . '.gz')) {
+                                $foundSymbolFile = true;
+                                \Filesystem::createDirectory($symbolCacheDirectory . '/' . $symdir, 0777, true);
+                                \Filesystem::writeFile($symbolCacheDirectory . '/' . $sympath, gzdecode(\Filesystem::readFile($path . '/' . $sympath . '.gz')));
+                                break;
+                            }
+                        }
+
+                        $symbolCache[$cacheKey] = $foundSymbolFile;
+
+                        if ($foundSymbolFile) {
+                            $app['redis']->hIncrBy('throttle:stats', 'symbols:found-compressed', 1);
+                        } else {
+                            $app['redis']->hIncrBy('throttle:stats', 'symbols:missing', 1);
+                        }
                     }
 
                     $future = new \ExecFuture($app['root'] . '/bin/minidump_stackwalk -m %s %s 2>> %s', $minidump, $symbolCacheDirectory, $logs);
 
                     $crashThread = -1;
                     $foundStack = false;
+                    $seenModules = array();
                     $moduleRepos = array();
 
                     foreach (new \LinesOfALargeExecFuture($future) as $line) {
@@ -221,9 +207,15 @@ class CrashProcessCommand extends Command
 
                                 $cacheKey = $data[1] . '-' . $data[3] . '-' . $data[4];
 
+                                if (isset($seenModules[$cacheKey])) {
+                                    continue;
+                                }
+
+                                $seenModules[$cacheKey] = true;
                                 $hasSymbols = ($symbolCache[$cacheKey] === true);
 
-                                $app['db']->executeUpdate('INSERT IGNORE INTO module VALUES (?, ?, ?, ?, ?, ?)', array($id, $data[3], $data[4], $hasSymbols, $hasSymbols, hexdec($data[5])));
+                                $base = hexdec(substr($data[5], -8));
+                                $app['db']->executeUpdate('INSERT INTO module (crash, name, identifier, processed, present, base) VALUES (?, ?, ?, ?, ?, ?)', array($id, $data[3], $data[4], (int)$hasSymbols, (int)$hasSymbols, $base));
 
                                 if ($hasSymbols) {
                                     if (!array_key_exists($cacheKey, $repoCache)) {
@@ -351,11 +343,7 @@ class CrashProcessCommand extends Command
                             }
                         }
 
-                        // This stuff unfortunately doesn't work as the stack walker can get a completely different stack with symbols.
-                        // Need to think about it when doing the rewrite.
-                        $address = null;//$addresses[(int)$data[0]][(int)$data[1]];
-                        //print_r(array($data[0], $data[1], $addresses[(int)$data[0]][(int)$data[1]]));
-                        $app['db']->executeUpdate('INSERT INTO frame VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($id, $data[0], $data[1], $data[2], $data[3], $data[4], $data[5], $data[6], $rendered, $url, $address));
+                        $app['db']->executeUpdate('INSERT INTO frame (crash, thread, frame, module, function, file, line, offset, rendered, url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($id, $data[0], $data[1], $data[2], $data[3], $data[4], $data[5], $data[6], $rendered, $url));
                     }
                 } catch (\CommandException $e) {
                     $app['db']->executeUpdate('UPDATE crash SET processed = TRUE, failed = TRUE WHERE id = ?', array($id));
