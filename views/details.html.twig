@@ -16,7 +16,7 @@
 {% endif %}
 
 {%if outdated %}
-<div class="alert alert-block alert-info">This crash was submitted using an older version of Accelerator, please <a href="https://forums.alliedmods.net/showthread.php?t=277703" class="alert-link">update to the latest version</a> for full functionality.</div>
+<div class="alert alert-block alert-warning">This crash was submitted using an older version of Accelerator, please <a href="https://forums.alliedmods.net/showthread.php?t=277703" class="alert-link">update to the latest version</a> for full functionality.</div>
 {% endif %}
 
 <div class="well" style="position: relative;">
@@ -61,6 +61,10 @@
 {% for notice in notices %}
 <div class="alert alert-block alert-{{ notice.severity }}">{{ notice.text|raw }}</div>
 {% endfor %}
+
+{% if crash.thread != 0 %}
+<div class="alert alert-block alert-info">This crash is not from the main thread.<br>The stack trace displayed below is of the thread that crashed.</div>
+{% endif %}
 
 {% if has_error_string and can_manage %}
 <div id="error-details" class="alert alert-block alert-warning"><i class="icon-cog icon-spin"></i></div>
