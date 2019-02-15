@@ -243,8 +243,12 @@ $app['user'] = null;
 
 if ($user) {
     $startTime = microtime(true);
-    $details = $app['db']->executeQuery('SELECT name, avatar, (SELECT COUNT(*) FROM share WHERE user = id AND accepted IS NULL) AS pending FROM user WHERE id = ? LIMIT 1', array($user['id']))->fetch();
+    $details = $app['db']->executeQuery('SELECT name, avatar, UNIX_TIMESTAMP(lastactive) AS lastactive, (SELECT COUNT(*) FROM share WHERE user = id AND accepted IS NULL) AS pending FROM user WHERE id = ? LIMIT 1', array($user['id']))->fetch();
     $app['monolog']->info(sprintf('Loaded user details in %fms', (microtime(true) - $startTime) / 1000));
+
+    if ($details && ($details['lastactive'] === null || (time() - $details['lastactive']) > (60 * 60 * 24))) {
+        $app['db']->executeUpdate('UPDATE user SET lastactive = NOW() WHERE id = ?', array($user['id']));
+    }
 
     $app['user'] = array(
         'id' => $user['id'],
@@ -256,7 +260,7 @@ if ($user) {
 }
 
 $app['feature'] = array(
-    'subscriptions' => false, //$app['user'] && ($developer || in_array($app['user']['id'], ['...'])),
+    'subscriptions' => false, //$app['user'] && $developer, //$app['user'] && ($developer || in_array($app['user']['id'], ['...'])),
 );
 
 Symfony\Component\HttpFoundation\Request::setTrustedProxies($app['config']['trusted-proxies']);
