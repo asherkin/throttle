@@ -116,12 +116,15 @@
         </thead>
         <tbody>
 {% for frame in stack %}
-            <tr>
+            <tr class="{% if '__SourceHook_' in frame.rendered %}text-muted{% endif %}">
                 <th>{{ frame.frame }}</th>
                 <td class="monospace">
                   {{ frame.rendered }}
 {% if frame.url %}
                   <a href="{{ frame.url }}"><i class="icon-external-link"></i></a>
+{% endif %}
+{% if '__SourceHook_' in frame.rendered %}
+                  <span class="pull-right" data-toggle="tooltip" data-container="body" data-placement="bottom" title="This frame is from a function hook and is most likely unrelated to the cause of the crash."><i class="icon-anchor"></i></span>
 {% endif %}
                 </td>
             </tr>

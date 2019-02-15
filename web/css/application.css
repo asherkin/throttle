@@ -6,6 +6,10 @@ body {
     background-color: #F8F8F8;
 }
 
+.well .text-muted, .well tr.text-muted>td>a {
+    color: #999;
+}
+
 .text-muted, h1 small, h2 small, h3 small, h4 small, h5 small, h6 small, .h1 small, .h2 small, .h3 small, .h4 small, .h5 small, .h6 small, .breadcrumb>.active {
     color: #777;
 }
