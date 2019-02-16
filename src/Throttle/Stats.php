@@ -223,7 +223,7 @@ class Stats
                 }
             }
         } else {
-            $data = $app['db']->executeQuery('SELECT module, COALESCE(NULLIF(function, \'\'), offset) AS function, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 '.$scope.' GROUP BY module, COALESCE(NULLIF(function, \'\'), offset) ORDER BY count DESC LIMIT 10');
+            $data = $app['db']->executeQuery('SELECT crashmodule AS module, crashfunction AS function, COUNT(*) AS count FROM crash WHERE 1=1 '.$scope.' GROUP BY module, function ORDER BY count DESC LIMIT 10');
 
             while ($row = $data->fetch()) {
                 $output[] = array($app->escape($row['function'] ? $row['module'].'!'.$row['function'] : $row['module']), $row['count'], $row['module'], $row['function']);

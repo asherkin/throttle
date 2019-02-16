@@ -343,6 +343,10 @@ class CrashProcessCommand extends Command
                             }
                         }
 
+                        if ($data[1] == '0' && ($crashThread == $data[0] || ($crashThread == -1 && $data[0] == '0'))) {
+                            $app['db']->executeUpdate('UPDATE crash SET crashmodule = ?, crashfunction = ? WHERE id = ?', array($data[2], strlen($data[3]) ? $data[3] : $data[6], $id));
+                        }
+
                         $app['db']->executeUpdate('INSERT INTO frame (crash, thread, frame, module, function, file, line, offset, rendered, url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($id, $data[0], $data[1], $data[2], $data[3], $data[4], $data[5], $data[6], $rendered, $url));
                     }
                 } catch (\CommandException $e) {
