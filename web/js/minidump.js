@@ -267,9 +267,14 @@ oReq.onload = function(oEvent) {
     var streamType, streamSize, streamOffset;
     for (var i = 0; i < streamCount; ++i) {
         streamType = view.getUint32();
+        streamSize = view.getUint32();
+        streamOffset = view.getUint32();
+
         if (StreamType[streamType]) {
             streamType = StreamType[streamType];
         }
+
+        console.log(streamCount, i, streamType, streamSize);
 
         if (streamType === 'MD_UNUSED_STREAM') {
             continue;
@@ -278,8 +283,8 @@ oReq.onload = function(oEvent) {
         var containerClasslist = 'well well-stream';
         html = '<dl class="dl-horizontal dl-minidump">';
         html += '<dt>Stream Type</dt><dd>' + streamType + '</dd>';
-        streamSize = view.getUint32(); //html += '<dt>Stream Size</dt><dd>0x' + hex(streamSize = view.getUint32()) + '</dd>';
-        streamOffset = view.getUint32(); //html += '<dt>Stream Offset</dt><dd>0x' + hex(streamOffset = view.getUint32()) + '</dd>';
+        //html += '<dt>Stream Size</dt><dd>0x' + hex(streamSize) + '</dd>';
+        //html += '<dt>Stream Offset</dt><dd>0x' + hex(streamOffset) + '</dd>';
         html += '</dl>';
 
         if (streamSize === 0) {

@@ -1,47 +1,47 @@
 'use strict';
 
 if (!String.prototype.padStart) {
-    String.prototype.padStart = function padStart(targetLength,padString) {
-        targetLength = targetLength>>0; //floor if number or convert non-number to 0;
-        padString = String(padString || ' ');
-        if (this.length > targetLength) {
-            return String(this);
-        }
-        else {
-            targetLength = targetLength-this.length;
-            if (targetLength > padString.length) {
-                padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
-            }
-            return padString.slice(0,targetLength) + String(this);
-        }
-    };
+	String.prototype.padStart = function padStart(targetLength,padString) {
+		targetLength = targetLength>>0; //floor if number or convert non-number to 0;
+		padString = String(padString || ' ');
+		if (this.length > targetLength) {
+			return String(this);
+		}
+		else {
+			targetLength = targetLength-this.length;
+			if (targetLength > padString.length) {
+				padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
+			}
+			return padString.slice(0,targetLength) + String(this);
+		}
+	};
 }
 
 if (!String.prototype.padEnd) {
-    String.prototype.padEnd = function padEnd(targetLength,padString) {
-        targetLength = targetLength>>0; //floor if number or convert non-number to 0;
-        padString = String(padString || ' ');
-        if (this.length > targetLength) {
-            return String(this);
-        }
-        else {
-            targetLength = targetLength-this.length;
-            if (targetLength > padString.length) {
-                padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
-            }
-            return String(this) + padString.slice(0,targetLength);
-        }
-    };
+	String.prototype.padEnd = function padEnd(targetLength,padString) {
+		targetLength = targetLength>>0; //floor if number or convert non-number to 0;
+		padString = String(padString || ' ');
+		if (this.length > targetLength) {
+			return String(this);
+		}
+		else {
+			targetLength = targetLength-this.length;
+			if (targetLength > padString.length) {
+				padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
+			}
+			return String(this) + padString.slice(0,targetLength);
+		}
+	};
 }
 
 function base64ToUint8Array(base64) {
-    var binary_string =  window.atob(base64);
-    var len = binary_string.length;
-    var bytes = new Uint8Array( len );
-    for (var i = 0; i < len; i++)        {
-        bytes[i] = binary_string.charCodeAt(i);
-    }
-    return bytes;
+	var binary_string =  window.atob(base64);
+	var len = binary_string.length;
+	var bytes = new Uint8Array( len );
+	for (var i = 0; i < len; i++)		{
+		bytes[i] = binary_string.charCodeAt(i);
+	}
+	return bytes;
 }
 
 function print_memory(region) {
@@ -111,7 +111,7 @@ function memory(data) {
 	const memory = data.memory;
 	if (!memory) {
 		console.log('No memory regions in input');
-        throw e;
+		throw e;
 	}
 
 	memory.sort((a, b) => (a.base - b.base));

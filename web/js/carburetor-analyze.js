@@ -1,37 +1,37 @@
 'use strict';
 
 if (!String.prototype.padStart) {
-    String.prototype.padStart = function padStart(targetLength,padString) {
-        targetLength = targetLength>>0; //floor if number or convert non-number to 0;
-        padString = String(padString || ' ');
-        if (this.length > targetLength) {
-            return String(this);
-        }
-        else {
-            targetLength = targetLength-this.length;
-            if (targetLength > padString.length) {
-                padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
-            }
-            return padString.slice(0,targetLength) + String(this);
-        }
-    };
+	String.prototype.padStart = function padStart(targetLength,padString) {
+		targetLength = targetLength>>0; //floor if number or convert non-number to 0;
+		padString = String(padString || ' ');
+		if (this.length > targetLength) {
+			return String(this);
+		}
+		else {
+			targetLength = targetLength-this.length;
+			if (targetLength > padString.length) {
+				padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
+			}
+			return padString.slice(0,targetLength) + String(this);
+		}
+	};
 }
 
 if (!String.prototype.padEnd) {
-    String.prototype.padEnd = function padEnd(targetLength,padString) {
-        targetLength = targetLength>>0; //floor if number or convert non-number to 0;
-        padString = String(padString || ' ');
-        if (this.length > targetLength) {
-            return String(this);
-        }
-        else {
-            targetLength = targetLength-this.length;
-            if (targetLength > padString.length) {
-                padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
-            }
-            return String(this) + padString.slice(0,targetLength);
-        }
-    };
+	String.prototype.padEnd = function padEnd(targetLength,padString) {
+		targetLength = targetLength>>0; //floor if number or convert non-number to 0;
+		padString = String(padString || ' ');
+		if (this.length > targetLength) {
+			return String(this);
+		}
+		else {
+			targetLength = targetLength-this.length;
+			if (targetLength > padString.length) {
+				padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
+			}
+			return String(this) + padString.slice(0,targetLength);
+		}
+	};
 }
 
 const FRAME_TRUST = [
@@ -179,24 +179,14 @@ function print_instructions(indent, ip, instructions) {
 	}
 }
 
-function base64ToUint8Array(base64) {
-    var binary_string =  window.atob(base64);
-    var len = binary_string.length;
-    var bytes = new Uint8Array( len );
-    for (var i = 0; i < len; i++)        {
-        bytes[i] = binary_string.charCodeAt(i);
-    }
-    return bytes;
-}
-
 function print_thread(i, crashed, thread) {
-    let title = 'Thread ' + i;
-    if (crashed) {
-        title += ' (crashed)';
-    }
-    title += ':';
+	let title = 'Thread ' + i;
+	if (crashed) {
+		title += ' (crashed)';
+	}
+	title += ':';
 
-    console.log(title);
+	console.log(title);
 
 	let num_frames = thread.length;
 	/*if (num_frames > 10) {
@@ -211,9 +201,9 @@ function print_thread(i, crashed, thread) {
 
 		console.log('  ' + prefix + frame.rendered);
 
-        if (frame.url) {
-            console.log(indent + frame.url);
-        }
+		if (frame.url) {
+			console.log(indent + frame.url);
+		}
 
 		if (frame.registers) {
 			//console.log(indent + 'Registers');
@@ -240,23 +230,33 @@ function print_thread(i, crashed, thread) {
 	}
 }
 
+function base64ToUint8Array(base64) {
+	var binary_string =  window.atob(base64);
+	var len = binary_string.length;
+	var bytes = new Uint8Array( len );
+	for (var i = 0; i < len; i++)		{
+		bytes[i] = binary_string.charCodeAt(i);
+	}
+	return bytes;
+}
+
 function analyze(data) {
 	if (data.crashed) {
 		console.log(data.crash_reason + ' accessing 0x' + data.crash_address.toString(16));
 		console.log('');
 	}
 
-    if (typeof data.requesting_thread !== 'undefined' && data.requesting_thread >= 0) {
-        const thread = data.threads[data.requesting_thread];
-        print_thread(data.requesting_thread, true, thread);
-    }
+	if (typeof data.requesting_thread !== 'undefined' && data.requesting_thread >= 0) {
+		const thread = data.threads[data.requesting_thread];
+		print_thread(data.requesting_thread, true, thread);
+	}
 
-    for (let i = 0; i < data.threads.length; ++i) {
-        if (i === data.requesting_thread) {
-            continue;
-        }
+	for (let i = 0; i < data.threads.length; ++i) {
+		if (i === data.requesting_thread) {
+			continue;
+		}
 
-        const thread = data.threads[i];
-        print_thread(i, false, thread);
-    }
+		const thread = data.threads[i];
+		print_thread(i, false, thread);
+	}
 }
