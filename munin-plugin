@@ -144,6 +144,13 @@ failed.type DERIVE
 failed.min 0
 failed.colour COLOUR2
 failed.draw AREASTACK
+multigraph throttle_processingtime
+graph_title Processing duration
+graph_category throttle
+graph_vlabel duration (seconds)
+update_rate 60
+graph_data_size custom 576, 6 432, 24 540, 288 450
+time.label time
 
 EOT;
 
@@ -155,9 +162,18 @@ $redis->connect('127.0.0.1', 6379, 1);
 
 $stats = $redis->hGetAll('throttle:stats');
 
+list($times) = $redis->multi()
+    ->lRange('throttle:stats:processing', 0, -1)
+    ->del('throttle:stats:processing', 0, 0)
+    ->exec();
+
 $redis->close();
 
 //print_r($stats);
+
+$time_values = implode(PHP_EOL, array_map(function($time) {
+    return 'time.value '.$time;
+}, $times));
 
 echo <<<EOT
 multigraph throttle_submitted
@@ -187,5 +203,9 @@ hit.value {$stats['symbols:repo-cache:hit']}
 multigraph throttle_userupdate
 updated.value {$stats['users:updated']}
 failed.value {$stats['users:failed']}
+multigraph throttle_processingtime
+{$time_values}
 
 EOT;
+
+//exit(1);

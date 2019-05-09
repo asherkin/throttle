@@ -112,15 +112,17 @@ class Crash
 
     public function presubmit(Application $app, $signature)
     {
-        $app['redis']->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
-
-        $app['monolog']->warning('Presubmit: '.$signature);
+        //$app['monolog']->warning('Presubmit: '.$signature);
 
         try {
             $signature = self::parsePresubmitSignature($signature);
         } catch (\Exception $e) {
+            $app['monolog']->warning('Error parsing presubmit: '.$signature, [$e]);
+
             return 'E|'.$e->getMessage();
         }
+
+        $app['redis']->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
 
         // TODO: Determine whether we want the crash dump...
         $return = 'Y|';

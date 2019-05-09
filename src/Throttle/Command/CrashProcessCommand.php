@@ -118,6 +118,8 @@ class CrashProcessCommand extends Command
         $output->writeln('Loaded ' . count($repoCache) . ' repo cache entries and ' . count($symbolCache) . ' symbol cache entries.');
 
         for ($count = 0; $count < $pending; $count++) {
+            $start = microtime(true);
+
             $app['db']->transactional(function($db) use ($app, $symbols, $symbolCacheDirectory, &$symbolCache, &$repoCache) {
                 $id = $app['db']->executeQuery('SELECT id FROM crash WHERE processed = 0 ORDER BY timestamp DESC LIMIT 1')->fetchColumn(0);
                 $minidump = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
@@ -157,6 +159,9 @@ class CrashProcessCommand extends Command
                         $symdir = $data[3] . '/' . $data[4];
                         $sympath = $symdir . '/' . $symname . '.sym';
 
+// TODO: Temp disabled to avoid using public-uploaded sourcemod symbols forever if they get cached first.
+// Need to measure the impact of this on processing time.
+/*
                         if (file_exists($symbolCacheDirectory . '/' . $sympath)) {
                             $symbolCache[$cacheKey] = true;
 
@@ -164,13 +169,16 @@ class CrashProcessCommand extends Command
 
                             continue;
                         }
+*/
 
                         $foundSymbolFile = false;
                         foreach ($symbols as $path) {
                             if (file_exists($path . '/' . $sympath . '.gz')) {
                                 $foundSymbolFile = true;
+
                                 \Filesystem::createDirectory($symbolCacheDirectory . '/' . $symdir, 0777, true);
                                 \Filesystem::writeFile($symbolCacheDirectory . '/' . $sympath, gzdecode(\Filesystem::readFile($path . '/' . $sympath . '.gz')));
+
                                 break;
                             }
                         }
@@ -382,6 +390,9 @@ class CrashProcessCommand extends Command
                     $app['db']->executeUpdate($query, array('crash' => $id));
                 }
             });
+
+            $duration = microtime(true) - $start;
+            $app['redis']->rPush('throttle:stats:processing', time().':'.$duration);
 
             $progress->advance();
         }
