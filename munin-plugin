@@ -148,9 +148,9 @@ multigraph throttle_processingtime
 graph_title Processing duration
 graph_category throttle
 graph_vlabel duration (seconds)
-update_rate 60
-graph_data_size custom 576, 6 432, 24 540, 288 450
-time.label time
+min.label min
+avg.label average
+max.label max
 
 EOT;
 
@@ -162,18 +162,28 @@ $redis->connect('127.0.0.1', 6379, 1);
 
 $stats = $redis->hGetAll('throttle:stats');
 
+//print_r($stats);
+
 list($times) = $redis->multi()
     ->lRange('throttle:stats:processing', 0, -1)
     ->del('throttle:stats:processing', 0, 0)
     ->exec();
 
+$time_values = array_map(function($time) {
+    return (float)substr($time, strpos($time, ':') + 1);
+}, $times);
+
+$time_min = 'U';
+$time_avg = 'U';
+$time_max = 'U';
+
+if (!empty($time_values)) {
+    $time_min = min($time_values);
+    $time_avg = array_sum($time_values) / count($time_values);
+    $time_max = max($time_values);
+}
+
 $redis->close();
-
-//print_r($stats);
-
-$time_values = implode(PHP_EOL, array_map(function($time) {
-    return 'time.value '.$time;
-}, $times));
 
 echo <<<EOT
 multigraph throttle_submitted
@@ -204,7 +214,9 @@ multigraph throttle_userupdate
 updated.value {$stats['users:updated']}
 failed.value {$stats['users:failed']}
 multigraph throttle_processingtime
-{$time_values}
+min.value {$time_min}
+avg.value {$time_avg}
+max.value {$time_max}
 
 EOT;
 
