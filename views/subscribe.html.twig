@@ -1,0 +1,230 @@
+{% extends 'layout.html.twig' %}
+
+{% set logout_to_index = true %}
+{% set supports_mobile = true %}
+
+{% block stylesheets %}
+<link href="{{ app.request.baseUrl }}/css/bootstrap-slider.min.css" rel="stylesheet">
+{% endblock %}
+ 
+{% block content %}
+{% set supporter_count = 1 %}
+{% set supporter_total = 20 %}
+<div class="row" style="text-align: center;">
+  <div class="col-sm-12">
+    <div style="font-size: 2em; margin-bottom: 20px;">
+      <span style="white-space: nowrap;">{{ supporter_count|number_format(0) }} supporter{% if supporter_count == 1 %} is{% else %}s are {% endif %} contributing</span>
+      <span style="white-space: nowrap;">${{ supporter_total|number_format(2) }} per month</span>
+    </div>
+    <p style="margin-bottom: 20px;">Money raised by Throttle Supporters goes towards hosting and developing this service.<br>Your status as a Throttle Supporter will be publicly displayed on all crash dumps associated with your Steam ID.</p>
+  </div>
+</div>
+<div class="row">
+  <div class="col-sm-8 col-sm-push-2 col-md-6 col-md-push-3">
+    <div class="well" style="margin-bottom: 20px;">
+      <div style="display: flex; flex-wrap: wrap;" class="subscribe-inputs">
+        <span class="price-container">$<span id="price-paid" style="display: inline-block; min-width: 43px; text-align: right;"></span></span>
+        <span class="slider-container">
+          <input id="price-slider" type="text" autocomplete="off" data-slider-min="1" data-slider-max="10" data-slider-step="1" data-slider-value="5" data-slider-tooltip="hide" />
+        </span>
+        <div class="btn-group" data-toggle="buttons">
+          <label class="btn btn-default active" style="flex: 1;">
+            <input type="radio" name="frequency" id="frequency-monthly" autocomplete="off" checked> Monthly
+          </label>
+          <label class="btn btn-default" style="flex: 1;">
+            <input type="radio" name="frequency" id="frequency-quarterly" autocomplete="off"> Quarterly
+          </label>
+          <label class="btn btn-default" style="flex: 1;">
+            <input type="radio" name="frequency" id="frequency-yearly" autocomplete="off"> Yearly
+          </label>
+        </div>
+      </div>
+      <div class="row" style="margin: 20px -10px;">
+        <div class="col-xs-4" style="padding: 0 10px">
+          <div class="alert alert-warning" style="margin-bottom: 5px">
+            -<span id="price-tax"></span>%
+          </div>
+          <small>Tax that goes to your government.</small>
+        </div>
+        <div class="col-xs-4" style="padding: 0 10px">
+          <div class="alert alert-warning" style="margin-bottom: 5px" data-toggle="tooltip" data-container="body" data-placement="bottom" title="Consider switching to a less frequent billing interval so that more of your contribution goes towards Throttle!">
+            -<span id="price-fees"></span>%
+          </div>
+          <small>Fees for the payment processor.</small>
+        </div>
+        <div class="col-xs-4" style="padding: 0 10px">
+          <div class="alert alert-success" style="margin-bottom: 5px">
+            +<span id="price-received"></span>%
+          </div>
+          <small>Percentage that goes to support Throttle!</small>
+        </div>
+      </div>
+      <button type="button" id="checkout-button" class="btn btn-success btn-lg btn-block" autocomplete="off">Subscribe</button>
+    </div>
+  </div>
+</div>
+<div class="row" style="margin-bottom: 20px;">
+  <div class="col-sm-8 col-sm-push-2 col-md-6 col-md-push-3 text-muted" style="text-align: center;">
+    <small>Subscription can be cancelled at any time, and access to any subscription-specific functionality will remain until end of the current billing period. If you wish to make a one-off contribution, please subscribe for the amount of your choosing and then cancel once the first payment is confirmed. If anything goes wrong, I'm here to help.</small>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ app.request.baseUrl }}/js/bootstrap-slider.min.js"></script>
+<script src="https://cdn.paddle.com/paddle/paddle.js"></script>
+<script type="text/javascript">
+var priceAdjustmentTable = {{ price_table|json_encode()|raw }};
+var subscriptions = {
+  monthly: {{ constant('Throttle\\Subscription::MONTHLY_PRODUCT_ID') }},
+  quarterly: {{ constant('Throttle\\Subscription::QUARTERLY_PRODUCT_ID') }},
+  yearly: {{ constant('Throttle\\Subscription::YEARLY_PRODUCT_ID') }},
+};
+
+var paymentCountry = null;
+var calculateFees = null;
+
+var slider = new Slider('#price-slider');
+var pricePaid = document.getElementById('price-paid');
+var priceTax = document.getElementById('price-tax');
+var priceFees = document.getElementById('price-fees');
+var priceReceived = document.getElementById('price-received');
+
+var frequencyMonthly = document.getElementById('frequency-monthly');
+var frequencyQuarterly = document.getElementById('frequency-quarterly');
+var frequencyYearly = document.getElementById('frequency-yearly');
+
+var lastFrequency = frequencyMonthly;
+
+var freqElemToMult = function(elem) {
+  switch (elem) {
+    case frequencyMonthly: return 1;
+    case frequencyQuarterly: return 1 / 3;
+    case frequencyYearly: return 1 / 12;
+  }
+};
+
+slider.on('change', function(e) {
+  if (!calculateFees) return;
+  var value = e.newValue;
+  var output = calculateFees(value);
+  pricePaid.innerText = value.toFixed(2);
+
+/*
+  priceTax.innerText = output.tax.toFixed(2);
+  priceFees.innerText = output.fees.toFixed(2);
+  priceReceived.innerText = output.received.toFixed(2);
+*/
+
+  priceTax.innerText = ((output.tax / value) * 100).toFixed(2);
+  priceFees.innerText = ((output.fees / value) * 100).toFixed(2);
+  priceReceived.innerText = ((output.received / value) * 100).toFixed(2);
+
+  priceTax.parentElement.parentElement.style.opacity = (output.tax > 0) ? 1 : 0.5;
+
+  var isDanger = (output.fees / value) > 0.15;
+  if (isDanger) {
+    priceFees.parentNode.classList.replace('alert-warning', 'alert-danger');
+    //$(priceFees.parentNode).tooltip('show');
+    priceFees.parentNode.dataset.originalTitle = 'Consider switching to a less frequent billing interval so that more of your contribution goes towards Throttle!';
+  } else {
+    priceFees.parentNode.classList.replace('alert-danger', 'alert-warning');
+    //$(priceFees.parentNode).tooltip('hide');
+    priceFees.parentNode.dataset.originalTitle = '';
+  }
+});
+
+frequencyMonthly.onchange = frequencyQuarterly.onchange = frequencyYearly.onchange = function(e) {
+  if (lastFrequency === this) {
+    return;
+  }
+
+  var prevMult = freqElemToMult(lastFrequency);
+  var newMult = freqElemToMult(this);
+
+  lastFrequency = this;
+
+  var oldValue = slider.getValue();
+  var newValue = oldValue * (prevMult / newMult);
+
+  var newStep = slider.options.step * (prevMult / newMult);
+  var newMin = slider.options.min * (prevMult / newMult);
+  var newMax = slider.options.max * (prevMult / newMult);
+
+  slider.setAttribute('step', newStep);
+  slider.setAttribute('min', newMin);
+  slider.setAttribute('max', newMax);
+  slider.setValue(newValue, true, true);
+
+};
+
+var checkoutButton = document.getElementById('checkout-button');
+checkoutButton.onclick = function(e) {
+  if (!calculateFees) return;
+  checkoutButton.disabled = true;
+
+  var frequency = null;
+  if (frequencyMonthly.checked) frequency = 'monthly';
+  else if (frequencyQuarterly.checked) frequency = 'quarterly';
+  else if (frequencyYearly.checked) frequency = 'yearly';
+
+  var price = slider.getValue() | 0;
+
+  var subscription = subscriptions[frequency];
+  var priceString = priceAdjustmentTable[price]['price'];
+  var priceAdjustment = priceAdjustmentTable[price][frequency];
+
+  Paddle.Checkout.open({
+    allowQuantity: false,
+    title: 'Throttle Subscription',
+    product: subscription,
+    recurringPrices: [{
+      currency: 'USD',
+      price: priceString,
+      auth: priceAdjustment,
+    }],
+    passthrough: '{{ app.user.id }}',
+    successCallback: function(data) {
+      console.log(data);
+      checkoutButton.disabled = false;
+    },
+    closeCallback: function(data) {
+      console.log(data);
+      checkoutButton.disabled = false;
+    },
+  });
+};
+
+Paddle.Setup({
+  vendor: {{ constant('Throttle\\Subscription::VENDOR_ID') }},
+{% if app.debug %}
+  debug: true,
+{% endif %}
+});
+
+Paddle.Product.Prices({{ constant('Throttle\\Subscription::MONTHLY_PRODUCT_ID') }}, function(prices) {
+  paymentCountry = prices.country;
+  var taxRate = Number.parseFloat(prices.price.tax.substr(3));
+
+  var paddleFeePct = 0.05;
+  var paddleFeeFixed = 0.5;
+
+  calculateFees = function(paid) {
+    var paid = Math.round(paid * 100);
+    var tax = Math.round(paid * taxRate);
+    var fees = Math.round((paid * paddleFeePct) + (paddleFeeFixed * 100));
+    var received = Math.round(paid - tax - fees);
+    return {
+      tax: tax / 100,
+      fees: fees / 100,
+      received: received / 100,
+    };
+  };
+
+  var oldValue = slider.getValue();
+  slider.setValue(0);
+  slider.setValue(oldValue, true, true);
+});
+</script>
+{% endblock %}
+
