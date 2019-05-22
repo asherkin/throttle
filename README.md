@@ -9,7 +9,7 @@
 
 ## Update Instructions
     cd throttle
-    hg pull -u
+    git pull
     php ../composer.phar install
     php app/console.php migrations:migrate
     rm -rf cache/*

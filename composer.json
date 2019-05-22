@@ -2,7 +2,7 @@
     "name": "asherkin/throttle",
     "type": "project",
     "description": "Lightweight google-breakpad back-end written in PHP and backed by MySQL",
-    "homepage": "https://bitbucket.org/asherkin/throttle",
+    "homepage": "https://crash.limetech.org/",
     "license": "Apache-2.0",
     "authors": [
         {
@@ -15,10 +15,10 @@
         {
             "type": "package",
             "package": {
-                "name": "facebook/libphutil",
+                "name": "phacility/libphutil",
                 "version": "dev-stable",
                 "source": {
-                    "url": "https://github.com/facebook/libphutil.git",
+                    "url": "https://github.com/phacility/libphutil.git",
                     "type": "git",
                     "reference": "origin/stable"
                 }
@@ -39,7 +39,7 @@
         "silex/web-profiler": "1.0.2",
         "symfony/web-profiler-bundle": "~2.3.0",
         "symfony/debug": "~2.3.0",
-        "facebook/libphutil": "dev-stable",
+        "phacility/libphutil": "dev-stable",
         "lightopenid/lightopenid": "dev-master",
         "pda/pheanstalk": "^3.1",
         "sorien/silex-dbal-profiler": "~1.1"

@@ -1,7 +1,0 @@
-^.wine/
-^app/config\.php
-^symbols/
-^dumps/
-^logs/
-^vendor/
-^cache/

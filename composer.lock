@@ -1,10 +1,10 @@
 {
     "_readme": [
         "This file locks the dependencies of your project to a known state",
-        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c3c922eddf424bfd2a640776bfbb0227",
+    "content-hash": "7ff2751a68555d62642f172d11d30aa6",
     "packages": [
         {
             "name": "cilex/console-service-provider",
@@ -610,17 +610,6 @@
             "time": "2016-12-25T22:54:00+00:00"
         },
         {
-            "name": "facebook/libphutil",
-            "version": "dev-stable",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/facebook/libphutil.git",
-                "reference": "origin/stable"
-            },
-            "type": "library",
-            "time": "2016-05-13 22:51:44"
-        },
-        {
             "name": "lightopenid/lightopenid",
             "version": "dev-master",
             "source": {
@@ -651,7 +640,7 @@
             "keywords": [
                 "OpenId"
             ],
-            "time": "2013-10-27 16:25:49"
+            "time": "2013-10-27T16:25:49+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -845,6 +834,17 @@
             "time": "2015-08-07T21:42:41+00:00"
         },
         {
+            "name": "phacility/libphutil",
+            "version": "dev-stable",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phacility/libphutil.git",
+                "reference": "origin/stable"
+            },
+            "type": "library",
+            "time": "2019-05-16T20:57:37+00:00"
+        },
+        {
             "name": "pimple/pimple",
             "version": "v1.1.1",
             "source": {
@@ -1021,6 +1021,7 @@
             "keywords": [
                 "microframework"
             ],
+            "abandoned": "symfony/flex",
             "time": "2013-10-30T08:53:26+00:00"
         },
         {
@@ -1068,6 +1069,7 @@
             ],
             "description": "A WebProfiler for Silex",
             "homepage": "http://silex.sensiolabs.org/",
+            "abandoned": true,
             "time": "2013-12-05T21:22:21+00:00"
         },
         {
@@ -2077,7 +2079,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "facebook/libphutil": 20,
+        "phacility/libphutil": 20,
         "lightopenid/lightopenid": 20
     },
     "prefer-stable": false,

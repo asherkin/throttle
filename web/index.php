@@ -9,8 +9,8 @@ if ($app['config']['show-version']) {
     $changeset = apcu_fetch('throttle.hg-id');
     if ($changeset === false) {
         $changeset = null;
-        $changesetFuture = new ExecFuture('/usr/bin/hg id -i');
-        $changesetFuture->setCWD(__DIR__ . '/..')->setTimeout(5)->start();
+        $changesetFuture = new ExecFuture('/usr/bin/git describe --abbrev=12 --always --dirty=+');
+        $changesetFuture->setCWD(__DIR__ . '/..')->setTimeout(1)->start();
     }
 }
 
