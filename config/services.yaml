@@ -33,3 +33,8 @@ services:
         decorates: 'twig.app_variable'
         arguments:
             $config: '%app.config%'
+
+    Redis:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection']
+        arguments: ['%env(resolve:REDIS_URL)%']

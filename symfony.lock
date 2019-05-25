@@ -93,6 +93,9 @@
     "ocramius/proxy-manager": {
         "version": "2.2.2"
     },
+    "phacility/libphutil": {
+        "version": "dev-stable"
+    },
     "psr/cache": {
         "version": "1.0.1"
     },
