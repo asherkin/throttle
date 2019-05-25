@@ -209,6 +209,9 @@
     "symfony/polyfill-php72": {
         "version": "v1.11.0"
     },
+    "symfony/process": {
+        "version": "v4.2.8"
+    },
     "symfony/profiler-pack": {
         "version": "v1.0.4"
     },

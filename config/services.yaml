@@ -5,8 +5,8 @@
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
     app.config:
-        apikey: null
-        accelerator: null
+        apikey: '%env(STEAM_API_KEY)%'
+        accelerator: '2.4.3'
         
 
 services:
