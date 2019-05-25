@@ -1,0 +1,29 @@
+{% extends 'layout.html.twig' %}
+
+{% set icon = 'exclamation-sign' %}
+{% set title = status_text ?: 'An Error Has Occurred' %}
+{% set comment = 'Someone has been dispatched to poke the server with a sharp stick.' %}
+
+{% if status_code >= 400 and status_code < 500 %}
+    {% set icon = 'remove-sign' %}
+    {% set comment = 'There was a problem with your request.' %}
+{% endif %}
+
+{% if status_code == 403 %}
+    {% set icon = 'ban-circle' %}
+    {% set title = 'Access Denied' %}
+    {% set comment = 'Doesn\'t look like you\'re meant to be here.' %}
+{% elseif status_code == 404 %}
+    {% set icon = 'question-sign' %}
+    {% set title = 'Not Found' %}
+    {% set comment = 'What you are looking for is not here,\nUnless you were looking for this error page of course.' %}
+{% endif %}
+
+{% block content %}
+<div class="error-page">
+<i class="icon-{{ icon }}"></i>
+{{ title }}
+<span>{{ comment | nl2br }}</span>
+</div>
+{% endblock %}
+
