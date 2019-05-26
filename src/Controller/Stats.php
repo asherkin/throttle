@@ -5,32 +5,40 @@ namespace App\Controller;
 use Doctrine\DBAL\Driver\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class Stats extends AbstractController
 {
-    const METRIC_GRAPH = 'submitted.submitted';
+    const METRIC_SUBMITTED = 'throttle_submitted-submitted';
+
+    private $cache;
+
+    public function __construct(CacheInterface $cache)
+    {
+        $this->cache = $cache;
+    }
 
     /**
      * @Route("/stats/today", name="stats_today")
      */
     public function today()
     {
-        $key = 'throttle.rrd.today';
-        $data = \apcu_fetch($key);
-        if ($data === false) {
-            $historical = self::getRawRrdData('-24hours', 300, self::METRIC_GRAPH);
+        $data = $this->cache->get('stats_today', function (ItemInterface $item) {
+            $item->expiresAfter(300);
+
+            $historical = $this->getRawRrdData('-24hours', 300, self::METRIC_SUBMITTED);
             $historical = array_reduce($historical, function ($r, $d) {
                 return $r + $d[1];
             }, 0);
 
-            $data = round($historical);
-            \apcu_add($key, $data, 300);
-        }
+            return round($historical);
+        });
 
         return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
             'Content-Type' => 'text/plain',
-            'Access-Control-Allow-Origin' => '*',
         ));
     }
 
@@ -39,17 +47,14 @@ class Stats extends AbstractController
      */
     public function lifetime(\Redis $redis)
     {
-        $key = 'throttle.rrd.lifetime';
-        $data = \apcu_fetch($key);
-        if ($data === false) {
-            $data = $redis->hGet('throttle:stats', 'crashes:submitted');
+        $data = $this->cache->get('stats_lifetime', function (ItemInterface $item) use ($redis) {
+            $item->expiresAfter(10);
 
-            \apcu_add($key, $data, 10);
-        }
+            return $redis->hGet('throttle:stats', 'crashes:submitted');
+        });
 
         return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
             'Content-Type' => 'text/plain',
-            'Access-Control-Allow-Origin' => '*',
         ));
     }
 
@@ -58,18 +63,15 @@ class Stats extends AbstractController
      */
     public function unique(Connection $db)
     {
-        $key = 'throttle.rrd.unique';
-        $data = \apcu_fetch($key);
-        if ($data === false) {
-            $query = $db->executeQuery('SELECT COUNT(*) AS count FROM (SELECT DISTINCT cmdline FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOUR)) AS _');
-            $data = $query->fetchColumn(0);
+        $data = $this->cache->get('stats_unique', function (ItemInterface $item) use ($db) {
+            $item->expiresAfter(10);
 
-            \apcu_add($key, $data, 10);
-        }
+            $query = $db->executeQuery('SELECT COUNT(*) AS count FROM (SELECT DISTINCT cmdline FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOUR)) AS _');
+            return $query->fetchColumn(0);
+        });
 
         return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
             'Content-Type' => 'text/plain',
-            'Access-Control-Allow-Origin' => '*',
         ));
     }
 
@@ -79,10 +81,10 @@ class Stats extends AbstractController
     public function daily(Connection $db, $module = null, $function = null)
     {
         if ($module === null && $function === null) {
-            $output = self::getCsvRrdData('-90days', 86400, self::METRIC_GRAPH);
+            $output = $this->getCsvRrdData('-90days', 86400, self::METRIC_SUBMITTED);
+
             return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
                 'Content-Type' => 'text/csv',
-                'Access-Control-Allow-Origin' => '*',
             ));
         }
 
@@ -110,7 +112,7 @@ class Stats extends AbstractController
         }
 
         $output = 'Date,Crash Reports'.PHP_EOL;
-        for($i = 89; $i >= 0; $i--) {
+        for ($i = 89; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime('-'.$i.' days'));
             $count = array_key_exists($date, $data) ? $data[$date] : 0;
             $output .= $date.','.$count.PHP_EOL;
@@ -118,7 +120,6 @@ class Stats extends AbstractController
 
         return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
             'Content-Type' => 'text/csv',
-            'Access-Control-Allow-Origin' => '*',
         ));
     }
 
@@ -128,10 +129,10 @@ class Stats extends AbstractController
     public function hourly(Connection $db, $module = null, $function = null)
     {
         if ($module === null && $function === null) {
-            $output = self::getCsvRrdData('-7days', 3600, self::METRIC_GRAPH);
+            $output = $this->getCsvRrdData('-7days', 3600, self::METRIC_SUBMITTED);
+
             return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
                 'Content-Type' => 'text/csv',
-                'Access-Control-Allow-Origin' => '*',
             ));
         }
 
@@ -159,7 +160,7 @@ class Stats extends AbstractController
         }
 
         $output = 'Date,Crash Reports'.PHP_EOL;
-        for($i = 167; $i >= 0; $i--) {
+        for ($i = 167; $i >= 0; $i--) {
             $date = date('Y-m-d-G', strtotime('-'.$i.' hours'));
             $count = array_key_exists($date, $data) ? $data[$date] : 0;
             $output .= $date.','.$count.PHP_EOL;
@@ -167,7 +168,6 @@ class Stats extends AbstractController
 
         return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
             'Content-Type' => 'text/csv',
-            'Access-Control-Allow-Origin' => '*',
         ));
     }
 
@@ -224,9 +224,7 @@ class Stats extends AbstractController
             }
         }
 
-        return $this->json($output, 200, array(
-            'Access-Control-Allow-Origin' => '*',
-        ));
+        return $this->json($output);
     }
 
     /**
@@ -264,9 +262,7 @@ class Stats extends AbstractController
             $output[] = array($row['crash'], htmlspecialchars($row['rendered'], ENT_QUOTES, 'UTF-8'), (empty($row['cmdline']) ? '' : md5($row['cmdline'])), $row['avatar']);
         }
 
-        return $this->json($output, 200, array(
-            'Access-Control-Allow-Origin' => '*',
-        ));
+        return $this->json($output);
     }
 
     /**
@@ -275,42 +271,59 @@ class Stats extends AbstractController
     public function index($module = null, $function = null)
     {
         return $this->render('stats.html.twig', array(
-            'module'   => $module,
+            'module' => $module,
             'function' => $function,
         ));
     }
 
-    private static function getRawRrdData($start, $step, $metric)
+    private function getRawRrdData($start, $step, $metric)
     {
-        $key = 'throttle.rrd.'.$metric.'.'.$start.'.'.$step;
-        $data = \apcu_fetch($key);
-        if ($data !== false) {
+        $key = 'stats_rrd_'.md5($start.$step.$metric);
+
+        return $this->cache->get($key, function (ItemInterface $item) use ($start, $step, $metric) {
+            $item->expiresAfter(300);
+
+            $process = (new Process([
+                '/usr/bin/rrdtool',
+                'graph',
+                '-',
+                '--start', $start,
+                '--step', $step,
+                '--imgformat', 'CSV',
+                'DEF:value=/var/lib/munin/fennec/fennec-'.$metric.'-d.rrd:42:AVERAGE',
+                'LINE1:value#000000:value',
+            ]))->setTimeout(5);
+
+            $process->mustRun();
+
+            $data = $process->getOutput();
+            $data = preg_split('/\r?\n/', trim($data));
+
+            array_shift($data);
+
+            $data = array_map(function($d) use ($step) {
+                [$time, $value] = str_getcsv($d);
+
+                $time = (int)$time - $step;
+
+                $value = round((float)$value * $step);
+
+                return [$time, $value];
+            }, $data);
+
             return $data;
-        }
-
-        $metric = str_replace('.', '-', $metric);
-        list($data,) = \execx('/usr/bin/rrdtool graph - --start %s --step %d --imgformat CSV %s %s', $start, $step, 'DEF:value=/var/lib/munin/fennec/fennec-throttle_'.$metric.'-d.rrd:42:AVERAGE', 'LINE1:value#000000:value');
-        $data = \phutil_split_lines($data);
-        array_shift($data);
-        $data = array_map(function($d) use ($step) {
-            $d = str_getcsv($d);
-            $d[0] = ((int)$d[0]) - $step;
-            $d[1] = round(((float)$d[1]) * $step);
-            return $d;
-        }, $data);
-
-        \apcu_add($key, $data, 300);
-        return $data;
+        });
     }
 
-    private static function getRrdData($start, $step, $metric)
+    private function getRrdData($start, $step, $metric)
     {
-        $data = self::getRawRrdData($start, $step, $metric);
+        $data = $this->getRawRrdData($start, $step, $metric);
+
         if (!empty($data)) {
             $last_stamp = end($data)[0] + $step;
 
             // TODO: Iteratively step down the periods, required for more than one day.
-            $last_period = self::getRawRrdData($last_stamp, 300, $metric);
+            $last_period = $this->getRawRrdData($last_stamp, 300, $metric);
             $last_period = array_reduce($last_period, function($r, $d) {
                 return $r + $d[1];
             }, 0);
@@ -320,36 +333,35 @@ class Stats extends AbstractController
                 round($last_period),
             ];
         }
+
         return $data;
     }
 
-    private static function getCsvRrdData($start, $step, $metric)
+    private function getCsvRrdData($start, $step, $metric)
     {
-        $key = 'throttle.rrd.'.$metric.'.'.$start.'.'.$step.'.csv';
-        $data = \apcu_fetch($key);
-        if ($data !== false) {
-            return $data;
-        }
+        $key = 'stats_rrd_'.md5($start.$step.$metric).'_csv';
 
-        $date_format = 'Y-m-d-H-i-s';
-        if ($step >= 86400) {
-            $date_format = 'Y-m-d';
-        } else if ($step >= 3600) {
-            $date_format = 'Y-m-d-H';
-        } else if ($step >= 60) {
-            $date_format = 'Y-m-d-H-i';
-        }
+        return $this->cache->get($key, function (ItemInterface $item) use ($start, $step, $metric) {
+            $item->expiresAfter(300);
 
-        $data = self::getRrdData($start, $step, $metric);
-        $data = array_map(function($d) use ($date_format) {
-            $date = gmdate($date_format, $d[0]);
-            return $date.','.$d[1];
-        }, $data);
-        array_unshift($data, 'Date,Crash Reports');
-        $data = implode(PHP_EOL, $data).PHP_EOL;
+            $date_format = 'Y-m-d-H-i-s';
+            if ($step >= 86400) {
+                $date_format = 'Y-m-d';
+            } else if ($step >= 3600) {
+                $date_format = 'Y-m-d-H';
+            } else if ($step >= 60) {
+                $date_format = 'Y-m-d-H-i';
+            }
 
-        \apcu_add($key, $data, 300);
-        return $data;
+            $data = $this->getRrdData($start, $step, $metric);
+            $data = array_map(function($d) use ($date_format) {
+                $date = gmdate($date_format, $d[0]);
+                return $date.','.$d[1];
+            }, $data);
+
+            array_unshift($data, 'Date,Crash Reports');
+            return implode(PHP_EOL, $data).PHP_EOL;
+        });
     }
 }
 
