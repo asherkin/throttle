@@ -1,6 +1,6 @@
 <script type="text/javascript">
 function bindLiveCounter(counter, url, interval) {
-  var current = 0;
+  var current = -1;
   var target = 0;
   var animating = false;
 
@@ -23,7 +23,7 @@ function bindLiveCounter(counter, url, interval) {
       current = target;
     }
 
-    var display = current;
+    var display = Math.max(0, current);
     display = +Number(display).toFixed(0);
     display = Number(display).toLocaleString();
     counter.text(display);
