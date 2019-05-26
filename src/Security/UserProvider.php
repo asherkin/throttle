@@ -28,12 +28,22 @@ class UserProvider implements UserProviderInterface
      *
      * @throws UsernameNotFoundException if the user is not found
      */
-    public function loadUserByUsername($username)
+    public function loadUserByUsername($id)
     {
-        $this->db->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', [$username]);
+        $details = $this->db->executeQuery('SELECT name, avatar, UNIX_TIMESTAMP(lastactive) AS lastactive, (SELECT COUNT(*) FROM share WHERE user = id AND accepted IS NULL) AS pending FROM user WHERE id = ? LIMIT 1', [$id])->fetch();
 
-        $user = new SteamUser();
-        $user->setId($username);
+        if (!$details) {
+            $this->db->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', [$id]);
+        }
+
+        if ($details && ($details['lastactive'] === null || (time() - $details['lastactive']) > (60 * 60 * 24))) {
+            $this->db->executeUpdate('UPDATE user SET lastactive = NOW() WHERE id = ?', [$id]);
+        }
+
+        $user = (new SteamUser($id))
+            ->setName($details ? $details['name'] : null)
+            ->setAvatar($details ? $details['avatar'] : null)
+            ->setPending($details ? $details['pending'] : 0);
 
         return $user;
     }
@@ -57,9 +67,7 @@ class UserProvider implements UserProviderInterface
             throw new UnsupportedUserException(sprintf('Invalid user class "%s".', get_class($user)));
         }
 
-        // Return a User object after making sure its data is "fresh".
-        // Or throw a UsernameNotFoundException if the user no longer exists.
-        return $user;
+        return $this->loadUserByUsername($user->getUsername());
     }
 
     /**

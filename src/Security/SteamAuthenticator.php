@@ -123,12 +123,22 @@ class SteamAuthenticator extends AbstractGuardAuthenticator
 
     public function start(Request $request, AuthenticationException $authException = null)
     {
+        $currentReturn = $request->getPathInfo();
+        $currentQueryString = $request->getQueryString();
+        if (strlen($currentQueryString)) {
+            $currentReturn .= '?'.$currentQueryString;
+        }
+
+        $returnTo = $this->router->generate('login', [
+            'return' => $request->get('return', $currentReturn),
+        ], UrlGeneratorInterface::ABSOLUTE_URL);
+
         $params = [
             'openid.ns' => 'http://specs.openid.net/auth/2.0',
             'openid.mode' => 'checkid_setup',
             'openid.identity' => 'http://specs.openid.net/auth/2.0/identifier_select',
             'openid.claimed_id' => 'http://specs.openid.net/auth/2.0/identifier_select',
-            'openid.return_to' => $this->router->generate('login', ['return' => $request->query->get('return')], UrlGeneratorInterface::ABSOLUTE_URL),
+            'openid.return_to' => $returnTo,
             'openid.realm' => $this->router->generate('index', [], UrlGeneratorInterface::ABSOLUTE_URL),
         ];
 
