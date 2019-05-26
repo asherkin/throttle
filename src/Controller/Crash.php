@@ -2,12 +2,20 @@
 
 namespace App\Controller;
 
+use Doctrine\DBAL\Driver\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 
 class Crash extends AbstractController
 {
+    private $db;
+
+    public function __construct(Connection $db)
+    {
+        $this->db = $db;
+    }
+
     public function submit()
     {
         //TODO
@@ -171,6 +179,9 @@ class Crash extends AbstractController
         ));
     }
 
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}", name="details")
+     */
     public function details(Request $request, $id)
     {
         $can_manage = $this->canUserManage($app, $id);
@@ -560,24 +571,25 @@ class Crash extends AbstractController
     /**
      * @Route("/dashboard", name="dashboard")
      */
-    public function dashboard($offset)
+    public function dashboard(Request $request)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $offset = $request->get('offset');
+        $userid = $request->get('user');
 
-        $shared = $app['db']->executeQuery('SELECT share.owner AS id, user.name, user.avatar FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? AND accepted IS NOT NULL ORDER BY accepted ASC', array($app['user']['id']))->fetchAll();
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        $currentUser = $this->getUser();
+
+        $shared = $this->db->executeQuery('SELECT share.owner AS id, user.name, user.avatar FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? AND accepted IS NOT NULL ORDER BY accepted ASC', [$currentUser->getId()])->fetchAll();
 
         array_unshift($shared, [
-            'id' => $app['user']['id'],
-            'name' => $app['user']['name'],
-            'avatar' => $app['user']['avatar'],
+            'id' => $currentUser->getId(),
+            'name' => $currentUser->getName(),
+            'avatar' => $currentUser->getAvatar(),
         ]);
 
-        $userid = $app['request']->get('user', null);
-
         $allowed = null;
-        if (!$app['user']['admin']) {
+        if (!$currentUser->isAdmin()) {
             foreach ($shared as $user) {
                 $allowed[] = $user['id'];
             }
@@ -618,7 +630,7 @@ class Crash extends AbstractController
             }
         }
 
-        $crashes = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 20', $params, $types)->fetchAll();
+        $crashes = $this->db->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 20', $params, $types)->fetchAll();
 
         return $this->render('dashboard.html.twig', array(
             'userid' => $userid,
