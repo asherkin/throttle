@@ -5,6 +5,7 @@
     "require": {
         "php": "^7.2.0",
         "ext-ctype": "*",
+        "ext-gmp": "*",
         "ext-iconv": "*",
         "ext-redis": "*",
         "phacility/libphutil": "dev-stable",
