@@ -11,15 +11,15 @@ use Symfony\Contracts\Cache\ItemInterface;
 
 class AppVariable
 {
-    private $kernel;
     private $cache;
+    private $rootPath;
     private $inner;
     private $config;
 
-    public function __construct(KernelInterface $kernel, CacheInterface $cache, SymfonyAppVariable $inner, $config)
+    public function __construct(CacheInterface $cache, $rootPath, SymfonyAppVariable $inner, $config)
     {
-        $this->kernel = $kernel;
         $this->cache = $cache;
+        $this->rootPath = $rootPath;
         $this->inner = $inner;
         $this->config = $config;
     }
@@ -77,7 +77,7 @@ class AppVariable
             $item->expiresAfter(60);
 
             $process = (new Process(['/usr/bin/git', 'describe', '--abbrev=12', '--always', '--dirty=+']))
-                ->setWorkingDirectory($this->kernel->getProjectDir())
+                ->setWorkingDirectory($this->rootPath)
                 ->setTimeout(1);
 
             $ret = $process->run();

@@ -10,10 +10,12 @@ use Symfony\Component\HttpFoundation\Request;
 class Crash extends AbstractController
 {
     private $db;
+    private $rootPath;
 
-    public function __construct(Connection $db)
+    public function __construct(Connection $db, $rootPath)
     {
         $this->db = $db;
+        $this->rootPath = $rootPath;
     }
 
     public function submit()
@@ -61,7 +63,7 @@ class Crash extends AbstractController
             }
 
             if ($owner !== null) {
-                $app['db']->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($owner));
+                $this->db->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($owner));
             }
         }
 
@@ -75,9 +77,9 @@ class Crash extends AbstractController
         $count = 0;
 
         if ($owner !== null) {
-            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner = ? AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($owner, $ip))->fetchColumn(0);
+            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner = ? AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($owner, $ip))->fetchColumn(0);
         } else {
-            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner IS NULL AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($ip))->fetchColumn(0);
+            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner IS NULL AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($ip))->fetchColumn(0);
         }
 
         if ($count > 0) {
@@ -87,9 +89,9 @@ class Crash extends AbstractController
         }
 
         if ($owner !== null) {
-            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner = ? AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($owner, $ip))->fetchColumn(0);
+            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner = ? AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($owner, $ip))->fetchColumn(0);
         } else {
-            $count = $app['db']->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner IS NULL AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($ip))->fetchColumn(0);
+            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner IS NULL AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($ip))->fetchColumn(0);
         }
 
         if ($count > 12) {
@@ -142,7 +144,7 @@ class Crash extends AbstractController
 
         $metadata = json_encode($metadata, JSON_FORCE_OBJECT|JSON_UNESCAPED_SLASHES);
 
-        $app['db']->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, cmdline) VALUES (?, NOW(), INET6_ATON(?), ?, ?, ?)', array($id, $ip, $owner, $metadata, $command_line));
+        $this->db->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, cmdline) VALUES (?, NOW(), INET6_ATON(?), ?, ?, ?)', array($id, $ip, $owner, $metadata, $command_line));
 
         // Move after it's in the DB, to avoid a race condition with the cleanup code.
         \Filesystem::createDirectory($path, 0755, true);
@@ -184,21 +186,21 @@ class Crash extends AbstractController
      */
     public function details(Request $request, $id)
     {
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
             if ($request->getSession()->getFlashBag()->get('internal')) {
                 $this->addFlash('error_crash', 'That Crash ID does not exist.');
 
-                return $app->redirect($app['url_generator']->generate('index'));
+                return $this->redirectToRoute('index');
             }
     
-            return $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
-        $crash = $app['db']->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) AS timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash, UNIX_TIMESTAMP(crash.lastview) AS lastview, user.name FROM crash LEFT JOIN user ON user.id = crash.owner WHERE crash.id = ?', array($id))->fetch();
+        $crash = $this->db->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) AS timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash, UNIX_TIMESTAMP(crash.lastview) AS lastview, user.name FROM crash LEFT JOIN user ON user.id = crash.owner WHERE crash.id = ?', array($id))->fetch();
 
         if ($crash['lastview'] === null || (time() - $crash['lastview']) > (60 * 60 * 24)) {
-            $app['db']->executeUpdate('UPDATE crash SET lastview = NOW() WHERE id = ?', array($id));
+            $this->db->executeUpdate('UPDATE crash SET lastview = NOW() WHERE id = ?', array($id));
         }
 
         if ($crash['thread'] == -1) {
@@ -220,10 +222,10 @@ class Crash extends AbstractController
 
         ksort($crash['metadata']);
 
-        $notices = $app['db']->executeQuery('SELECT severity, text FROM crashnotice JOIN notice ON notice.id = crashnotice.notice WHERE crash = ?', array($id))->fetchAll();
-        $stack = $app['db']->executeQuery('SELECT frame, rendered, url FROM frame WHERE crash = ? AND thread = ? ORDER BY frame', array($id, $crash['thread']))->fetchAll();
-        $modules = $app['db']->executeQuery('SELECT name, identifier, processed, present, HEX(base) AS base FROM module WHERE crash = ? ORDER BY name', array($id))->fetchAll();
-        $stats = $app['db']->executeQuery('SELECT COUNT(DISTINCT crash.owner) AS owners, COUNT(DISTINCT crash.ip) AS ips, COUNT(*) AS crashes FROM crash, (SELECT owner, stackhash FROM crash WHERE id = ?) AS this WHERE this.stackhash = crash.stackhash', array($id))->fetch();
+        $notices = $this->db->executeQuery('SELECT severity, text FROM crashnotice JOIN notice ON notice.id = crashnotice.notice WHERE crash = ?', array($id))->fetchAll();
+        $stack = $this->db->executeQuery('SELECT frame, rendered, url FROM frame WHERE crash = ? AND thread = ? ORDER BY frame', array($id, $crash['thread']))->fetchAll();
+        $modules = $this->db->executeQuery('SELECT name, identifier, processed, present, HEX(base) AS base FROM module WHERE crash = ? ORDER BY name', array($id))->fetchAll();
+        $stats = $this->db->executeQuery('SELECT COUNT(DISTINCT crash.owner) AS owners, COUNT(DISTINCT crash.ip) AS ips, COUNT(*) AS crashes FROM crash, (SELECT owner, stackhash FROM crash WHERE id = ?) AS this WHERE this.stackhash = crash.stackhash', array($id))->fetch();
 
         return $this->render('details.html.twig', array(
             'crash' => $crash,
@@ -232,69 +234,72 @@ class Crash extends AbstractController
             'stack' => $stack,
             'modules' => $modules,
             'stats' => $stats,
-            'outdated' => ($app['config']['accelerator'] ? (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], $app['config']['accelerator'], '<') : true) : false),
+            'outdated' => false, // TODO: ($this->container->getParameter('app.config')['accelerator'] ? (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], $this->container->getParameter('app.config')['accelerator'], '<') : true) : false),
             'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1) : false),
         ));
     }
 
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/download", name="download")
+     */
     public function download($id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
         if (!\Filesystem::pathExists($path)) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
-        return $app->sendFile($path)->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'crash_' . $id . '.dmp');
+        return $this->file($path, 'crash_'.$id.'.dmp');
     }
 
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/view", name="view")
+     */
     public function view($id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
         return $this->render('view.html.twig', array('id' => $id));
     }
 
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/logs", name="logs")
+     */
     public function logs($id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt';
+        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt';
 
         $logs = null;
         if (\Filesystem::pathExists($path . '.gz')) {
@@ -306,22 +311,23 @@ class Crash extends AbstractController
         return $this->render('logs.html.twig', array('id' => $id, 'logs' => $logs));
     }
 
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/metadata", name="metadata")
+     */
     public function metadata($id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.meta.txt';
+        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.meta.txt';
 
         $logs = null;
         if (\Filesystem::pathExists($path . '.gz')) {
@@ -333,22 +339,23 @@ class Crash extends AbstractController
         return $this->render('logs.html.twig', array('id' => $id, 'logs' => $logs));
     }
 
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/console", name="console")
+     */
     public function console($id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.meta.txt';
+        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.meta.txt';
 
         $metadata = null;
         if (\Filesystem::pathExists($path . '.gz')) {
@@ -361,7 +368,7 @@ class Crash extends AbstractController
         $ret = preg_match('/(?<=-------- CONSOLE HISTORY BEGIN --------)[^\\x00]+(?=-------- CONSOLE HISTORY END --------)/i', $metadata, $console);
 
         if ($ret !== 1) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         $console = $console[0]; // Get the console output.
@@ -376,25 +383,26 @@ class Crash extends AbstractController
         return $this->render('console.html.twig', array('id' => $id, 'console' => $console));
     }
 
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/error", name="error")
+     */
     public function error($id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
         if (!\Filesystem::pathExists($path)) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         $minidump = \Filesystem::readFile($path);
@@ -414,7 +422,7 @@ class Crash extends AbstractController
             throw new \RuntimeException('Missing MD_THREAD_LIST_STREAM');
         }
 
-        $thread = $app['db']->executeQuery('SELECT thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetchColumn(0);
+        $thread = $this->db->executeQuery('SELECT thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetchColumn(0);
         $output['thread'] = $thread = unpack('Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, $stream['offset'] + 4 + ($thread * 48), 48));
 
         $output['context_flags'] = $context_flags = unpack('Lflags', substr($minidump, $thread['context_offset'], 4));
@@ -441,7 +449,7 @@ class Crash extends AbstractController
         }
 
         if ($error_offset === 0) {
-            return $app->json(array('string' => 'Failed to extract error message.'));
+            return $this->json(array('string' => 'Failed to extract error message.'));
         }
 
         $output['string_start'] = $string_start = $thread['stack_offset'] + $error_offset;
@@ -458,76 +466,79 @@ class Crash extends AbstractController
         // Remove non-ASCII chars, this needs a cleanup, but just fix the errors while encoding UTF-8 for now.
         $error_string = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '?', $error_string);
 
-        return $app->json(array('string' => $error_string));
+        return $this->json(array('string' => $error_string));
     }
 
-    public function carburetor($id)
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/carburetor", name="carburetor")
+     */
+    public function carburetor(Request $request, $id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
         return $this->render('carburetor.html.twig', array(
             'id' => $id,
-            'symbols' => $app['request']->get('symbols', null),
+            'symbols' => $request->get('symbols'),
         ));
     }
 
-    public function carburetor_data($id)
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/carburetor/data", name="carburetor_data")
+     */
+    public function carburetor_data(Request $request, $id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
-        $config = $app['root'].'/app/carburetor-config.json';
-        if ($app['request']->get('symbols', null) === 'no') {
-            $config = $app['root'].'/app/carburetor-config-no-symbols.json';
+        $config = $this->rootPath.'/app/carburetor-config.json';
+        if ($request->get('symbols') === 'no') {
+            $config = $this->rootPath.'/app/carburetor-config-no-symbols.json';
         }
 
-        $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
         if (!\Filesystem::pathExists($path)) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         set_time_limit(120);
 
-        list($stdout, $stderr) = execx($app['root'].'/bin/carburetor %s %s', $config, $path);
+        list($stdout, $stderr) = execx($this->rootPath.'/bin/carburetor %s %s', $config, $path);
 
         return new \Symfony\Component\HttpFoundation\Response($stdout, 200, array(
             'Content-Type' => 'application/json',
         ));
     }
 
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/reprocess", methods={"POST"}, name="reprocess")
+     */
     public function reprocess($id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        if (!$this->getUser()->isAdmin()) {
+            throw $this->createAccessDeniedException();
         }
 
-        if (!$app['user']['admin']) {
-            $app->abort(403);
-        }
-
-        $app['db']->transactional(function($db) use ($id) {
+        $this->db->transactional(function($db) use ($id) {
             $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
             $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
             $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
@@ -535,37 +546,38 @@ class Crash extends AbstractController
             $db->executeUpdate('UPDATE crash SET thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', array($id));
         });
 
-        $return = $app['request']->get('return', null);
-        if (!$return) {
-            $return = $app['url_generator']->generate('dashboard');
+        $return = $request->get('return');
+        if ($return) {
+            return $this->redirect($return);
         }
 
-        return $app->redirect($return);
+        return $this->redirectToRoute('dashboard');
     }
 
-    public function delete($id)
+    /**
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/delete", methods={"POST"}, name="delete")
+     */
+    public function delete(Request $request, $id)
     {
-        if ($app['user'] === null) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $can_manage = $this->canUserManage($app, $id);
+        $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            $app->abort(404);
+            throw $this->createNotFoundException();
         }
 
         if (!$can_manage) {
-            $app->abort(403);
+            throw $this->createAccessDeniedException();
         }
 
-        $app['db']->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
+        $this->db->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
 
-        $return = $app['request']->get('return', null);
-        if (!$return) {
-            $return = $app['url_generator']->generate('dashboard');
+        $return = $request->get('return');
+        if ($return) {
+            return $this->redirect($return);
         }
 
-        return $app->redirect($return);
+        return $this->redirectToRoute('dashboard');
     }
 
     /**
@@ -595,7 +607,7 @@ class Crash extends AbstractController
             }
 
             if ($userid !== null && !in_array($userid, $allowed, true)) {
-                $app->abort(403);
+                throw $this->createAccessDeniedException();
             }
         }
 
@@ -644,7 +656,7 @@ class Crash extends AbstractController
     {
         for ($i = 0; $i < 10; $i++) {
             $id = \Filesystem::readRandomCharacters(12);
-            $path = $app['root'] . '/dumps/' . substr($id, 0, 2);
+            $path = $this->rootPath . '/dumps/' . substr($id, 0, 2);
 
             if (\Filesystem::pathExists($path . '/' . $id . '.dmp')) {
                 continue;
@@ -658,14 +670,16 @@ class Crash extends AbstractController
 
     private function canUserManage($crash)
     {
-        if (!$app['user'] || $app['user']['admin']) {
-            // Hacky, but execute a query to check if the crash doesn't exist at all.
-            $query = $app['db']->executeQuery('SELECT 1 FROM crash WHERE crash.id = ?', [$crash])->fetchColumn(0);
+        $user = $this->getUser();
 
-            return ($query === false) ? null : !!$app['user']['admin'];
+        if (!$user || $user->isAdmin()) {
+            // Hacky, but execute a query to check if the crash doesn't exist at all.
+            $query = $this->db->executeQuery('SELECT 1 FROM crash WHERE crash.id = ?', [$crash])->fetchColumn(0);
+
+            return ($query === false) ? null : ($user && $user->isAdmin());
         }
 
-        $query = $app['db']->executeQuery('SELECT COALESCE(crash.owner = ? OR EXISTS (SELECT TRUE FROM share WHERE share.owner = crash.owner AND share.user = ?), 0) AS manage FROM crash WHERE crash.id = ?', [$app['user']['id'], $app['user']['id'], $crash])->fetchColumn(0);
+        $query = $this->db->executeQuery('SELECT COALESCE(crash.owner = ? OR EXISTS (SELECT TRUE FROM share WHERE share.owner = crash.owner AND share.user = ?), 0) AS manage FROM crash WHERE crash.id = ?', [ $user->getId(), $user->getId(), $crash ])->fetchColumn(0);
 
         if ($query === false) {
             return null;
@@ -700,7 +714,7 @@ class Crash extends AbstractController
         $return = 'Y|';
         foreach ($signature->modules as $module) {
             // This query in a loop is *a lot* faster than other methods.
-            $exists = $app['db']->executeQuery('SELECT TRUE FROM module WHERE name = ? AND identifier = ? AND present = 1 LIMIT 1', [$module->file, $module->identifier])->fetchColumn(0);
+            $exists = $this->db->executeQuery('SELECT TRUE FROM module WHERE name = ? AND identifier = ? AND present = 1 LIMIT 1', [$module->file, $module->identifier])->fetchColumn(0);
             $return .= ($exists === false) ? 'Y' : 'N';
         }
 
