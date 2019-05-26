@@ -2,10 +2,15 @@
 
 namespace App\Controller;
 
-use Silex\Application;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\Request;
 
-class Sharing
+class Sharing extends AbstractController
 {
+    /**
+     * @Route("/settings/share", name="share")
+     */
     public function share()
     {
         if (!$app['user']) {
@@ -38,26 +43,26 @@ class Sharing
 
         $user = $app['request']->get('user', null);
         if ($user === null) {
-            $app['session']->getFlashBag()->add('error_share_invite', 'Missing Steam ID');
+            $this->addFlash('error_share_invite', 'Missing Steam ID');
             return $app->redirect($app['url_generator']->generate('share_invite'));
         }
 
         if (!ctype_digit($user) || gmp_cmp(gmp_and($user, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
-            $app['session']->getFlashBag()->add('error_share_invite', 'Invalid Steam ID');
+            $this->addFlash('error_share_invite', 'Invalid Steam ID');
             return $app->redirect($app['url_generator']->generate('share_invite'));
         }
 
         if ($user === $app['user']['id']) {
-            $app['session']->getFlashBag()->add('error_share_invite', 'You already have full access to your own reports');
+            $this->addFlash('error_share_invite', 'You already have full access to your own reports');
             return $app->redirect($app['url_generator']->generate('share_invite'));
         }
 
         $query = $app['db']->executeQuery('SELECT accepted FROM share WHERE owner = ? AND user = ?', array($app['user']['id'], $user))->fetch();
         if ($query !== false) {
             if ($query['accepted'] !== null) {
-                $app['session']->getFlashBag()->add('error_share_invite', 'You have already granted that user access');
+                $this->addFlash('error_share_invite', 'You have already granted that user access');
             } else {
-                $app['session']->getFlashBag()->add('error_share_invite', 'You have already invited that user, but they have not accepted yet');
+                $this->addFlash('error_share_invite', 'You have already invited that user, but they have not accepted yet');
             }
             return $app->redirect($app['url_generator']->generate('share_invite'));
         }

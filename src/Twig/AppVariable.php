@@ -64,6 +64,13 @@ class AppVariable
         return $this->config;
     }
 
+    public function getFeature()
+    {
+        return [
+            'subscriptions' => false,
+        ];
+    }
+
     public function getVersion()
     {
         return $this->cache->get('git_version', function (ItemInterface $item) {

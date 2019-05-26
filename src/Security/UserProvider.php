@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use Doctrine\DBAL\Driver\Connection;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -9,6 +10,13 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 
 class UserProvider implements UserProviderInterface
 {
+    private $db;
+
+    public function __construct(Connection $db)
+    {
+        $this->db = $db;
+    }
+
     /**
      * Symfony calls this method if you use features like switch_user
      * or remember_me.
@@ -22,11 +30,12 @@ class UserProvider implements UserProviderInterface
      */
     public function loadUserByUsername($username)
     {
-        // Load a User object from your data source or throw UsernameNotFoundException.
-        // The $username argument may not actually be a username:
-        // it is whatever value is being returned by the getUsername()
-        // method in your User class.
-        throw new \Exception('TODO: fill in loadUserByUsername() inside '.__FILE__);
+        $this->db->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', [$username]);
+
+        $user = new SteamUser();
+        $user->setId($username);
+
+        return $user;
     }
 
     /**
@@ -50,7 +59,7 @@ class UserProvider implements UserProviderInterface
 
         // Return a User object after making sure its data is "fresh".
         // Or throw a UsernameNotFoundException if the user no longer exists.
-        throw new \Exception('TODO: fill in refreshUser() inside '.__FILE__);
+        return $user;
     }
 
     /**

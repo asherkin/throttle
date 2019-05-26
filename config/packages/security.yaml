@@ -10,6 +10,12 @@ security:
             security: false
         main:
             anonymous: true
+            logout:
+                path: logout
+                success_handler: App\Security\LogoutSuccessHandler
+            guard:
+                authenticators:
+                    - App\Security\SteamAuthenticator
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#firewalls-authentication

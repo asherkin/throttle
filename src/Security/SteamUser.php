@@ -29,7 +29,7 @@ class SteamUser implements UserInterface
      */
     public function getUsername(): string
     {
-        return (string) $this->id;
+        return (string)$this->id;
     }
 
     /**
@@ -74,5 +74,26 @@ class SteamUser implements UserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
+    }
+
+    public function getName()
+    {
+        return null;
+    }
+
+    public function getAvatar()
+    {
+        return null;
+    }
+
+    public function getPending()
+    {
+        return 0;
+    }
+
+    public function getAdmin()
+    {
+        // TODO: Use a role for admin?
+        return false;
     }
 }

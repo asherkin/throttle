@@ -2,36 +2,12 @@
 
 namespace App\Controller;
 
-class Crash
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\Request;
+
+class Crash extends AbstractController
 {
-    public function presubmit($signature)
-    {
-        //$app['monolog']->warning('Presubmit: '.$signature);
-
-        try {
-            $signature = self::parsePresubmitSignature($signature);
-        } catch (\Exception $e) {
-            $app['monolog']->warning('Error parsing presubmit: '.$signature, [$e]);
-
-            return 'E|'.$e->getMessage();
-        }
-
-        $app['redis']->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
-
-        // TODO: Determine whether we want the crash dump...
-        $return = 'Y|';
-        foreach ($signature->modules as $module) {
-            // TODO: N query problem...
-            $exists = $app['db']->executeQuery('SELECT TRUE FROM module WHERE name = ? AND identifier = ? AND present = 1 LIMIT 1', [$module->file, $module->identifier])->fetchColumn(0);
-            $return .= ($exists === false) ? 'Y' : 'N';
-        }
-
-        // Stick a random presubmit token on the end for testing.
-        $return .= '|'.md5($return);
-
-        return $return;
-    }
-
     public function submit()
     {
         //TODO
@@ -171,16 +147,6 @@ class Crash
 
         $app['redis']->hIncrBy('throttle:stats', 'crashes:accepted', 1);
 
-/*
-        try {
-            $app['queue']->putInTube('carburetor', json_encode(array(
-                'id' => $id,
-                'owner' => $owner,
-                'ip' => $ip,
-            )));
-        } catch (\Exception $e) {}
-*/
-
         // Special code for handling breakpad-uploaded minidumps.
         // FIXME: This is mainly a hack for testing Electron.
         if ($app['request']->request->get('prod')) {
@@ -205,12 +171,12 @@ class Crash
         ));
     }
 
-    public function details($id)
+    public function details(Request $request, $id)
     {
         $can_manage = $this->canUserManage($app, $id);
         if ($can_manage === null) {
-            if ($app['session']->getFlashBag()->get('internal')) {
-                $app['session']->getFlashBag()->add('error_crash', 'That Crash ID does not exist.');
+            if ($request->getSession()->getFlashBag()->get('internal')) {
+                $this->addFlash('error_crash', 'That Crash ID does not exist.');
 
                 return $app->redirect($app['url_generator']->generate('index'));
             }
@@ -591,6 +557,9 @@ class Crash
         return $app->redirect($return);
     }
 
+    /**
+     * @Route("/dashboard", name="dashboard")
+     */
     public function dashboard($offset)
     {
         if ($app['user'] === null) {
@@ -699,6 +668,34 @@ class Crash
         }
 
         throw new \Exception('Bad query return in '.__FUNCTION__);
+    }
+
+    private function presubmit($signature)
+    {
+        //$app['monolog']->warning('Presubmit: '.$signature);
+
+        try {
+            $signature = self::parsePresubmitSignature($signature);
+        } catch (\Exception $e) {
+            $app['monolog']->warning('Error parsing presubmit: '.$signature, [$e]);
+
+            return 'E|'.$e->getMessage();
+        }
+
+        $app['redis']->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
+
+        // TODO: Determine whether we want the crash dump...
+        $return = 'Y|';
+        foreach ($signature->modules as $module) {
+            // This query in a loop is *a lot* faster than other methods.
+            $exists = $app['db']->executeQuery('SELECT TRUE FROM module WHERE name = ? AND identifier = ? AND present = 1 LIMIT 1', [$module->file, $module->identifier])->fetchColumn(0);
+            $return .= ($exists === false) ? 'Y' : 'N';
+        }
+
+        // Stick a random presubmit token on the end for testing.
+        $return .= '|'.md5($return);
+
+        return $return;
     }
 
     public static function parsePresubmitSignature($signature)
