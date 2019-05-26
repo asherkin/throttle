@@ -1,23 +1,25 @@
 {
     "type": "project",
-    "license": "apache-2.0",
+    "license": "Apache-2.0",
+    "minimum-stability": "beta",
     "require": {
-        "php": "^7.1.3",
+        "php": "^7.2.0",
         "ext-ctype": "*",
         "ext-iconv": "*",
         "ext-redis": "*",
         "phacility/libphutil": "dev-stable",
-        "symfony/console": "4.2.*",
-        "symfony/dotenv": "4.2.*",
+        "symfony/console": "4.3.*",
+        "symfony/dotenv": "4.3.*",
         "symfony/flex": "^1.1",
-        "symfony/framework-bundle": "4.2.*",
+        "symfony/framework-bundle": "4.3.*",
+        "symfony/http-client": "4.3.*",
         "symfony/monolog-bundle": "^3.3",
         "symfony/orm-pack": "^1.0",
-        "symfony/process": "4.2.*",
+        "symfony/process": "4.3.*",
         "symfony/profiler-pack": "^1.0",
-        "symfony/security-bundle": "4.2.*",
-        "symfony/twig-bundle": "4.2.*",
-        "symfony/yaml": "4.2.*"
+        "symfony/security-bundle": "4.3.*",
+        "symfony/twig-bundle": "4.3.*",
+        "symfony/yaml": "4.3.*"
     },
     "repositories": [
         {
@@ -53,6 +55,7 @@
         "paragonie/random_compat": "2.*",
         "symfony/polyfill-ctype": "*",
         "symfony/polyfill-iconv": "*",
+        "symfony/polyfill-php72": "*",
         "symfony/polyfill-php71": "*",
         "symfony/polyfill-php70": "*",
         "symfony/polyfill-php56": "*"
@@ -75,7 +78,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "4.2.*"
+            "require": "4.3.*"
         }
     },
     "require-dev": {
