@@ -2,9 +2,13 @@
 
 namespace App\Controller;
 
-use Silex\Application;
+use Psr\Log\LoggerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\Routing\Annotation\Route;
 
-class Subscription
+class Subscription extends AbstractController
 {
     const VENDOR_ID = 21783;
 
@@ -22,21 +26,18 @@ EOT;
     const YEARLY_PRODUCT_ID = 519794;
     const YEARLY_SECRET_KEY = '';
 
-    public function webhook()
+    /**
+     * @Route("/paddle_webhook", defaults={"_format": "json"}, methods={"POST"}, name="paddle_webhook")
+     */
+    public function webhook(Request $request, LoggerInterface $logger)
     {
-        $this->validateWebhook($app);
+        $this->validateWebhook($request);
 
-        $log = new \Monolog\Logger('throttle.paddle');
-        $log->pushHandler(new \Monolog\Handler\StreamHandler($app['root'].'/logs/paddle.log'));
+        $logger->info('Paddle webhook received', [
+            'request' => $request->request->all(),
+        ]);
 
-        $params = $app['request']->request;
-
-        $paramArray = $app['request']->request->all();
-        unset($paramArray['p_signature']);
-        $log->info('Webhook received!', ['request' => $paramArray]);
-        unset($paramArray);
-
-        switch ($params->get('alert_name')) {
+        switch ($request->request->get('alert_name')) {
             case 'subscription_created';
                 break;
             case 'subscription_updated';
@@ -51,30 +52,33 @@ EOT;
                 break;
         }
 
-        return '';
+        return $this->json([]);
     }
 
-    public function subscribe()
+    /**
+     * @Route("/subscribe", name="subscribe")
+     */
+    public function subscribe(\App\Twig\AppVariable $appVar)
     {
-        if (!$app['feature']['subscriptions']) {
-            $app->abort(404);
+        // TODO: This is a hack, feature-flags need implementing properly.
+        if (!$appVar->getFeature()['subscriptions']) {
+            throw $this->createNotFoundException();
         }
 
-        if (!$app['user']) {
-            $app->abort(401);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
 
         return $this->render('subscribe.html.twig', [
             'price_table' => self::getPriceAdjustmentTable(),
         ]);
     }
 
-    private function validateWebhook()
+    private function validateWebhook(Request $request)
     {
-        $params = $app['request']->request->all();
+        // TODO: Re-write this function as a custom firewall/guard/authenticator/voter/whatever.
+        $params = $request->request->all();
 
         if (!isset($params['p_signature'])) {
-            $app->abort(403, 'Missing signature');
+            throw new AccessDeniedHttpException('Missing signature');
         }
 
         $signature = base64_decode($params['p_signature']);
@@ -89,7 +93,7 @@ EOT;
         $params = serialize($params);
 
         if (!openssl_verify($params, $signature, self::PUBLIC_KEY, OPENSSL_ALGO_SHA1)) {
-            $app->abort(403, 'Invalid signature');
+            throw new AccessDeniedHttpException('Invalid signature');
         }
 
         return true;

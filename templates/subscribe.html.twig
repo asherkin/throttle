@@ -76,9 +76,9 @@
 <script type="text/javascript">
 var priceAdjustmentTable = {{ price_table|json_encode()|raw }};
 var subscriptions = {
-  monthly: {{ constant('Throttle\\Subscription::MONTHLY_PRODUCT_ID') }},
-  quarterly: {{ constant('Throttle\\Subscription::QUARTERLY_PRODUCT_ID') }},
-  yearly: {{ constant('Throttle\\Subscription::YEARLY_PRODUCT_ID') }},
+  monthly: {{ constant('App\\Controller\\Subscription::MONTHLY_PRODUCT_ID') }},
+  quarterly: {{ constant('App\\Controller\\Subscription::QUARTERLY_PRODUCT_ID') }},
+  yearly: {{ constant('App\\Controller\\Subscription::YEARLY_PRODUCT_ID') }},
 };
 
 var paymentCountry = null;
@@ -196,13 +196,13 @@ checkoutButton.onclick = function(e) {
 };
 
 Paddle.Setup({
-  vendor: {{ constant('Throttle\\Subscription::VENDOR_ID') }},
+  vendor: {{ constant('App\\Controller\\Subscription::VENDOR_ID') }},
 {% if app.debug %}
   debug: true,
 {% endif %}
 });
 
-Paddle.Product.Prices({{ constant('Throttle\\Subscription::MONTHLY_PRODUCT_ID') }}, function(prices) {
+Paddle.Product.Prices({{ constant('App\\Controller\\Subscription::MONTHLY_PRODUCT_ID') }}, function(prices) {
   paymentCountry = prices.country;
   var taxRate = Number.parseFloat(prices.price.tax.substr(3));
 
