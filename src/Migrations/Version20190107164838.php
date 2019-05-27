@@ -2,8 +2,8 @@
 
 namespace ThrottleMigrations;
 
-use Doctrine\Migrations\AbstractMigration;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
 
 class Version20190107164838 extends AbstractMigration
 {

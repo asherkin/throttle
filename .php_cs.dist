@@ -7,9 +7,13 @@ $finder = PhpCsFixer\Finder::create()
 return PhpCsFixer\Config::create()
     ->setRules([
         '@Symfony' => true,
+        '@Symfony:risky' => true,
         'array_syntax' => ['syntax' => 'short'],
         'cast_spaces' => ['space' => 'none'],
+        'ordered_imports' => true,
+        'native_function_invocation' => ['include' => [], 'strict' => true],
         'yoda_style' => ['equal' => false, 'identical' => false],
     ])
+    ->setRiskyAllowed(true)
     ->setFinder($finder)
 ;

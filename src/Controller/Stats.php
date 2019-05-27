@@ -237,7 +237,7 @@ class Stats extends AbstractController
     {
         $query = null;
 
-        $limit = intval($request->get('limit', 10));
+        $limit = (int)($request->get('limit', 10));
         if ($limit <= 0) {
             $limit = 10;
         } elseif ($limit > 200) {
