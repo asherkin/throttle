@@ -38,17 +38,17 @@ EOT;
         ]);
 
         switch ($request->request->get('alert_name')) {
-            case 'subscription_created';
+            case 'subscription_created':
                 break;
-            case 'subscription_updated';
+            case 'subscription_updated':
                 break;
-            case 'subscription_cancelled';
+            case 'subscription_cancelled':
                 break;
-            case 'subscription_payment_succeeded';
+            case 'subscription_payment_succeeded':
                 break;
-            case 'subscription_payment_failed';
+            case 'subscription_payment_failed':
                 break;
-            case 'subscription_payment_refunded';
+            case 'subscription_payment_refunded':
                 break;
         }
 
@@ -89,7 +89,7 @@ EOT;
 
         ksort($params);
         foreach ($params as $k => $v) {
-            if(!in_array(gettype($v), array('object', 'array'))) {
+            if (!in_array(gettype($v), ['object', 'array'])) {
                 $params[$k] = (string)$v;
             }
         }
@@ -109,14 +109,13 @@ EOT;
         for ($i = 0; $i <= 120; ++$i) {
             $price = number_format($i, 2, '.', '');
             $output[] = [
-                'price'     => $price,
-                'monthly'   => md5($price . self::MONTHLY_SECRET_KEY),
-                'quarterly' => md5($price . self::QUARTERLY_SECRET_KEY),
-                'yearly'    => md5($price . self::YEARLY_SECRET_KEY),
+                'price' => $price,
+                'monthly' => md5($price.self::MONTHLY_SECRET_KEY),
+                'quarterly' => md5($price.self::QUARTERLY_SECRET_KEY),
+                'yearly' => md5($price.self::YEARLY_SECRET_KEY),
             ];
         }
 
         return $output;
     }
 }
-

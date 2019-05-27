@@ -10,7 +10,7 @@ class Version20130902230947 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $crash = $schema->getTable('crash');
-        $crash->addColumn('output', 'text', array('notnull' => false));
+        $crash->addColumn('output', 'text', ['notnull' => false]);
     }
 
     public function down(Schema $schema): void

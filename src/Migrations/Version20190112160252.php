@@ -31,15 +31,15 @@ class Version20190112160252 extends AbstractMigration
     public function down(Schema $schema): void
     {
         $crash = $schema->getTable('crash');
-        $crash->addIndex(array('owner'));
+        $crash->addIndex(['owner']);
 
         $crashnotice = $schema->getTable('crashnotice');
-        $crashnotice->addIndex(array('crash'));
+        $crashnotice->addIndex(['crash']);
 
         $server = $schema->getTable('server');
-        $server->addIndex(array('owner'));
+        $server->addIndex(['owner']);
 
         $share = $schema->getTable('share');
-        $share->addIndex(array('owner'));
+        $share->addIndex(['owner']);
     }
 }

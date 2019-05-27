@@ -34,8 +34,8 @@ class Sharing extends AbstractController
 
         $user = $this->getUser();
 
-        $sharing = $this->db->executeQuery('SELECT share.user AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.user = user.id WHERE share.owner = ? ORDER BY accepted IS NULL DESC, accepted DESC', array($user->getId()))->fetchAll();
-        $shared = $this->db->executeQuery('SELECT share.owner AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? ORDER BY accepted IS NULL DESC, accepted DESC', array($user->getId()))->fetchAll();
+        $sharing = $this->db->executeQuery('SELECT share.user AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.user = user.id WHERE share.owner = ? ORDER BY accepted IS NULL DESC, accepted DESC', [$user->getId()])->fetchAll();
+        $shared = $this->db->executeQuery('SELECT share.owner AS id, user.name, user.avatar, accepted FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? ORDER BY accepted IS NULL DESC, accepted DESC', [$user->getId()])->fetchAll();
 
         return $this->render('share.html.twig', [
             'sharing' => $sharing,
@@ -53,32 +53,36 @@ class Sharing extends AbstractController
         $user = $request->get('user', null);
         if ($user === null) {
             $this->addFlash('error_share_invite', 'Missing Steam ID');
+
             return $this->redirectToRoute('share_invite');
         }
 
         if (!ctype_digit($user) || gmp_cmp(gmp_and($user, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
             $this->addFlash('error_share_invite', 'Invalid Steam ID');
+
             return $this->redirectToRoute('share_invite');
         }
 
         $currentUser = $this->getUser();
         if ($user === $currentUser->getId()) {
             $this->addFlash('error_share_invite', 'You already have full access to your own reports');
+
             return $this->redirectToRoute('share_invite');
         }
 
-        $query = $this->db->executeQuery('SELECT accepted FROM share WHERE owner = ? AND user = ?', array($currentUser->getId(), $user))->fetch();
+        $query = $this->db->executeQuery('SELECT accepted FROM share WHERE owner = ? AND user = ?', [$currentUser->getId(), $user])->fetch();
         if ($query !== false) {
             if ($query['accepted'] !== null) {
                 $this->addFlash('error_share_invite', 'You have already granted that user access');
             } else {
                 $this->addFlash('error_share_invite', 'You have already invited that user, but they have not accepted yet');
             }
+
             return $this->redirectToRoute('share_invite');
         }
 
-        $this->db->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($user));
-        $this->db->executeUpdate('INSERT INTO share (owner, user) VALUES (?, ?)', array($currentUser->getId(), $user));
+        $this->db->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', [$user]);
+        $this->db->executeUpdate('INSERT INTO share (owner, user) VALUES (?, ?)', [$currentUser->getId(), $user]);
 
         $return = $request->get('return');
         if ($return) {
@@ -110,7 +114,7 @@ class Sharing extends AbstractController
             throw new \Exception('Missing or invalid target');
         }
 
-        $this->db->executeUpdate('UPDATE share SET accepted = NOW() WHERE owner = ? AND user = ?', array($owner, $this->getUser()->getId()));
+        $this->db->executeUpdate('UPDATE share SET accepted = NOW() WHERE owner = ? AND user = ?', [$owner, $this->getUser()->getId()]);
 
         $return = $request->get('return');
         if ($return) {
@@ -138,13 +142,13 @@ class Sharing extends AbstractController
                 throw new \Exception('Invalid target');
             }
 
-            $this->db->executeUpdate('DELETE FROM share WHERE owner = ? AND user = ?', array($this->getUser()->getId(), $user));
-        } else if ($owner !== null) {
+            $this->db->executeUpdate('DELETE FROM share WHERE owner = ? AND user = ?', [$this->getUser()->getId(), $user]);
+        } elseif ($owner !== null) {
             if (!ctype_digit($owner) || gmp_cmp(gmp_and($owner, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
                 throw new \Exception('Invalid target');
             }
 
-            $this->db->executeUpdate('DELETE FROM share WHERE owner = ? AND user = ?', array($owner, $this->getUser()->getId()));
+            $this->db->executeUpdate('DELETE FROM share WHERE owner = ? AND user = ?', [$owner, $this->getUser()->getId()]);
         }
 
         $return = $request->get('return');
@@ -155,4 +159,3 @@ class Sharing extends AbstractController
         return $this->redirectToRoute('share');
     }
 }
-

@@ -11,39 +11,39 @@ class Version20171031224128 extends AbstractMigration
     {
         $subscription = $schema->createTable('subscription');
 
-        $subscription->addColumn('subscription_id', 'string', array('length' => 255));
-        $subscription->addColumn('steamid', 'bigint', array('unsigned' => true, 'notnull' => false));
-        $subscription->addColumn('update_date', 'datetime', array());
-        $subscription->addColumn('status', 'string', array('length' => 255, 'notnull' => false));
-        $subscription->addColumn('start_date', 'datetime', array('notnull' => false));
-        $subscription->addColumn('end_date', 'datetime', array('notnull' => false));
-        $subscription->addColumn('checkout_id', 'string', array('length' => 255, 'notnull' => false));
-        $subscription->addColumn('update_url', 'string', array('length' => 511, 'notnull' => false));
-        $subscription->addColumn('cancel_url', 'string', array('length' => 511, 'notnull' => false));
-        $subscription->addColumn('user_id', 'string', array('length' => 255, 'notnull' => false));
-        $subscription->addColumn('plan_id', 'string', array('length' => 255, 'notnull' => false));
-        $subscription->addColumn('passthrough', 'string', array('length' => 255, 'notnull' => false));
+        $subscription->addColumn('subscription_id', 'string', ['length' => 255]);
+        $subscription->addColumn('steamid', 'bigint', ['unsigned' => true, 'notnull' => false]);
+        $subscription->addColumn('update_date', 'datetime', []);
+        $subscription->addColumn('status', 'string', ['length' => 255, 'notnull' => false]);
+        $subscription->addColumn('start_date', 'datetime', ['notnull' => false]);
+        $subscription->addColumn('end_date', 'datetime', ['notnull' => false]);
+        $subscription->addColumn('checkout_id', 'string', ['length' => 255, 'notnull' => false]);
+        $subscription->addColumn('update_url', 'string', ['length' => 511, 'notnull' => false]);
+        $subscription->addColumn('cancel_url', 'string', ['length' => 511, 'notnull' => false]);
+        $subscription->addColumn('user_id', 'string', ['length' => 255, 'notnull' => false]);
+        $subscription->addColumn('plan_id', 'string', ['length' => 255, 'notnull' => false]);
+        $subscription->addColumn('passthrough', 'string', ['length' => 255, 'notnull' => false]);
 
-        $subscription->setPrimaryKey(array('subscription_id'));
+        $subscription->setPrimaryKey(['subscription_id']);
 
         $user = $schema->getTable('user');
-        $subscription->addForeignKeyConstraint($user, array('steamid'), array('id'), array('onUpdate' => 'CASCADE', 'onDelete' => 'SET NULL'));
+        $subscription->addForeignKeyConstraint($user, ['steamid'], ['id'], ['onUpdate' => 'CASCADE', 'onDelete' => 'SET NULL']);
 
         $payment = $schema->createTable('payment');
 
-        $payment->addColumn('order_id', 'string', array('length' => 255));
-        $payment->addColumn('subscription_id', 'string', array('length' => 255));
-        $payment->addColumn('payment_date', 'datetime', array('notnull' => false));
-        $payment->addColumn('refund_date', 'datetime', array('notnull' => false));
-        $payment->addColumn('receipt_url', 'string', array('length' => 511, 'notnull' => false));
-        $payment->addColumn('gross_amount', 'integer', array('unsigned' => true, 'notnull' => false));
-        $payment->addColumn('fee_amount', 'integer', array('unsigned' => true, 'notnull' => false));
-        $payment->addColumn('tax_amount', 'integer', array('unsigned' => true, 'notnull' => false));
-        $payment->addColumn('earned_amount', 'integer', array('unsigned' => true, 'notnull' => false));
+        $payment->addColumn('order_id', 'string', ['length' => 255]);
+        $payment->addColumn('subscription_id', 'string', ['length' => 255]);
+        $payment->addColumn('payment_date', 'datetime', ['notnull' => false]);
+        $payment->addColumn('refund_date', 'datetime', ['notnull' => false]);
+        $payment->addColumn('receipt_url', 'string', ['length' => 511, 'notnull' => false]);
+        $payment->addColumn('gross_amount', 'integer', ['unsigned' => true, 'notnull' => false]);
+        $payment->addColumn('fee_amount', 'integer', ['unsigned' => true, 'notnull' => false]);
+        $payment->addColumn('tax_amount', 'integer', ['unsigned' => true, 'notnull' => false]);
+        $payment->addColumn('earned_amount', 'integer', ['unsigned' => true, 'notnull' => false]);
 
-        $payment->setPrimaryKey(array('order_id'));
+        $payment->setPrimaryKey(['order_id']);
 
-        $payment->addForeignKeyConstraint($subscription, array('subscription_id'), array('subscription_id'), array('onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE'));
+        $payment->addForeignKeyConstraint($subscription, ['subscription_id'], ['subscription_id'], ['onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE']);
     }
 
     public function down(Schema $schema): void

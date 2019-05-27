@@ -11,7 +11,7 @@ class Version20130629035411 extends AbstractMigration
     {
         $crash = $schema->getTable('crash');
 
-        $crash->addColumn('failed', 'boolean', array('default' => false));
+        $crash->addColumn('failed', 'boolean', ['default' => false]);
     }
 
     public function down(Schema $schema): void

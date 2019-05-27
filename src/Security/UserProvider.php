@@ -78,6 +78,6 @@ class UserProvider implements UserProviderInterface
      */
     public function supportsClass($class)
     {
-        return SteamUser::class === $class;
+        return $class === SteamUser::class;
     }
 }

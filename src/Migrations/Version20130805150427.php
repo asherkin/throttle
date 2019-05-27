@@ -10,7 +10,7 @@ class Version20130805150427 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $crash = $schema->getTable('crash');
-        $crash->addIndex(array('timestamp'));
+        $crash->addIndex(['timestamp']);
     }
 
     public function down(Schema $schema): void

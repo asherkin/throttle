@@ -16,6 +16,6 @@ class Version20140301232326 extends AbstractMigration
     public function down(Schema $schema): void
     {
         $crash = $schema->getTable('crash');
-        $crash->addColumn('output', 'text', array('notnull' => false));
+        $crash->addColumn('output', 'text', ['notnull' => false]);
     }
 }

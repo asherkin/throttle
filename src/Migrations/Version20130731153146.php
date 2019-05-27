@@ -14,14 +14,14 @@ class Version20130731153146 extends AbstractMigration
 
         $crash = $schema->createTable('user');
 
-        $crash->addColumn('id', 'bigint', array('unsigned' => true));
-        $crash->addColumn('name', 'string', array('length' => 255, 'notnull' => false));
-        $crash->addColumn('avatar', 'string', array('length' => 255, 'notnull' => false));
-        $crash->addColumn('updated', 'datetime', array('notnull' => false));
+        $crash->addColumn('id', 'bigint', ['unsigned' => true]);
+        $crash->addColumn('name', 'string', ['length' => 255, 'notnull' => false]);
+        $crash->addColumn('avatar', 'string', ['length' => 255, 'notnull' => false]);
+        $crash->addColumn('updated', 'datetime', ['notnull' => false]);
 
-        $crash->setPrimaryKey(array('id'));
+        $crash->setPrimaryKey(['id']);
 
-        $crash->addIndex(array('updated'));
+        $crash->addIndex(['updated']);
     }
 
     public function down(Schema $schema): void

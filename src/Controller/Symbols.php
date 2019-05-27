@@ -25,7 +25,7 @@ class Symbols extends AbstractController
         $lines = preg_split('/\r?\n/', trim($data));
 
         if ($lines === false || !preg_match('/^MODULE (?P<operatingsystem>[^ ]++) (?P<architecture>[^ ]++) (?P<id>[a-fA-F0-9]++) (?P<name>[^\\/\\\\\r\n]++)$/m', $lines[0], $info)) {
-            $logger->warning('Invalid symbol file', [ 'header' => ($lines ? $lines[0] : null) ]);
+            $logger->warning('Invalid symbol file', ['header' => ($lines ? $lines[0] : null)]);
             $redis->hIncrBy('throttle:stats', 'symbols:rejected:invalid', 1);
 
             return new \Symfony\Component\HttpFoundation\Response('Invalid symbol file', 400);
@@ -42,17 +42,18 @@ class Symbols extends AbstractController
                 }
 
                 if ($type === 'FUNC') {
-                    $functions++;
+                    ++$functions;
                 }
             }
 
             if ($functions === 0) {
                 $redis->hIncrBy('throttle:stats', 'symbols:rejected:no-functions', 1);
+
                 return new \Symfony\Component\HttpFoundation\Response('Symbol file had no FUNC records, please update to Accelerator 2.4.3 or later', 400);
             }
         }
 
-        $path = $rootPath . '/symbols/public/' . $info['name'] . '/' . $info['id'];
+        $path = $rootPath.'/symbols/public/'.$info['name'].'/'.$info['id'];
 
         \Filesystem::createDirectory($path, 0755, true);
 
@@ -61,13 +62,12 @@ class Symbols extends AbstractController
             $file = substr($file, 0, -4);
         }
 
-        \Filesystem::writeFile($path . '/' . $file . '.sym.gz', gzencode($data));
+        \Filesystem::writeFile($path.'/'.$file.'.sym.gz', gzencode($data));
 
         $redis->hIncrBy('throttle:stats', 'symbols:accepted', 1);
 
-        return $this->render('submit-symbols.txt.twig', array(
+        return $this->render('submit-symbols.txt.twig', [
             'module' => $info,
-        ));
+        ]);
     }
 }
-

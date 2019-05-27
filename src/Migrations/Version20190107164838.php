@@ -10,9 +10,9 @@ class Version20190107164838 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $crash = $schema->getTable('crash');
-        $crash->addColumn('lastview', 'datetime', array('notnull' => false));
+        $crash->addColumn('lastview', 'datetime', ['notnull' => false]);
 
-        $crash->addIndex(array('lastview'));
+        $crash->addIndex(['lastview']);
     }
 
     public function down(Schema $schema): void

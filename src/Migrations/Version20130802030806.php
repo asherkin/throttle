@@ -11,10 +11,10 @@ class Version20130802030806 extends AbstractMigration
     {
         $crash = $schema->getTable('crash');
 
-        $crash->addIndex(array('owner', 'server'));
+        $crash->addIndex(['owner', 'server']);
 
         $server = $schema->getTable('server');
-        $crash->addForeignKeyConstraint($server, array('owner', 'server'), array('owner', 'id'), array('onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE'));
+        $crash->addForeignKeyConstraint($server, ['owner', 'server'], ['owner', 'id'], ['onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE']);
     }
 
     public function down(Schema $schema): void

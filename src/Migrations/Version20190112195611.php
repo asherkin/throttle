@@ -13,8 +13,8 @@ class Version20190112195611 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $crash = $schema->getTable('crash');
-        $crash->addIndex(array('ip'));
-        $crash->addIndex(array('failed'));
+        $crash->addIndex(['ip']);
+        $crash->addIndex(['failed']);
 
         $frame = $schema->getTable('frame');
         $frame->dropIndex('IDX_B5F83CCDD7E8F0DF');
@@ -24,8 +24,8 @@ class Version20190112195611 extends AbstractMigration
         $module = $schema->getTable('module');
         $module->dropIndex('IDX_C242628D7E8F0DF');
         $module->dropIndex('IDX_C24262827FB1B8BFDBCAE17');
-        $module->addIndex(array('processed'));
-        $module->addIndex(array('present'));
+        $module->addIndex(['processed']);
+        $module->addIndex(['present']);
     }
 
     /**

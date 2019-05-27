@@ -10,7 +10,7 @@ class Version20130902151422 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $module = $schema->getTable('module');
-        $module->addIndex(array('processed', 'present'));
+        $module->addIndex(['processed', 'present']);
     }
 
     public function down(Schema $schema): void

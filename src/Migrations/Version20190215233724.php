@@ -11,10 +11,10 @@ class Version20190215233724 extends AbstractMigration
     {
         $crash = $schema->getTable('crash');
 
-        $crash->addColumn('crashmodule', 'string', array('length' => 255, 'notnull' => false));
-        $crash->addColumn('crashfunction', 'string', array('length' => 769, 'notnull' => false));
+        $crash->addColumn('crashmodule', 'string', ['length' => 255, 'notnull' => false]);
+        $crash->addColumn('crashfunction', 'string', ['length' => 769, 'notnull' => false]);
 
-        $crash->addIndex(array('crashmodule', 'crashfunction'));
+        $crash->addIndex(['crashmodule', 'crashfunction']);
     }
 
     public function down(Schema $schema): void

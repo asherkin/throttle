@@ -39,9 +39,9 @@ class Stats extends AbstractController
             return round($historical);
         });
 
-        return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
+        return new \Symfony\Component\HttpFoundation\Response($data, 200, [
             'Content-Type' => 'text/plain',
-        ));
+        ]);
     }
 
     /**
@@ -55,9 +55,9 @@ class Stats extends AbstractController
             return $redis->hGet('throttle:stats', 'crashes:submitted');
         });
 
-        return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
+        return new \Symfony\Component\HttpFoundation\Response($data, 200, [
             'Content-Type' => 'text/plain',
-        ));
+        ]);
     }
 
     /**
@@ -69,12 +69,13 @@ class Stats extends AbstractController
             $item->expiresAfter(10);
 
             $query = $this->db->executeQuery('SELECT COUNT(*) AS count FROM (SELECT DISTINCT cmdline FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOUR)) AS _');
+
             return $query->fetchColumn(0);
         });
 
-        return new \Symfony\Component\HttpFoundation\Response($data, 200, array(
+        return new \Symfony\Component\HttpFoundation\Response($data, 200, [
             'Content-Type' => 'text/plain',
-        ));
+        ]);
     }
 
     /**
@@ -85,44 +86,44 @@ class Stats extends AbstractController
         if ($module === null && $function === null) {
             $output = $this->getCsvRrdData('-90days', 86400, self::METRIC_SUBMITTED);
 
-            return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
+            return new \Symfony\Component\HttpFoundation\Response($output, 200, [
                 'Content-Type' => 'text/csv',
-            ));
+            ]);
         }
 
         $query = null;
 
         if ($function !== null) {
             if (preg_match('/^0x[0-9a-f]+$/', $function)) {
-                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? GROUP BY DATE(timestamp)', array($module, $function));
+                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? GROUP BY DATE(timestamp)', [$module, $function]);
             } else {
-                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND frame = 0 AND module LIKE ? AND function LIKE ? GROUP BY DATE(timestamp)', array($module, $function));
+                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND frame = 0 AND module LIKE ? AND function LIKE ? GROUP BY DATE(timestamp)', [$module, $function]);
             }
-        } else if ($module !== null) {
+        } elseif ($module !== null) {
             if (preg_match('/^%?(?:[0-9a-f]{8})+%?$/', $module)) {
-                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND stackhash LIKE ? GROUP BY DATE(timestamp)', array($module));
+                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND stackhash LIKE ? GROUP BY DATE(timestamp)', [$module]);
             } else {
-                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND frame = 0 AND module LIKE ? GROUP BY DATE(timestamp)', array($module));
+                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) AND frame = 0 AND module LIKE ? GROUP BY DATE(timestamp)', [$module]);
             }
         } else {
             $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 90 DAY) GROUP BY DATE(timestamp)');
         }
 
-        $data = array();
+        $data = [];
         while ($row = $query->fetch()) {
             $data[$row['date']] = $row['count'];
         }
 
         $output = 'Date,Crash Reports'.PHP_EOL;
-        for ($i = 89; $i >= 0; $i--) {
+        for ($i = 89; $i >= 0; --$i) {
             $date = date('Y-m-d', (int)strtotime('-'.$i.' days'));
             $count = array_key_exists($date, $data) ? $data[$date] : 0;
             $output .= $date.','.$count.PHP_EOL;
         }
 
-        return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
+        return new \Symfony\Component\HttpFoundation\Response($output, 200, [
             'Content-Type' => 'text/csv',
-        ));
+        ]);
     }
 
     /**
@@ -133,44 +134,44 @@ class Stats extends AbstractController
         if ($module === null && $function === null) {
             $output = $this->getCsvRrdData('-7days', 3600, self::METRIC_SUBMITTED);
 
-            return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
+            return new \Symfony\Component\HttpFoundation\Response($output, 200, [
                 'Content-Type' => 'text/csv',
-            ));
+            ]);
         }
 
         $query = null;
 
         if ($function !== null) {
             if (preg_match('/^0x[0-9a-f]+$/', $function)) {
-                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? GROUP BY DATE(timestamp), HOUR(timestamp)', array($module, $function));
+                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? GROUP BY DATE(timestamp), HOUR(timestamp)', [$module, $function]);
             } else {
-                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? AND function LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', array($module, $function));
+                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? AND function LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', [$module, $function]);
             }
-        } else if ($module !== null) {
+        } elseif ($module !== null) {
             if (preg_match('/^%?(?:[0-9a-f]{8})+%?$/', $module)) {
-                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND stackhash LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', array($module));
+                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND stackhash LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', [$module]);
             } else {
-                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', array($module));
+                $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) AND frame = 0 AND module LIKE ? GROUP BY DATE(timestamp), HOUR(timestamp)', [$module]);
             }
         } else {
             $query = $this->db->executeQuery('SELECT DATE(timestamp) AS date, HOUR(timestamp) AS hour, COUNT(*) AS count FROM crash WHERE timestamp > DATE_SUB(NOW(), INTERVAL 168 HOUR) GROUP BY DATE(timestamp), HOUR(timestamp)');
         }
 
-        $data = array();
+        $data = [];
         while ($row = $query->fetch()) {
             $data[$row['date'].'-'.$row['hour']] = $row['count'];
         }
 
         $output = 'Date,Crash Reports'.PHP_EOL;
-        for ($i = 167; $i >= 0; $i--) {
+        for ($i = 167; $i >= 0; --$i) {
             $date = date('Y-m-d-G', (int)strtotime('-'.$i.' hours'));
             $count = array_key_exists($date, $data) ? $data[$date] : 0;
             $output .= $date.','.$count.PHP_EOL;
         }
 
-        return new \Symfony\Component\HttpFoundation\Response($output, 200, array(
+        return new \Symfony\Component\HttpFoundation\Response($output, 200, [
             'Content-Type' => 'text/csv',
-        ));
+        ]);
     }
 
     /**
@@ -178,7 +179,7 @@ class Stats extends AbstractController
      */
     public function top(Request $request, $module = null, $function = null)
     {
-        $output = array();
+        $output = [];
 
         $scope = '';
         $requestScope = $request->get('scope', 'all');
@@ -196,33 +197,33 @@ class Stats extends AbstractController
 
         if ($function !== null) {
             if (preg_match('/^0x[0-9a-f]+$/', $function)) {
-                $data = $this->db->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module, $function));
+                $data = $this->db->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', [$module, $function]);
             } else {
-                $data = $this->db->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? AND function LIKE ? '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module, $function));
+                $data = $this->db->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? AND function LIKE ? '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', [$module, $function]);
             }
 
             while ($row = $data->fetch()) {
-                $output[] = array(htmlspecialchars($row['rendered'], ENT_QUOTES, 'UTF-8'), $row['count'], false, false);
+                $output[] = [htmlspecialchars($row['rendered'], ENT_QUOTES, 'UTF-8'), $row['count'], false, false];
             }
-        } else if ($module !== null) {
+        } elseif ($module !== null) {
             if (preg_match('/^%?(?:[0-9a-f]{8})+%?$/', $module)) {
-                $data = $this->db->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread AND stackhash LIKE ? WHERE frame = 0 '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', array($module));
+                $data = $this->db->executeQuery('SELECT rendered, COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread AND stackhash LIKE ? WHERE frame = 0 '.$scope.' GROUP BY rendered ORDER BY count DESC LIMIT 10', [$module]);
 
                 while ($row = $data->fetch()) {
-                    $output[] = array(htmlspecialchars($row['rendered'], ENT_QUOTES, 'UTF-8'), $row['count'], false, false);
+                    $output[] = [htmlspecialchars($row['rendered'], ENT_QUOTES, 'UTF-8'), $row['count'], false, false];
                 }
             } else {
-                $data = $this->db->executeQuery('SELECT module, COALESCE(NULLIF(function, \'\'), offset) AS function,  COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? '.$scope.' GROUP BY COALESCE(NULLIF(function, \'\'), offset) ORDER BY count DESC LIMIT 10', array($module));
+                $data = $this->db->executeQuery('SELECT module, COALESCE(NULLIF(function, \'\'), offset) AS function,  COUNT(*) AS count FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread WHERE frame = 0 AND module LIKE ? '.$scope.' GROUP BY COALESCE(NULLIF(function, \'\'), offset) ORDER BY count DESC LIMIT 10', [$module]);
 
                 while ($row = $data->fetch()) {
-                    $output[] = array(htmlspecialchars(($row['function'] ? $row['module'].'!'.$row['function'] : $row['module']), ENT_QUOTES, 'UTF-8'), $row['count'], $row['module'], $row['function']);
+                    $output[] = [htmlspecialchars(($row['function'] ? $row['module'].'!'.$row['function'] : $row['module']), ENT_QUOTES, 'UTF-8'), $row['count'], $row['module'], $row['function']];
                 }
             }
         } else {
             $data = $this->db->executeQuery('SELECT crashmodule AS module, crashfunction AS function, COUNT(*) AS count FROM crash WHERE 1=1 '.$scope.' GROUP BY module, function ORDER BY count DESC LIMIT 10');
 
             while ($row = $data->fetch()) {
-                $output[] = array(htmlspecialchars(($row['function'] ? $row['module'].'!'.$row['function'] : $row['module']), ENT_QUOTES, 'UTF-8'), $row['count'], $row['module'], $row['function']);
+                $output[] = [htmlspecialchars(($row['function'] ? $row['module'].'!'.$row['function'] : $row['module']), ENT_QUOTES, 'UTF-8'), $row['count'], $row['module'], $row['function']];
             }
         }
 
@@ -239,29 +240,29 @@ class Stats extends AbstractController
         $limit = intval($request->get('limit', 10));
         if ($limit <= 0) {
             $limit = 10;
-        } else if ($limit > 200) {
+        } elseif ($limit > 200) {
             $limit = 200;
         }
 
         if ($function !== null) {
             if (preg_match('/^0x[0-9a-f]+$/', $function)) {
-                $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? ORDER BY timestamp DESC LIMIT ' . $limit, array($module, $function));
+                $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 AND module LIKE ? AND function = \'\' AND offset = ? ORDER BY timestamp DESC LIMIT '.$limit, [$module, $function]);
             } else {
-                $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 AND module LIKE ? AND function LIKE ? ORDER BY timestamp DESC LIMIT ' . $limit, array($module, $function));
+                $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 AND module LIKE ? AND function LIKE ? ORDER BY timestamp DESC LIMIT '.$limit, [$module, $function]);
             }
-        } else if ($module !== null) {
+        } elseif ($module !== null) {
             if (preg_match('/^%?(?:[0-9a-f]{8})+%?$/', $module)) {
-                $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread AND crash.stackhash LIKE ? LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 ORDER BY timestamp DESC LIMIT ' . $limit, array($module));
+                $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread AND crash.stackhash LIKE ? LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 ORDER BY timestamp DESC LIMIT '.$limit, [$module]);
             } else {
-                $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 AND module LIKE ? ORDER BY timestamp DESC LIMIT ' . $limit, array($module));
+                $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM frame JOIN crash ON id = crash AND crash.thread = frame.thread LEFT JOIN user ON crash.owner = user.id WHERE frame = 0 AND module LIKE ? ORDER BY timestamp DESC LIMIT '.$limit, [$module]);
             }
         } else {
-            $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM crash JOIN frame ON crash = id AND frame.thread = crash.thread AND frame = 0 LEFT JOIN user ON crash.owner = user.id ORDER BY timestamp DESC LIMIT ' . $limit);
+            $query = $this->db->executeQuery('SELECT crash, rendered, cmdline, avatar FROM crash JOIN frame ON crash = id AND frame.thread = crash.thread AND frame = 0 LEFT JOIN user ON crash.owner = user.id ORDER BY timestamp DESC LIMIT '.$limit);
         }
 
-        $output = array();
+        $output = [];
         while ($row = $query->fetch()) {
-            $output[] = array($row['crash'], htmlspecialchars($row['rendered'], ENT_QUOTES, 'UTF-8'), (empty($row['cmdline']) ? '' : md5($row['cmdline'])), $row['avatar']);
+            $output[] = [$row['crash'], htmlspecialchars($row['rendered'], ENT_QUOTES, 'UTF-8'), (empty($row['cmdline']) ? '' : md5($row['cmdline'])), $row['avatar']];
         }
 
         return $this->json($output);
@@ -272,10 +273,10 @@ class Stats extends AbstractController
      */
     public function index($module = null, $function = null)
     {
-        return $this->render('stats.html.twig', array(
+        return $this->render('stats.html.twig', [
             'module' => $module,
             'function' => $function,
-        ));
+        ]);
     }
 
     private function getRawRrdData($start, $step, $metric)
@@ -306,7 +307,7 @@ class Stats extends AbstractController
 
             array_shift($data);
 
-            $data = array_map(function($d) use ($step) {
+            $data = array_map(function ($d) use ($step) {
                 [$time, $value] = str_getcsv($d);
 
                 $time = (int)$time - $step;
@@ -329,7 +330,7 @@ class Stats extends AbstractController
 
             // TODO: Iteratively step down the periods, required for more than one day.
             $last_period = $this->getRawRrdData($last_stamp, 300, $metric);
-            $last_period = array_reduce($last_period, function($r, $d) {
+            $last_period = array_reduce($last_period, function ($r, $d) {
                 return $r + $d[1];
             }, 0);
 
@@ -352,21 +353,22 @@ class Stats extends AbstractController
             $date_format = 'Y-m-d-H-i-s';
             if ($step >= 86400) {
                 $date_format = 'Y-m-d';
-            } else if ($step >= 3600) {
+            } elseif ($step >= 3600) {
                 $date_format = 'Y-m-d-H';
-            } else if ($step >= 60) {
+            } elseif ($step >= 60) {
                 $date_format = 'Y-m-d-H-i';
             }
 
             $data = $this->getRrdData($start, $step, $metric);
-            $data = array_map(function($d) use ($date_format) {
+            $data = array_map(function ($d) use ($date_format) {
                 $date = gmdate($date_format, $d[0]);
+
                 return $date.','.$d[1];
             }, $data);
 
             array_unshift($data, 'Date,Crash Reports');
+
             return implode(PHP_EOL, $data).PHP_EOL;
         });
     }
 }
-

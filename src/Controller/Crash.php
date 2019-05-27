@@ -58,19 +58,19 @@ class Crash extends AbstractController
 
             if ($owner == 0) {
                 $owner = null;
-            } else if (stripos($owner, 'STEAM_') === 0) {
+            } elseif (stripos($owner, 'STEAM_') === 0) {
                 $owner = explode(':', $owner);
                 $owner = ((int)$owner[2] << 1) | (int)$owner[1];
                 $owner = gmp_add('76561197960265728', $owner);
             } /* else if (gmp_cmp($owner, '0xFFFFFFFF') < 0) {
                 $owner = gmp_add('76561197960265728', $owner);
-            } */ else if (gmp_cmp(gmp_and($owner, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
-                $logger->warning('Bad owner provided in submit', array('id' => $id, 'owner' => $owner));
+            } */ elseif (gmp_cmp(gmp_and($owner, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
+                $logger->warning('Bad owner provided in submit', ['id' => $id, 'owner' => $owner]);
                 $owner = null;
             }
 
             if ($owner !== null) {
-                $this->db->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', array($owner));
+                $this->db->executeUpdate('INSERT IGNORE INTO user (id) VALUES (?)', [$owner]);
             }
         }
 
@@ -84,9 +84,9 @@ class Crash extends AbstractController
         $count = 0;
 
         if ($owner !== null) {
-            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner = ? AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($owner, $ip))->fetchColumn(0);
+            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner = ? AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', [$owner, $ip])->fetchColumn(0);
         } else {
-            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner IS NULL AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', array($ip))->fetchColumn(0);
+            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash JOIN crashnotice ON crash = id AND notice LIKE \'nosteam-%\' WHERE owner IS NULL AND ip = INET6_ATON(?) AND processed = 1 AND timestamp > DATE_SUB(NOW(), INTERVAL 1 MONTH)', [$ip])->fetchColumn(0);
         }
 
         if ($count > 0) {
@@ -96,9 +96,9 @@ class Crash extends AbstractController
         }
 
         if ($owner !== null) {
-            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner = ? AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($owner, $ip))->fetchColumn(0);
+            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner = ? AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', [$owner, $ip])->fetchColumn(0);
         } else {
-            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner IS NULL AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', array($ip))->fetchColumn(0);
+            $count = $this->db->executeQuery('SELECT COUNT(*) AS count FROM crash WHERE owner IS NULL AND ip = INET6_ATON(?) AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)', [$ip])->fetchColumn(0);
         }
 
         if ($count > 12) {
@@ -152,16 +152,16 @@ class Crash extends AbstractController
             unset($metadata['PresubmitToken']);
         }
 
-        $metadata = json_encode($metadata, JSON_FORCE_OBJECT|JSON_UNESCAPED_SLASHES);
+        $metadata = json_encode($metadata, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES);
 
-        $this->db->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, cmdline) VALUES (?, NOW(), INET6_ATON(?), ?, ?, ?)', array($id, $ip, $owner, $metadata, $command_line));
+        $this->db->executeUpdate('INSERT INTO crash (id, timestamp, ip, owner, metadata, cmdline) VALUES (?, NOW(), INET6_ATON(?), ?, ?, ?)', [$id, $ip, $owner, $metadata, $command_line]);
 
         // Move after it's in the DB, to avoid a race condition with the cleanup code.
         \Filesystem::createDirectory($path, 0755, true);
-        $minidump->move($path, $id . '.dmp');
+        $minidump->move($path, $id.'.dmp');
 
         if ($raw_metadata) {
-            $metapath = $path . '/' . $id . '.meta.txt.gz';
+            $metapath = $path.'/'.$id.'.meta.txt.gz';
             \Filesystem::writeFile($metapath, gzencode($raw_metadata));
         }
 
@@ -172,23 +172,25 @@ class Crash extends AbstractController
         if ($request->request->get('prod')) {
             $bid = '1000'; // First 2 bits specify UUID variant
             $map = array_merge(range('a', 'z'), range('2', '7'));
-            for ($i = 0; $i < 12; $i++) {
+            for ($i = 0; $i < 12; ++$i) {
                 $bid .= sprintf('%05b', array_search($id[$i], $map));
             }
             $bid = str_split($bid, 8);
 
             $uuid = 'bee0cafe-0000-4000-'; // 4 = UUID version
-            for ($i = 0; $i < 8; $i++) {
+            for ($i = 0; $i < 8; ++$i) {
                 $uuid .= sprintf('%02x', bindec($bid[$i]));
-                if ($i === 1) $uuid .= '-';
+                if ($i === 1) {
+                    $uuid .= '-';
+                }
             }
 
             return new Response($uuid);
         }
 
-        return $this->render('submit.txt.twig', array(
+        return $this->render('submit.txt.twig', [
             'id' => $id,
-        ));
+        ]);
     }
 
     /**
@@ -230,13 +232,12 @@ class Crash extends AbstractController
         if ($offset !== null || $userid !== null || $allowed !== null) {
             $where .= 'WHERE ';
 
-
             if ($userid !== null || $allowed !== null) {
                 if ($userid !== null) {
                     $where .= 'owner = ?';
                     $params[] = $userid;
                     $types[] = \PDO::PARAM_INT;
-                } else if ($allowed !== null) {
+                } elseif ($allowed !== null) {
                     $where .= 'owner IN (?)';
                     $params[] = $allowed;
                     $types[] = \Doctrine\DBAL\Connection::PARAM_INT_ARRAY;
@@ -254,14 +255,14 @@ class Crash extends AbstractController
             }
         }
 
-        $crashes = $this->db->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 20', $params, $types)->fetchAll();
+        $crashes = $this->db->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 '.$where.' ORDER BY crash.timestamp DESC LIMIT 20', $params, $types)->fetchAll();
 
-        return $this->render('dashboard.html.twig', array(
+        return $this->render('dashboard.html.twig', [
             'userid' => $userid,
             'shared' => $shared,
             'offset' => $offset,
             'crashes' => $crashes,
-        ));
+        ]);
     }
 
     /**
@@ -269,18 +270,18 @@ class Crash extends AbstractController
      */
     public function detailsUuid($uuid)
     {
-        $uuid = substr($uuid, 20, 3) . substr($uuid, 24);
+        $uuid = substr($uuid, 20, 3).substr($uuid, 24);
         $uuid = str_split($uuid);
 
         $bid = '';
-        for ($i = 0; $i < 15; $i++) {
+        for ($i = 0; $i < 15; ++$i) {
             $bid .= sprintf('%04b', hexdec($uuid[$i]));
         }
         $bid = str_split($bid, 5);
 
         $id = '';
         $map = array_merge(range('a', 'z'), range('2', '7'));
-        for ($i = 0; $i < 12; $i++) {
+        for ($i = 0; $i < 12; ++$i) {
             $id .= $map[bindec($bid[$i])];
         }
 
@@ -301,14 +302,14 @@ class Crash extends AbstractController
 
                 return $this->redirectToRoute('index');
             }
-    
+
             throw $this->createNotFoundException();
         }
 
-        $crash = $this->db->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) AS timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash, UNIX_TIMESTAMP(crash.lastview) AS lastview, user.name FROM crash LEFT JOIN user ON user.id = crash.owner WHERE crash.id = ?', array($id))->fetch();
+        $crash = $this->db->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) AS timestamp, INET6_NTOA(ip) AS ip, owner, metadata, cmdline, thread, processed, failed, stackhash, UNIX_TIMESTAMP(crash.lastview) AS lastview, user.name FROM crash LEFT JOIN user ON user.id = crash.owner WHERE crash.id = ?', [$id])->fetch();
 
         if ($crash['lastview'] === null || (time() - $crash['lastview']) > (60 * 60 * 24)) {
-            $this->db->executeUpdate('UPDATE crash SET lastview = NOW() WHERE id = ?', array($id));
+            $this->db->executeUpdate('UPDATE crash SET lastview = NOW() WHERE id = ?', [$id]);
         }
 
         if ($crash['thread'] == -1) {
@@ -330,21 +331,21 @@ class Crash extends AbstractController
 
         ksort($crash['metadata']);
 
-        $notices = $this->db->executeQuery('SELECT severity, text FROM crashnotice JOIN notice ON notice.id = crashnotice.notice WHERE crash = ?', array($id))->fetchAll();
-        $stack = $this->db->executeQuery('SELECT frame, rendered, url FROM frame WHERE crash = ? AND thread = ? ORDER BY frame', array($id, $crash['thread']))->fetchAll();
-        $modules = $this->db->executeQuery('SELECT name, identifier, processed, present, HEX(base) AS base FROM module WHERE crash = ? ORDER BY name', array($id))->fetchAll();
-        $stats = $this->db->executeQuery('SELECT COUNT(DISTINCT crash.owner) AS owners, COUNT(DISTINCT crash.ip) AS ips, COUNT(*) AS crashes FROM crash, (SELECT owner, stackhash FROM crash WHERE id = ?) AS this WHERE this.stackhash = crash.stackhash', array($id))->fetch();
+        $notices = $this->db->executeQuery('SELECT severity, text FROM crashnotice JOIN notice ON notice.id = crashnotice.notice WHERE crash = ?', [$id])->fetchAll();
+        $stack = $this->db->executeQuery('SELECT frame, rendered, url FROM frame WHERE crash = ? AND thread = ? ORDER BY frame', [$id, $crash['thread']])->fetchAll();
+        $modules = $this->db->executeQuery('SELECT name, identifier, processed, present, HEX(base) AS base FROM module WHERE crash = ? ORDER BY name', [$id])->fetchAll();
+        $stats = $this->db->executeQuery('SELECT COUNT(DISTINCT crash.owner) AS owners, COUNT(DISTINCT crash.ip) AS ips, COUNT(*) AS crashes FROM crash, (SELECT owner, stackhash FROM crash WHERE id = ?) AS this WHERE this.stackhash = crash.stackhash', [$id])->fetch();
 
-        return $this->render('details.html.twig', array(
+        return $this->render('details.html.twig', [
             'crash' => $crash,
             'can_manage' => $can_manage,
             'notices' => $notices,
             'stack' => $stack,
             'modules' => $modules,
             'stats' => $stats,
-            'outdated' => isset($appConfig['accelerator'])  && isset($crash['metadata']['ExtensionVersion']) && version_compare($crash['metadata']['ExtensionVersion'], $appConfig['accelerator'], '<'),
+            'outdated' => isset($appConfig['accelerator']) && isset($crash['metadata']['ExtensionVersion']) && version_compare($crash['metadata']['ExtensionVersion'], $appConfig['accelerator'], '<'),
             'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1) : false),
-        ));
+        ]);
     }
 
     /**
@@ -363,7 +364,7 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+        $path = $this->rootPath.'/dumps/'.substr($id, 0, 2).'/'.$id.'.dmp';
 
         if (!\Filesystem::pathExists($path)) {
             throw $this->createNotFoundException();
@@ -388,7 +389,7 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        return $this->render('view.html.twig', array('id' => $id));
+        return $this->render('view.html.twig', ['id' => $id]);
     }
 
     /**
@@ -407,16 +408,16 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.txt';
+        $path = $this->rootPath.'/dumps/'.substr($id, 0, 2).'/'.$id.'.txt';
 
         $logs = null;
-        if (\Filesystem::pathExists($path . '.gz')) {
-            $logs = gzdecode(\Filesystem::readFile($path . '.gz'));
-        } else if (\Filesystem::pathExists($path)) {
+        if (\Filesystem::pathExists($path.'.gz')) {
+            $logs = gzdecode(\Filesystem::readFile($path.'.gz'));
+        } elseif (\Filesystem::pathExists($path)) {
             $logs = \Filesystem::readFile($path);
         }
 
-        return $this->render('logs.html.twig', array('id' => $id, 'logs' => $logs));
+        return $this->render('logs.html.twig', ['id' => $id, 'logs' => $logs]);
     }
 
     /**
@@ -435,16 +436,16 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.meta.txt';
+        $path = $this->rootPath.'/dumps/'.substr($id, 0, 2).'/'.$id.'.meta.txt';
 
         $logs = null;
-        if (\Filesystem::pathExists($path . '.gz')) {
-            $logs = gzdecode(\Filesystem::readFile($path . '.gz'));
-        } else if (\Filesystem::pathExists($path)) {
+        if (\Filesystem::pathExists($path.'.gz')) {
+            $logs = gzdecode(\Filesystem::readFile($path.'.gz'));
+        } elseif (\Filesystem::pathExists($path)) {
             $logs = \Filesystem::readFile($path);
         }
 
-        return $this->render('logs.html.twig', array('id' => $id, 'logs' => $logs));
+        return $this->render('logs.html.twig', ['id' => $id, 'logs' => $logs]);
     }
 
     /**
@@ -463,12 +464,12 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.meta.txt';
+        $path = $this->rootPath.'/dumps/'.substr($id, 0, 2).'/'.$id.'.meta.txt';
 
         $metadata = null;
-        if (\Filesystem::pathExists($path . '.gz')) {
-            $metadata = gzdecode(\Filesystem::readFile($path . '.gz'));
-        } else if (\Filesystem::pathExists($path)) {
+        if (\Filesystem::pathExists($path.'.gz')) {
+            $metadata = gzdecode(\Filesystem::readFile($path.'.gz'));
+        } elseif (\Filesystem::pathExists($path)) {
             $metadata = \Filesystem::readFile($path);
         }
 
@@ -492,7 +493,7 @@ class Crash extends AbstractController
 
         $console = array_reverse($console); // Flip them back into chronological order.
 
-        return $this->render('console.html.twig', array('id' => $id, 'console' => $console));
+        return $this->render('console.html.twig', ['id' => $id, 'console' => $console]);
     }
 
     /**
@@ -511,7 +512,7 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+        $path = $this->rootPath.'/dumps/'.substr($id, 0, 2).'/'.$id.'.dmp';
 
         if (!\Filesystem::pathExists($path)) {
             throw $this->createNotFoundException();
@@ -519,7 +520,7 @@ class Crash extends AbstractController
 
         $minidump = \Filesystem::readFile($path);
 
-        $output = array();
+        $output = [];
 
         $output['header'] = $header = unpack('A4magic/Lversion/Lstream_count/Lstream_offset', $minidump);
 
@@ -539,7 +540,7 @@ class Crash extends AbstractController
             throw new \RuntimeException('Missing MD_THREAD_LIST_STREAM');
         }
 
-        $thread = $this->db->executeQuery('SELECT thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetchColumn(0);
+        $thread = $this->db->executeQuery('SELECT thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', [$id])->fetchColumn(0);
         $thread_offset = $stream['offset'] + 4 + ($thread * 48);
         $output['thread'] = $thread = unpack('Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, (int)$thread_offset, 48));
 
@@ -551,6 +552,7 @@ class Crash extends AbstractController
 
         $get_register_offset = function ($minidump, $stack_start, $register_offset) {
             $context_register = unpack('Lregister', substr($minidump, $register_offset, 4));
+
             return (int)bcsub(sprintf('%u', $context_register['register']), sprintf('%u', $stack_start));
         };
 
@@ -558,7 +560,7 @@ class Crash extends AbstractController
         $output['register_ebp'] = $register_ebp = $get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 180);
 
         $error_offset = 0;
-        for ($i = 0; $i < 6; $i++) {
+        for ($i = 0; $i < 6; ++$i) {
             $output['register_offset_'.$i] = $register_offset = $get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 156 + ($i * 4));
             if ($register_offset >= $register_esp && $register_offset <= $register_ebp) {
                 $output['error_offset'] = $error_offset = $register_offset;
@@ -567,14 +569,14 @@ class Crash extends AbstractController
         }
 
         if ($error_offset === 0) {
-            return $this->json(array('string' => 'Failed to extract error message.'));
+            return $this->json(['string' => 'Failed to extract error message.']);
         }
 
         $output['string_start'] = $string_start = $thread['stack_offset'] + $error_offset;
         $string_length = 0;
 
         while (ord($minidump[$string_start + $string_length]) != 0 && $string_length < 256) {
-            $string_length++;
+            ++$string_length;
         }
 
         $output['string_length'] = $string_length;
@@ -584,7 +586,7 @@ class Crash extends AbstractController
         // Remove non-ASCII chars, this needs a cleanup, but just fix the errors while encoding UTF-8 for now.
         $error_string = preg_replace('/[\x00-\x1F\x7F-\xFF]/', '?', $error_string);
 
-        return $this->json(array('string' => $error_string));
+        return $this->json(['string' => $error_string]);
     }
 
     /**
@@ -603,10 +605,10 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        return $this->render('carburetor.html.twig', array(
+        return $this->render('carburetor.html.twig', [
             'id' => $id,
             'symbols' => $request->get('symbols'),
-        ));
+        ]);
     }
 
     /**
@@ -625,7 +627,7 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
+        $path = $this->rootPath.'/dumps/'.substr($id, 0, 2).'/'.$id.'.dmp';
 
         if (!file_exists($path)) {
             throw $this->createNotFoundException();
@@ -646,9 +648,9 @@ class Crash extends AbstractController
 
         $process->mustRun();
 
-        return new Response($process->getOutput(), 200, array(
+        return new Response($process->getOutput(), 200, [
             'Content-Type' => 'application/json',
-        ));
+        ]);
     }
 
     /**
@@ -662,12 +664,12 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $this->db->transactional(function($db) use ($id) {
-            $db->executeUpdate('DELETE FROM frame WHERE crash = ?', array($id));
-            $db->executeUpdate('DELETE FROM module WHERE crash = ?', array($id));
-            $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', array($id));
+        $this->db->transactional(function ($db) use ($id) {
+            $db->executeUpdate('DELETE FROM frame WHERE crash = ?', [$id]);
+            $db->executeUpdate('DELETE FROM module WHERE crash = ?', [$id]);
+            $db->executeUpdate('DELETE FROM crashnotice WHERE crash = ?', [$id]);
 
-            $db->executeUpdate('UPDATE crash SET thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', array($id));
+            $db->executeUpdate('UPDATE crash SET thread = NULL, processed = FALSE, failed = FALSE, stackhash = NULL WHERE id = ?', [$id]);
         });
 
         $return = $request->get('return');
@@ -694,7 +696,7 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $this->db->executeUpdate('DELETE FROM crash WHERE id = ?', array($id));
+        $this->db->executeUpdate('DELETE FROM crash WHERE id = ?', [$id]);
 
         $return = $request->get('return');
         if ($return) {
@@ -706,15 +708,15 @@ class Crash extends AbstractController
 
     private function generateId()
     {
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 10; ++$i) {
             $id = \Filesystem::readRandomCharacters(12);
-            $path = $this->rootPath . '/dumps/' . substr($id, 0, 2);
+            $path = $this->rootPath.'/dumps/'.substr($id, 0, 2);
 
-            if (\Filesystem::pathExists($path . '/' . $id . '.dmp')) {
+            if (\Filesystem::pathExists($path.'/'.$id.'.dmp')) {
                 continue;
             }
 
-            return array($id, $path);
+            return [$id, $path];
         }
 
         throw new \Exception('MINIDUMP COLLISION');
@@ -731,7 +733,7 @@ class Crash extends AbstractController
             return ($query === false) ? null : ($user && $user->isAdmin());
         }
 
-        $query = $this->db->executeQuery('SELECT COALESCE(crash.owner = ? OR EXISTS (SELECT TRUE FROM share WHERE share.owner = crash.owner AND share.user = ?), 0) AS manage FROM crash WHERE crash.id = ?', [ $user->getId(), $user->getId(), $crash ])->fetchColumn(0);
+        $query = $this->db->executeQuery('SELECT COALESCE(crash.owner = ? OR EXISTS (SELECT TRUE FROM share WHERE share.owner = crash.owner AND share.user = ?), 0) AS manage FROM crash WHERE crash.id = ?', [$user->getId(), $user->getId(), $crash])->fetchColumn(0);
 
         if ($query === false) {
             return null;
@@ -755,7 +757,7 @@ class Crash extends AbstractController
         try {
             $signature = self::parsePresubmitSignature($signature);
         } catch (\Exception $e) {
-            $logger->warning('Error parsing presubmit: '.$signature, [ 'exception' => $e ]);
+            $logger->warning('Error parsing presubmit: '.$signature, ['exception' => $e]);
 
             return 'E|'.$e->getMessage();
         }
@@ -836,4 +838,3 @@ class Crash extends AbstractController
         return (object)compact('timestamp', 'platform', 'architecture', 'crashed', 'crash_reason', 'crash_address', 'requesting_thread', 'modules', 'frames');
     }
 }
-

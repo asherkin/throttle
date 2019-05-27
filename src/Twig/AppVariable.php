@@ -3,8 +3,6 @@
 namespace App\Twig;
 
 use Symfony\Bridge\Twig\AppVariable as SymfonyAppVariable;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Process\Process;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;

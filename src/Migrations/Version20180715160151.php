@@ -11,15 +11,15 @@ class Version20180715160151 extends AbstractMigration
     {
         $share = $schema->createTable('share');
 
-        $share->addColumn('owner', 'bigint', array('unsigned' => true));
-        $share->addColumn('user', 'bigint', array('unsigned' => true));
-        $share->addColumn('accepted', 'datetime', array('notnull' => false));
+        $share->addColumn('owner', 'bigint', ['unsigned' => true]);
+        $share->addColumn('user', 'bigint', ['unsigned' => true]);
+        $share->addColumn('accepted', 'datetime', ['notnull' => false]);
 
-        $share->setPrimaryKey(array('owner', 'user'));
+        $share->setPrimaryKey(['owner', 'user']);
 
         $user = $schema->getTable('user');
-        $share->addForeignKeyConstraint($user, array('owner'), array('id'), array('onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE'));
-        $share->addForeignKeyConstraint($user, array('user'), array('id'), array('onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE'));
+        $share->addForeignKeyConstraint($user, ['owner'], ['id'], ['onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE']);
+        $share->addForeignKeyConstraint($user, ['user'], ['id'], ['onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE']);
     }
 
     public function down(Schema $schema): void

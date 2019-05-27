@@ -21,10 +21,10 @@ class Home extends AbstractController
             try {
                 $session->getFlashBag()->set('internal', 'true');
 
-                return $this->redirectToRoute('details', array('id' => $crashid));
+                return $this->redirectToRoute('details', ['id' => $crashid]);
             } catch (\Exception $e) {
                 try {
-                    return $this->redirectToRoute('details_uuid', array('uuid' => $id));
+                    return $this->redirectToRoute('details_uuid', ['uuid' => $id]);
                 } catch (\Exception $e) {
                     $this->addFlash('error_crash', 'Invalid Crash ID.');
 
@@ -33,9 +33,9 @@ class Home extends AbstractController
             }
         }
 
-        return $this->render('index.html.twig', array(
+        return $this->render('index.html.twig', [
             'maintenance_message' => '', //$app['config']['maintenance'],
-        ));
+        ]);
     }
 
     /**
@@ -59,4 +59,3 @@ class Home extends AbstractController
         throw new \Exception('Should not be called');
     }
 }
-

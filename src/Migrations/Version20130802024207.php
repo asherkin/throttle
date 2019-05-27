@@ -11,16 +11,16 @@ class Version20130802024207 extends AbstractMigration
     {
         $server = $schema->createTable('server');
 
-        $server->addColumn('owner', 'bigint', array('unsigned' => true));
-        $server->addColumn('id', 'string', array('length' => 64, 'default' => ''));
+        $server->addColumn('owner', 'bigint', ['unsigned' => true]);
+        $server->addColumn('id', 'string', ['length' => 64, 'default' => '']);
 
-        $server->setPrimaryKey(array('owner', 'id'));
+        $server->setPrimaryKey(['owner', 'id']);
 
         $user = $schema->getTable('user');
-        $server->addForeignKeyConstraint($user, array('owner'), array('id'), array('onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE'));
+        $server->addForeignKeyConstraint($user, ['owner'], ['id'], ['onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE']);
 
         $crash = $schema->getTable('crash');
-        $crash->addColumn('server', 'string', array('length' => 64, 'notnull' => false));
+        $crash->addColumn('server', 'string', ['length' => 64, 'notnull' => false]);
     }
 
     public function down(Schema $schema): void

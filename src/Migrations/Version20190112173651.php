@@ -17,7 +17,7 @@ class Version20190112173651 extends AbstractMigration
         $crash->dropColumn('server');
 
         $user = $schema->getTable('user');
-        $crash->addForeignKeyConstraint($user, array('owner'), array('id'), array('onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE'));
+        $crash->addForeignKeyConstraint($user, ['owner'], ['id'], ['onUpdate' => 'CASCADE', 'onDelete' => 'CASCADE']);
         $crash->dropIndex('IDX_D7E8F0DFCF60E67C5A6DD5F6');
 
         $schema->dropTable('server');

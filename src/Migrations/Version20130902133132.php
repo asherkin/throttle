@@ -10,8 +10,8 @@ class Version20130902133132 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $module = $schema->getTable('module');
-        $module->addColumn('processed', 'boolean', array('default' => false));
-        $module->addColumn('present', 'boolean', array('default' => false));
+        $module->addColumn('processed', 'boolean', ['default' => false]);
+        $module->addColumn('present', 'boolean', ['default' => false]);
     }
 
     public function down(Schema $schema): void
