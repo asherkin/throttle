@@ -7,6 +7,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Annotation\Route;
 
 class Crash extends AbstractController
@@ -25,8 +26,7 @@ class Crash extends AbstractController
      */
     public function submit(Request $request, LoggerInterface $logger, \Redis $redis)
     {
-        //TODO
-        //return $this->render('submit-disabled.txt.twig');
+        // return $this->render('submit-disabled.txt.twig');
 
         $presubmit = $request->get('CrashSignature');
         if ($presubmit !== null) {
@@ -610,22 +610,28 @@ class Crash extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $config = $this->rootPath.'/app/carburetor-config.json';
-        if ($request->get('symbols') === 'no') {
-            $config = $this->rootPath.'/app/carburetor-config-no-symbols.json';
-        }
-
         $path = $this->rootPath . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
 
-        if (!\Filesystem::pathExists($path)) {
+        if (!file_exists($path)) {
             throw $this->createNotFoundException();
         }
 
-        set_time_limit(120);
+        $arguments = [
+            $this->rootPath.'/bin/carburetor',
+            '--',
+            $path,
+        ];
 
-        list($stdout, $stderr) = execx($this->rootPath.'/bin/carburetor %s %s', $config, $path);
+        if ($request->get('symbols') !== 'no') {
+            $arguments[] = '...'; // TODO
+        }
 
-        return new Response($stdout, 200, array(
+        $process = (new Process($arguments))
+            ->setTimeout(10);
+
+        $process->mustRun();
+
+        return new Response($process->getOutput(), 200, array(
             'Content-Type' => 'application/json',
         ));
     }
