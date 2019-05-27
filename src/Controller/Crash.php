@@ -487,7 +487,7 @@ class Crash extends AbstractController
     }
 
     /**
-     * @Route("/{id<[0-9a-zA-Z]{12}>}/error", name="error")
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/error", defaults={"_format": "json"}, name="error")
      */
     public function error($id)
     {
@@ -595,7 +595,7 @@ class Crash extends AbstractController
     }
 
     /**
-     * @Route("/{id<[0-9a-zA-Z]{12}>}/carburetor/data", name="carburetor_data")
+     * @Route("/{id<[0-9a-zA-Z]{12}>}/carburetor/data", defaults={"_format": "json"}, name="carburetor_data")
      */
     public function carburetor_data(Request $request, $id)
     {

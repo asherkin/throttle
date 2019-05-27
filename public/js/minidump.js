@@ -212,8 +212,6 @@ var progress = $('#loading .progress-bar');
 var content = $('#content');
 
 var oReq = new XMLHttpRequest();
-oReq.open('GET', 'download', true);
-oReq.responseType = 'arraybuffer';
 
 oReq.onerror = function(oEvent) {
     loading.removeClass('active');
@@ -495,4 +493,8 @@ oReq.onload = function(oEvent) {
     }
 };
 
-oReq.send(null);
+$(function() {
+    oReq.open('GET', 'download', true);
+    oReq.responseType = 'arraybuffer';
+    oReq.send(null);
+});

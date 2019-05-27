@@ -36,7 +36,6 @@ var tabMemory = $('#tab-memory');
 var tabRaw = $('#tab-raw');
 
 var oReq = new XMLHttpRequest();
-oReq.open('GET', '{{ path('carburetor_data', { id: id, symbols: symbols }) }}', true);
 
 oReq.onerror = function(oEvent) {
     loading.removeClass('active');
@@ -93,7 +92,10 @@ oReq.onload = function(oEvent) {
     tabRaw.text(JSON.stringify(data, null, 2));
 };
 
-oReq.send(null);
+$(function() {
+    oReq.open('GET', '{{ path('carburetor_data', { id: id, symbols: symbols }) }}', true);
+    oReq.send(null);
+});
 </script>
 {% endblock %}
 
