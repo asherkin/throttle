@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use Doctrine\DBAL\Driver\Connection;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
 
 class Crash extends AbstractController
 {
@@ -18,36 +20,40 @@ class Crash extends AbstractController
         $this->rootPath = $rootPath;
     }
 
-    public function submit()
+    /**
+     * @Route("/submit", defaults={"_format": "txt"}, methods={"POST"})
+     */
+    public function submit(Request $request, LoggerInterface $logger, \Redis $redis)
     {
         //TODO
-        //return $app->abort(503);
-        //return 'Sorry, crash submission is currently disabled';
+        //return $this->render('submit-disabled.txt.twig');
 
-        $presubmit = $app['request']->get('CrashSignature');
+        $presubmit = $request->get('CrashSignature');
         if ($presubmit !== null) {
-            return $this->presubmit($app, $presubmit);
+            $redis->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
+
+            return new Response($this->presubmit($logger, $presubmit));
         }
 
-        $app['redis']->hIncrBy('throttle:stats', 'crashes:submitted', 1);
+        $redis->hIncrBy('throttle:stats', 'crashes:submitted', 1);
 
-        $minidump = $app['request']->files->get('upload_file_minidump');
+        $minidump = $request->files->get('upload_file_minidump');
 
         if ($minidump === null || !$minidump->isValid() || $minidump->getClientSize() <= 0) {
-            $app['redis']->hIncrBy('throttle:stats', 'crashes:rejected:no-minidump', 1);
+            $redis->hIncrBy('throttle:stats', 'crashes:rejected:no-minidump', 1);
 
             return $this->render('submit-empty.txt.twig');
         }
 
-        $app['redis']->hIncrBy('throttle:stats', 'crashes:submitted:bytes', $minidump->getClientSize());
+        $redis->hIncrBy('throttle:stats', 'crashes:submitted:bytes', $minidump->getClientSize());
 
-        list($id, $path) = $this->generateId($app);
+        list($id, $path) = $this->generateId();
 
-        $ip = $app['request']->getClientIp();
+        $ip = $request->getClientIp();
 
-        $owner = $app['request']->request->get('UserID');
+        $owner = $request->request->get('UserID');
         if ($owner !== null) {
-            $app['request']->request->remove('UserID');
+            $request->request->remove('UserID');
 
             if ($owner == 0) {
                 $owner = null;
@@ -58,7 +64,7 @@ class Crash extends AbstractController
             } /* else if (gmp_cmp($owner, '0xFFFFFFFF') < 0) {
                 $owner = gmp_add('76561197960265728', $owner);
             } */ else if (gmp_cmp(gmp_and($owner, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
-                $app['monolog']->warning('Bad owner provided in submit', array('id' => $id, 'owner' => $owner));
+                $logger->warning('Bad owner provided in submit', array('id' => $id, 'owner' => $owner));
                 $owner = null;
             }
 
@@ -67,9 +73,9 @@ class Crash extends AbstractController
             }
         }
 
-        $server = $app['request']->request->get('ServerID');
+        $server = $request->request->get('ServerID');
         if ($server !== null) {
-            $app['request']->request->remove('ServerID');
+            $request->request->remove('ServerID');
 
             // TODO: Validate ID, then insert, just like above.
         }
@@ -83,7 +89,7 @@ class Crash extends AbstractController
         }
 
         if ($count > 0) {
-            $app['redis']->hIncrBy('throttle:stats', 'crashes:rejected:no-steam', 1);
+            $redis->hIncrBy('throttle:stats', 'crashes:rejected:no-steam', 1);
 
             return $this->render('submit-nosteam.txt.twig');
         }
@@ -95,15 +101,15 @@ class Crash extends AbstractController
         }
 
         if ($count > 12) {
-            $app['redis']->hIncrBy('throttle:stats', 'crashes:rejected:rate-limit', 1);
+            $redis->hIncrBy('throttle:stats', 'crashes:rejected:rate-limit', 1);
 
             return $this->render('submit-reject.txt.twig');
         }
 
-        $metadata = $app['request']->request->all();
+        $metadata = $request->request->all();
 
         $raw_metadata = null;
-        $metadata_file = $app['request']->files->get('upload_file_metadata');
+        $metadata_file = $request->files->get('upload_file_metadata');
         if ($metadata_file !== null && $metadata_file->isValid() && $metadata_file->getClientSize() > 0) {
             $raw_metadata = \Filesystem::readFile($metadata_file->getRealPath());
 
@@ -155,11 +161,11 @@ class Crash extends AbstractController
             \Filesystem::writeFile($metapath, gzencode($raw_metadata));
         }
 
-        $app['redis']->hIncrBy('throttle:stats', 'crashes:accepted', 1);
+        $redis->hIncrBy('throttle:stats', 'crashes:accepted', 1);
 
         // Special code for handling breakpad-uploaded minidumps.
         // FIXME: This is mainly a hack for testing Electron.
-        if ($app['request']->request->get('prod')) {
+        if ($request->request->get('prod')) {
             $bid = '1000'; // First 2 bits specify UUID variant
             $map = array_merge(range('a', 'z'), range('2', '7'));
             for ($i = 0; $i < 12; $i++) {
@@ -173,12 +179,109 @@ class Crash extends AbstractController
                 if ($i === 1) $uuid .= '-';
             }
 
-            return $uuid;
+            return new Response($uuid);
         }
 
         return $this->render('submit.txt.twig', array(
             'id' => $id,
         ));
+    }
+
+    /**
+     * @Route("/dashboard", name="dashboard")
+     */
+    public function dashboard(Request $request)
+    {
+        $offset = $request->get('offset');
+        $userid = $request->get('user');
+
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        $currentUser = $this->getUser();
+
+        $shared = $this->db->executeQuery('SELECT share.owner AS id, user.name, user.avatar FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? AND accepted IS NOT NULL ORDER BY accepted ASC', [$currentUser->getId()])->fetchAll();
+
+        array_unshift($shared, [
+            'id' => $currentUser->getId(),
+            'name' => $currentUser->getName(),
+            'avatar' => $currentUser->getAvatar(),
+        ]);
+
+        $allowed = null;
+        if (!$currentUser->isAdmin()) {
+            foreach ($shared as $user) {
+                $allowed[] = $user['id'];
+            }
+
+            if ($userid !== null && !in_array($userid, $allowed, true)) {
+                throw $this->createAccessDeniedException();
+            }
+        }
+
+        $where = '';
+        $params = [];
+        $types = [];
+
+        if ($offset !== null || $userid !== null || $allowed !== null) {
+            $where .= 'WHERE ';
+
+
+            if ($userid !== null || $allowed !== null) {
+                if ($userid !== null) {
+                    $where .= 'owner = ?';
+                    $params[] = $userid;
+                    $types[] = \PDO::PARAM_INT;
+                } else if ($allowed !== null) {
+                    $where .= 'owner IN (?)';
+                    $params[] = $allowed;
+                    $types[] = \Doctrine\DBAL\Connection::PARAM_INT_ARRAY;
+                }
+
+                if ($offset !== null) {
+                    $where .= ' AND ';
+                }
+            }
+
+            if ($offset !== null) {
+                $where .= 'timestamp < FROM_UNIXTIME(?)';
+                $params[] = $offset;
+                $types[] = \PDO::PARAM_INT;
+            }
+        }
+
+        $crashes = $this->db->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 20', $params, $types)->fetchAll();
+
+        return $this->render('dashboard.html.twig', array(
+            'userid' => $userid,
+            'shared' => $shared,
+            'offset' => $offset,
+            'crashes' => $crashes,
+        ));
+    }
+
+    /**
+     * @Route("/{uuid<[0-9a-fA-F-]{36}>}", name="details_uuid")
+     */
+    public function detailsUuid($uuid)
+    {
+        $uuid = substr($uuid, 20, 3) . substr($uuid, 24);
+        $uuid = str_split($uuid);
+
+        $bid = '';
+        for ($i = 0; $i < 15; $i++) {
+            $bid .= sprintf('%04b', hexdec($uuid[$i]));
+        }
+        $bid = str_split($bid, 5);
+
+        $id = '';
+        $map = array_merge(range('a', 'z'), range('2', '7'));
+        for ($i = 0; $i < 12; $i++) {
+            $id .= $map[bindec($bid[$i])];
+        }
+
+        return $this->redirectToRoute('details', [
+            'id' => $id,
+        ]);
     }
 
     /**
@@ -522,7 +625,7 @@ class Crash extends AbstractController
 
         list($stdout, $stderr) = execx($this->rootPath.'/bin/carburetor %s %s', $config, $path);
 
-        return new \Symfony\Component\HttpFoundation\Response($stdout, 200, array(
+        return new Response($stdout, 200, array(
             'Content-Type' => 'application/json',
         ));
     }
@@ -580,78 +683,6 @@ class Crash extends AbstractController
         return $this->redirectToRoute('dashboard');
     }
 
-    /**
-     * @Route("/dashboard", name="dashboard")
-     */
-    public function dashboard(Request $request)
-    {
-        $offset = $request->get('offset');
-        $userid = $request->get('user');
-
-        $this->denyAccessUnlessGranted('ROLE_USER');
-
-        $currentUser = $this->getUser();
-
-        $shared = $this->db->executeQuery('SELECT share.owner AS id, user.name, user.avatar FROM share LEFT JOIN user ON share.owner = user.id WHERE share.user = ? AND accepted IS NOT NULL ORDER BY accepted ASC', [$currentUser->getId()])->fetchAll();
-
-        array_unshift($shared, [
-            'id' => $currentUser->getId(),
-            'name' => $currentUser->getName(),
-            'avatar' => $currentUser->getAvatar(),
-        ]);
-
-        $allowed = null;
-        if (!$currentUser->isAdmin()) {
-            foreach ($shared as $user) {
-                $allowed[] = $user['id'];
-            }
-
-            if ($userid !== null && !in_array($userid, $allowed, true)) {
-                throw $this->createAccessDeniedException();
-            }
-        }
-
-        $where = '';
-        $params = [];
-        $types = [];
-
-        if ($offset !== null || $userid !== null || $allowed !== null) {
-            $where .= 'WHERE ';
-
-
-            if ($userid !== null || $allowed !== null) {
-                if ($userid !== null) {
-                    $where .= 'owner = ?';
-                    $params[] = $userid;
-                    $types[] = \PDO::PARAM_INT;
-                } else if ($allowed !== null) {
-                    $where .= 'owner IN (?)';
-                    $params[] = $allowed;
-                    $types[] = \Doctrine\DBAL\Connection::PARAM_INT_ARRAY;
-                }
-
-                if ($offset !== null) {
-                    $where .= ' AND ';
-                }
-            }
-
-            if ($offset !== null) {
-                $where .= 'timestamp < FROM_UNIXTIME(?)';
-                $params[] = $offset;
-                $types[] = \PDO::PARAM_INT;
-            }
-        }
-
-        $crashes = $this->db->executeQuery('SELECT crash.id, UNIX_TIMESTAMP(crash.timestamp) as timestamp, crash.owner, crash.cmdline, crash.processed, crash.failed, user.name, user.avatar, frame.module, frame.rendered, frame2.module as module2, frame2.rendered AS rendered2, (SELECT CONCAT(COUNT(*), \'-\', MIN(notice.severity)) FROM crashnotice JOIN notice ON crashnotice.notice = notice.id WHERE crashnotice.crash = crash.id) AS notice FROM crash LEFT JOIN user ON crash.owner = user.id LEFT JOIN frame ON crash.id = frame.crash AND crash.thread = frame.thread AND frame.frame = 0 LEFT JOIN frame AS frame2 ON crash.id = frame2.crash AND crash.thread = frame2.thread AND frame2.frame = 1 ' . $where . ' ORDER BY crash.timestamp DESC LIMIT 20', $params, $types)->fetchAll();
-
-        return $this->render('dashboard.html.twig', array(
-            'userid' => $userid,
-            'shared' => $shared,
-            'offset' => $offset,
-            'crashes' => $crashes,
-        ));
-    }
-
     private function generateId()
     {
         for ($i = 0; $i < 10; $i++) {
@@ -696,19 +727,17 @@ class Crash extends AbstractController
         throw new \Exception('Bad query return in '.__FUNCTION__);
     }
 
-    private function presubmit($signature)
+    private function presubmit(LoggerInterface $logger, string $signature)
     {
-        //$app['monolog']->warning('Presubmit: '.$signature);
+        //$logger->info('Presubmit: '.$signature);
 
         try {
             $signature = self::parsePresubmitSignature($signature);
         } catch (\Exception $e) {
-            $app['monolog']->warning('Error parsing presubmit: '.$signature, [$e]);
+            $logger->warning('Error parsing presubmit: '.$signature, [ 'exception' => $e ]);
 
             return 'E|'.$e->getMessage();
         }
-
-        $app['redis']->hIncrBy('throttle:stats', 'crashes:presubmitted', 1);
 
         // TODO: Determine whether we want the crash dump...
         $return = 'Y|';

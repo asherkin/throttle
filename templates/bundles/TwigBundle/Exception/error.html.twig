@@ -1,5 +1,8 @@
 {% extends 'layout.html.twig' %}
 
+{% set logout_to_index = true %}
+{% set supports_mobile = true %}
+
 {% set icon = 'exclamation-sign' %}
 {% set title = status_text ?: 'An Error Has Occurred' %}
 {% set comment = 'Someone has been dispatched to poke the server with a sharp stick.' %}
@@ -17,6 +20,9 @@
     {% set icon = 'question-sign' %}
     {% set title = 'Not Found' %}
     {% set comment = 'What you are looking for is not here,\nUnless you were looking for this error page of course.' %}
+{% elseif status_code == 405 and exception.message starts with 'No route found for "GET /submit": ' %}
+    {# Hack to display a custom message for /submit #}
+    {% set comment = 'The Acclerator extension must be used to upload crash dumps.' %}
 {% endif %}
 
 {% block content %}
