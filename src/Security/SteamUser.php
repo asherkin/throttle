@@ -10,6 +10,7 @@ class SteamUser implements UserInterface
     private $name = null;
     private $avatar = null;
     private $pending = 0;
+    private $isAdmin = false;
 
     public function __construct(string $id)
     {
@@ -59,8 +60,15 @@ class SteamUser implements UserInterface
 
     public function isAdmin(): bool
     {
-        // TODO: Use a role for admin?
-        return false;
+        // TODO: Use a role for admin? Yes, but later.
+        return $this->isAdmin;
+    }
+
+    public function setIsAdmin(bool $isAdmin): self
+    {
+        $this->isAdmin = $isAdmin;
+
+        return $this;
     }
 
     /**
@@ -71,6 +79,10 @@ class SteamUser implements UserInterface
         $roles = [
             'ROLE_USER',
         ];
+
+        if ($this->isAdmin()) {
+            $roles[] = 'ROLE_ADMIN';
+        }
 
         return $roles;
     }

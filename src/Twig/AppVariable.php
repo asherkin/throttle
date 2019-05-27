@@ -13,15 +13,15 @@ class AppVariable
 {
     private $cache;
     private $rootPath;
+    private $appConfig;
     private $inner;
-    private $config;
 
-    public function __construct(CacheInterface $cache, $rootPath, SymfonyAppVariable $inner, $config)
+    public function __construct(CacheInterface $cache, $rootPath, $appConfig, SymfonyAppVariable $inner)
     {
         $this->cache = $cache;
         $this->rootPath = $rootPath;
+        $this->appConfig = $appConfig;
         $this->inner = $inner;
-        $this->config = $config;
     }
 
     public function getToken()
@@ -61,7 +61,7 @@ class AppVariable
 
     public function getConfig()
     {
-        return $this->config;
+        return $this->appConfig;
     }
 
     public function getFeature()

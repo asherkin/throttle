@@ -287,7 +287,7 @@ class Crash extends AbstractController
     /**
      * @Route("/{id<[0-9a-zA-Z]{12}>}", name="details")
      */
-    public function details(Request $request, $id)
+    public function details(Request $request, $appConfig, $id)
     {
         $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
@@ -337,7 +337,7 @@ class Crash extends AbstractController
             'stack' => $stack,
             'modules' => $modules,
             'stats' => $stats,
-            'outdated' => false, // TODO: ($this->container->getParameter('app.config')['accelerator'] ? (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], $this->container->getParameter('app.config')['accelerator'], '<') : true) : false),
+            'outdated' => isset($appConfig['accelerator'])  && isset($crash['metadata']['ExtensionVersion']) && version_compare($crash['metadata']['ExtensionVersion'], $appConfig['accelerator'], '<'),
             'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1) : false),
         ));
     }
@@ -633,7 +633,7 @@ class Crash extends AbstractController
     /**
      * @Route("/{id<[0-9a-zA-Z]{12}>}/reprocess", methods={"POST"}, name="reprocess")
      */
-    public function reprocess($id)
+    public function reprocess(Request $request, $id)
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
 

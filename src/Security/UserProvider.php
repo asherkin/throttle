@@ -11,10 +11,12 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 class UserProvider implements UserProviderInterface
 {
     private $db;
+    private $appConfig;
 
-    public function __construct(Connection $db)
+    public function __construct(Connection $db, $appConfig)
     {
         $this->db = $db;
+        $this->appConfig = $appConfig;
     }
 
     /**
@@ -43,7 +45,8 @@ class UserProvider implements UserProviderInterface
         $user = (new SteamUser($id))
             ->setName($details ? $details['name'] : null)
             ->setAvatar($details ? $details['avatar'] : null)
-            ->setPending($details ? $details['pending'] : 0);
+            ->setPending($details ? $details['pending'] : 0)
+            ->setIsAdmin(in_array($id, $this->appConfig['admins'], true));
 
         return $user;
     }
