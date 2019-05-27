@@ -1,13 +1,24 @@
 {
+    "name": "asherkin/throttle",
     "type": "project",
+    "description": "Lightweight google-breakpad back-end written in PHP and backed by MySQL",
+    "homepage": "https://crash.limetech.io/",
     "license": "Apache-2.0",
-    "minimum-stability": "beta",
+    "authors": [
+        {
+            "name": "Asher Baker",
+            "email": "asherkin@limetech.io",
+            "homepage": "https://limetech.io"
+        }
+    ],
     "require": {
         "php": "^7.2.0",
         "ext-ctype": "*",
         "ext-gmp": "*",
         "ext-iconv": "*",
         "ext-redis": "*",
+        "doctrine/doctrine-bundle": "^1.11",
+        "doctrine/doctrine-migrations-bundle": "^2.0",
         "phacility/libphutil": "dev-stable",
         "symfony/console": "4.3.*",
         "symfony/dotenv": "4.3.*",
@@ -15,32 +26,41 @@
         "symfony/framework-bundle": "4.3.*",
         "symfony/http-client": "4.3.*",
         "symfony/monolog-bundle": "^3.3",
-        "symfony/orm-pack": "^1.0",
         "symfony/process": "4.3.*",
         "symfony/profiler-pack": "^1.0",
         "symfony/security-bundle": "4.3.*",
         "symfony/twig-bundle": "4.3.*",
         "symfony/yaml": "4.3.*"
     },
-    "repositories": [
-        {
-            "type": "package",
-            "package": {
-                "name": "phacility/libphutil",
-                "version": "dev-stable",
-                "source": {
-                    "url": "https://github.com/phacility/libphutil.git",
-                    "type": "git",
-                    "reference": "origin/stable"
-                }
-            }
-        }
-    ],
+    "replace": {
+        "paragonie/random_compat": "2.*",
+        "symfony/polyfill-ctype": "*",
+        "symfony/polyfill-iconv": "*",
+        "symfony/polyfill-php56": "*",
+        "symfony/polyfill-php70": "*",
+        "symfony/polyfill-php71": "*",
+        "symfony/polyfill-php72": "*"
+    },
+    "conflict": {
+        "symfony/symfony": "*"
+    },
+    "require-dev": {
+        "phpstan/extension-installer": "^1.0",
+        "phpstan/phpstan": "^0.11.7",
+        "phpstan/phpstan-symfony": "^0.11.6",
+        "symfony/maker-bundle": "^1.11"
+    },
     "config": {
         "preferred-install": {
             "*": "dist"
         },
         "sort-packages": true
+    },
+    "extra": {
+        "symfony": {
+            "allow-contrib": false,
+            "require": "4.3.*"
+        }
     },
     "autoload": {
         "psr-4": {
@@ -52,41 +72,32 @@
             "App\\Tests\\": "tests/"
         }
     },
-    "replace": {
-        "paragonie/random_compat": "2.*",
-        "symfony/polyfill-ctype": "*",
-        "symfony/polyfill-iconv": "*",
-        "symfony/polyfill-php72": "*",
-        "symfony/polyfill-php71": "*",
-        "symfony/polyfill-php70": "*",
-        "symfony/polyfill-php56": "*"
-    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "phacility/libphutil",
+                "version": "dev-stable",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/phacility/libphutil.git",
+                    "reference": "origin/stable"
+                }
+            }
+        }
+    ],
+    "minimum-stability": "beta",
     "scripts": {
-        "auto-scripts": {
-            "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
-        },
         "post-install-cmd": [
             "@auto-scripts"
         ],
         "post-update-cmd": [
             "@auto-scripts"
         ],
+        "auto-scripts": {
+            "cache:clear": "symfony-cmd",
+            "assets:install %PUBLIC_DIR%": "symfony-cmd"
+        },
         "phpstan": "phpstan analyse src -l 7"
-    },
-    "conflict": {
-        "symfony/symfony": "*"
-    },
-    "extra": {
-        "symfony": {
-            "allow-contrib": false,
-            "require": "4.3.*"
-        }
-    },
-    "require-dev": {
-        "phpstan/extension-installer": "^1.0",
-        "phpstan/phpstan": "^0.11.7",
-        "phpstan/phpstan-symfony": "^0.11.6",
-        "symfony/maker-bundle": "^1.11"
     }
 }

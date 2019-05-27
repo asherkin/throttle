@@ -20,9 +20,6 @@
     "doctrine/collections": {
         "version": "v1.6.1"
     },
-    "doctrine/common": {
-        "version": "v2.10.0"
-    },
     "doctrine/dbal": {
         "version": "v2.9.2"
     },
@@ -63,17 +60,11 @@
     "doctrine/inflector": {
         "version": "v1.3.0"
     },
-    "doctrine/instantiator": {
-        "version": "1.2.0"
-    },
     "doctrine/lexer": {
         "version": "v1.0.1"
     },
     "doctrine/migrations": {
         "version": "v2.0.2"
-    },
-    "doctrine/orm": {
-        "version": "v2.6.3"
     },
     "doctrine/persistence": {
         "version": "1.1.1"
@@ -244,9 +235,6 @@
             "config/packages/prod/monolog.yaml",
             "config/packages/test/monolog.yaml"
         ]
-    },
-    "symfony/orm-pack": {
-        "version": "v1.0.6"
     },
     "symfony/polyfill-intl-idn": {
         "version": "v1.11.0"
