@@ -107,7 +107,10 @@ class SteamAuthenticator extends AbstractGuardAuthenticator
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception)
     {
-        $request->getSession()->getFlashBag()->add('error_auth', strtr($exception->getMessageKey(), $exception->getMessageData()));
+        /** @var \Symfony\Component\HttpFoundation\Session\Session $session */
+        $session = $request->getSession();
+
+        $session->getFlashBag()->add('error_auth', strtr($exception->getMessageKey(), $exception->getMessageData()));
 
         $returnUrl = $request->get('return', $this->router->generate('index'));
 
@@ -125,7 +128,7 @@ class SteamAuthenticator extends AbstractGuardAuthenticator
     {
         $currentReturn = $request->getPathInfo();
         $currentQueryString = $request->getQueryString();
-        if (strlen($currentQueryString)) {
+        if ($currentQueryString !== null && strlen($currentQueryString)) {
             $currentReturn .= '?'.$currentQueryString;
         }
 

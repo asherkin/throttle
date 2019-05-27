@@ -22,10 +22,10 @@ class Symbols extends AbstractController
         $redis->hIncrBy('throttle:stats', 'symbols:submitted', 1);
         $redis->hIncrBy('throttle:stats', 'symbols:submitted:bytes', strlen($data));
 
-        $lines = phutil_split_lines($data, false);
+        $lines = preg_split('/\r?\n/', trim($data));
 
-        if (!preg_match('/^MODULE (?P<operatingsystem>[^ ]++) (?P<architecture>[^ ]++) (?P<id>[a-fA-F0-9]++) (?P<name>[^\\/\\\\\r\n]++)$/m', $lines[0], $info)) {
-            $logger->warning('Invalid symbol file: ' . $lines[0]);
+        if ($lines === false || !preg_match('/^MODULE (?P<operatingsystem>[^ ]++) (?P<architecture>[^ ]++) (?P<id>[a-fA-F0-9]++) (?P<name>[^\\/\\\\\r\n]++)$/m', $lines[0], $info)) {
+            $logger->warning('Invalid symbol file', [ 'header' => ($lines ? $lines[0] : null) ]);
             $redis->hIncrBy('throttle:stats', 'symbols:rejected:invalid', 1);
 
             return new \Symfony\Component\HttpFoundation\Response('Invalid symbol file', 400);
@@ -52,7 +52,7 @@ class Symbols extends AbstractController
             }
         }
 
-        $path = $this->rootPath . '/symbols/public/' . $info['name'] . '/' . $info['id'];
+        $path = $rootPath . '/symbols/public/' . $info['name'] . '/' . $info['id'];
 
         \Filesystem::createDirectory($path, 0755, true);
 

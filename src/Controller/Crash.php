@@ -7,6 +7,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -59,7 +60,7 @@ class Crash extends AbstractController
                 $owner = null;
             } else if (stripos($owner, 'STEAM_') === 0) {
                 $owner = explode(':', $owner);
-                $owner = ($owner[2] << 1) | $owner[1];
+                $owner = ((int)$owner[2] << 1) | (int)$owner[1];
                 $owner = gmp_add('76561197960265728', $owner);
             } /* else if (gmp_cmp($owner, '0xFFFFFFFF') < 0) {
                 $owner = gmp_add('76561197960265728', $owner);
@@ -116,7 +117,10 @@ class Crash extends AbstractController
             $has_config = preg_match('/(?<=-------- CONFIG BEGIN --------)[^\\x00]+(?=-------- CONFIG END --------)/i', $raw_metadata, $metadata_config);
             if ($has_config === 1) {
                 $metadata_config = trim($metadata_config[0]);
-                $metadata_config = phutil_split_lines($metadata_config, false);
+                $metadata_config = preg_split('/\r?\n/', $metadata_config);
+                if ($metadata_config === false) {
+                    $metadata_config = [];
+                }
 
                 // Merge with the existing metadata, overwrite existing.
                 foreach ($metadata_config as $line) {
@@ -209,6 +213,7 @@ class Crash extends AbstractController
 
         $allowed = null;
         if (!$currentUser->isAdmin()) {
+            $allowed = [];
             foreach ($shared as $user) {
                 $allowed[] = $user['id'];
             }
@@ -287,11 +292,11 @@ class Crash extends AbstractController
     /**
      * @Route("/{id<[0-9a-zA-Z]{12}>}", name="details")
      */
-    public function details(Request $request, $appConfig, $id)
+    public function details(Request $request, Session $session, $appConfig, $id)
     {
         $can_manage = $this->canUserManage($id);
         if ($can_manage === null) {
-            if ($request->getSession()->getFlashBag()->get('internal')) {
+            if ($session->getFlashBag()->get('internal')) {
                 $this->addFlash('error_crash', 'That Crash ID does not exist.');
 
                 return $this->redirectToRoute('index');
@@ -467,8 +472,12 @@ class Crash extends AbstractController
             $metadata = \Filesystem::readFile($path);
         }
 
-        // Extract the console output from the full metadata.
-        $ret = preg_match('/(?<=-------- CONSOLE HISTORY BEGIN --------)[^\\x00]+(?=-------- CONSOLE HISTORY END --------)/i', $metadata, $console);
+        $ret = false;
+        $console = null;
+        if ($metadata !== null && $metadata !== false) {
+            // Extract the console output from the full metadata.
+            $ret = preg_match('/(?<=-------- CONSOLE HISTORY BEGIN --------)[^\\x00]+(?=-------- CONSOLE HISTORY END --------)/i', $metadata, $console);
+        }
 
         if ($ret !== 1) {
             throw $this->createNotFoundException();
@@ -516,17 +525,23 @@ class Crash extends AbstractController
 
         $stream_offset = $header['stream_offset'];
         $stream = false;
-        do {
+        for ($i = 0; $i < $header['stream_count']; ++$i) {
             $output['stream'] = $stream = unpack('Ltype/Lsize/Loffset', substr($minidump, $stream_offset, 16));
             $stream_offset += 16;
-        } while ($stream !== false && $stream['type'] !== 3);
+            if ($stream !== false && $stream['type'] === 3) {
+                break;
+            } else {
+                $stream = false;
+            }
+        }
 
         if ($stream === false) {
             throw new \RuntimeException('Missing MD_THREAD_LIST_STREAM');
         }
 
         $thread = $this->db->executeQuery('SELECT thread FROM crash WHERE id = ? AND processed = 1 LIMIT 1', array($id))->fetchColumn(0);
-        $output['thread'] = $thread = unpack('Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, $stream['offset'] + 4 + ($thread * 48), 48));
+        $thread_offset = $stream['offset'] + 4 + ($thread * 48);
+        $output['thread'] = $thread = unpack('Lthread_id/Lsuspend_count/Lpriority_class/Lpriority/L2teb/L2stack_start/Lstack_size/Lstack_offset/Lcontext_size/Lcontext_offset', substr($minidump, (int)$thread_offset, 48));
 
         $output['context_flags'] = $context_flags = unpack('Lflags', substr($minidump, $thread['context_offset'], 4));
 
@@ -534,17 +549,17 @@ class Crash extends AbstractController
             throw new \RuntimeException('Bad context flags.');
         }
 
-        function get_register_offset($minidump, $stack_start, $register_offset) {
+        $get_register_offset = function ($minidump, $stack_start, $register_offset) {
             $context_register = unpack('Lregister', substr($minidump, $register_offset, 4));
             return (int)bcsub(sprintf('%u', $context_register['register']), sprintf('%u', $stack_start));
-        }
+        };
 
-        $output['register_esp'] = $register_esp = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 196);
-        $output['register_ebp'] = $register_ebp = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 180);
+        $output['register_esp'] = $register_esp = $get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 196);
+        $output['register_ebp'] = $register_ebp = $get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 180);
 
         $error_offset = 0;
         for ($i = 0; $i < 6; $i++) {
-            $output['register_offset_'.$i] = $register_offset = get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 156 + ($i * 4));
+            $output['register_offset_'.$i] = $register_offset = $get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 156 + ($i * 4));
             if ($register_offset >= $register_esp && $register_offset <= $register_ebp) {
                 $output['error_offset'] = $error_offset = $register_offset;
                 break;
@@ -789,7 +804,7 @@ class Crash extends AbstractController
             switch ($type) {
                 case 'M':
                     $file = array_pop($signature);
-                    if (!strlen($platform)) {
+                    if ($platform === null || !strlen($platform)) {
                         switch (pathinfo($file, PATHINFO_EXTENSION)) {
                             case 'pdb':
                                 $platform = 'windows';

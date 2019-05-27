@@ -83,6 +83,9 @@ EOT;
 
         $signature = base64_decode($params['p_signature']);
         unset($params['p_signature']);
+        if ($signature === false) {
+            throw new AccessDeniedHttpException('Failed to decode signature');
+        }
 
         ksort($params);
         foreach ($params as $k => $v) {

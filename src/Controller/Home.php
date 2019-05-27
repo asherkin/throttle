@@ -5,20 +5,21 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 class Home extends AbstractController
 {
     /**
      * @Route("/", name="index")
      */
-    public function index(Request $request)
+    public function index(Request $request, Session $session)
     {
         $id = $request->query->get('id');
         if (isset($id)) {
             $crashid = strtolower(str_replace('-', '', $id));
 
             try {
-                $request->getSession()->getFlashBag()->set('internal', 'true');
+                $session->getFlashBag()->set('internal', 'true');
 
                 return $this->redirectToRoute('details', array('id' => $crashid));
             } catch (\Exception $e) {

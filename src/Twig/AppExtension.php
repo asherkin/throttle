@@ -96,6 +96,11 @@ class AppExtension extends AbstractExtension
     }
 
     public function filterFormatMetadataKey($string) {
+        $name = preg_split('/(?:(?<=[a-z])(?=[A-Z])|_|-)/x', $string);
+        if ($name === false) {
+            $name = [$string];
+        }
+
         $name = implode(' ', array_map(function($d) {
             switch (strtolower($d)) {
             case 'url':
@@ -108,7 +113,7 @@ class AppExtension extends AbstractExtension
             default:
                 return ucfirst($d);
             }
-        }, preg_split('/(?:(?<=[a-z])(?=[A-Z])|_|-)/x', $string)));
+        }, $name));
 
         switch ($name) {
         case 'Prod':

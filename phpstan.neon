@@ -1,0 +1,5 @@
+parameters:
+    autoload_files:
+        - %rootDir%/../../../config/bootstrap.php
+    autoload_directories:
+        - %rootDir%/../../../src/Migrations

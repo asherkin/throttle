@@ -71,7 +71,8 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "phpstan": "phpstan analyse src -l 7"
     },
     "conflict": {
         "symfony/symfony": "*"
@@ -83,6 +84,9 @@
         }
     },
     "require-dev": {
+        "phpstan/extension-installer": "^1.0",
+        "phpstan/phpstan": "^0.11.7",
+        "phpstan/phpstan-symfony": "^0.11.6",
         "symfony/maker-bundle": "^1.11"
     }
 }
