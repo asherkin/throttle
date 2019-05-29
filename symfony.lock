@@ -159,6 +159,9 @@
     "symfony/cache": {
         "version": "v4.2.3"
     },
+    "symfony/cache-contracts": {
+        "version": "v1.1.1"
+    },
     "symfony/config": {
         "version": "v4.2.3"
     },
@@ -170,9 +173,6 @@
             "version": "3.3",
             "ref": "0fa049c19069a65f52c1c181d64be3de672c1504"
         }
-    },
-    "symfony/contracts": {
-        "version": "v1.0.2"
     },
     "symfony/debug": {
         "version": "v4.2.3"
@@ -188,6 +188,9 @@
     },
     "symfony/event-dispatcher": {
         "version": "v4.2.3"
+    },
+    "symfony/event-dispatcher-contracts": {
+        "version": "v1.1.1"
     },
     "symfony/filesystem": {
         "version": "v4.2.3"
@@ -215,6 +218,9 @@
     },
     "symfony/http-client": {
         "version": "v4.3.0-beta2"
+    },
+    "symfony/http-client-contracts": {
+        "version": "v1.1.1"
     },
     "symfony/http-foundation": {
         "version": "v4.2.3"
@@ -269,9 +275,6 @@
     "symfony/process": {
         "version": "v4.2.8"
     },
-    "symfony/profiler-pack": {
-        "version": "v1.0.4"
-    },
     "symfony/property-access": {
         "version": "v4.2.8"
     },
@@ -307,6 +310,9 @@
     },
     "symfony/security-http": {
         "version": "v4.2.8"
+    },
+    "symfony/service-contracts": {
+        "version": "v1.1.2"
     },
     "symfony/stopwatch": {
         "version": "v4.2.8"

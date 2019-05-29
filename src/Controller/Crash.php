@@ -553,7 +553,7 @@ class Crash extends AbstractController
         $get_register_offset = function ($minidump, $stack_start, $register_offset) {
             $context_register = unpack('Lregister', substr($minidump, $register_offset, 4));
 
-            return (int)bcsub(sprintf('%u', $context_register['register']), sprintf('%u', $stack_start));
+            return gmp_intval(gmp_sub(sprintf('%u', $context_register['register']), sprintf('%u', $stack_start)));
         };
 
         $output['register_esp'] = $register_esp = $get_register_offset($minidump, $thread['stack_start1'], $thread['context_offset'] + 196);

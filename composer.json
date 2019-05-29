@@ -13,10 +13,14 @@
     ],
     "require": {
         "php": "^7.2.0",
+        "ext-PDO": "*",
         "ext-ctype": "*",
         "ext-gmp": "*",
         "ext-iconv": "*",
+        "ext-json": "*",
+        "ext-pdo_mysql": "*",
         "ext-redis": "*",
+        "ext-zlib": "*",
         "doctrine/doctrine-bundle": "^1.11",
         "doctrine/doctrine-migrations-bundle": "^2.0",
         "phacility/libphutil": "dev-stable",
@@ -27,9 +31,10 @@
         "symfony/http-client": "4.3.*",
         "symfony/monolog-bundle": "^3.3",
         "symfony/process": "4.3.*",
-        "symfony/profiler-pack": "^1.0",
         "symfony/security-bundle": "4.3.*",
+        "symfony/stopwatch": "4.3.*",
         "symfony/twig-bundle": "4.3.*",
+        "symfony/web-profiler-bundle": "4.3.*",
         "symfony/yaml": "4.3.*"
     },
     "replace": {
@@ -99,6 +104,6 @@
             "cache:clear": "symfony-cmd",
             "assets:install %PUBLIC_DIR%": "symfony-cmd"
         },
-        "phpstan": "phpstan analyse src -l 7"
+        "phpstan": "phpstan analyse src"
     }
 }

@@ -1,4 +1,5 @@
 parameters:
+    level: 7
     autoload_files:
         - %rootDir%/../../../config/bootstrap.php
     autoload_directories:
