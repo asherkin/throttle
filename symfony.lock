@@ -231,6 +231,9 @@
     "symfony/inflector": {
         "version": "v4.2.8"
     },
+    "symfony/lock": {
+        "version": "v4.3.0-rc1"
+    },
     "symfony/maker-bundle": {
         "version": "1.0",
         "recipe": {

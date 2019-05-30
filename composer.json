@@ -29,6 +29,7 @@
         "symfony/flex": "^1.1",
         "symfony/framework-bundle": "4.3.*",
         "symfony/http-client": "4.3.*",
+        "symfony/lock": "4.3.*",
         "symfony/monolog-bundle": "^3.3",
         "symfony/process": "4.3.*",
         "symfony/security-bundle": "4.3.*",
@@ -92,7 +93,6 @@
             }
         }
     ],
-    "minimum-stability": "beta",
     "scripts": {
         "post-install-cmd": [
             "@auto-scripts"
