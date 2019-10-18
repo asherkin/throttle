@@ -45,22 +45,49 @@ const FRAME_TRUST = [
 ];
 
 function print_registers(indent, registers) {
+	let order = [
+		"eip", "esp", "ebp", "ebx",
+		"esi", "edi", "eax", "ecx",
+		"edx", "efl",
+		"rax", "rdx", "rcx", "rbx",
+		"rsi", "rdi", "rbp", "rsp",
+		 "r8",  "r9", "r10", "r11",
+		"r12", "r13", "r14",
+		"r15", "rip",
+	];
+
+	let source = order;
+	let printed = {};
 	let register_count = 0;
 	let line = indent;
 
-	for (let register in registers) {
-		line += register + ': 0x' + registers[register].toString(16).padStart(8, '0');
+	for (let i = 0; i < 2; ++i) {
+		for (let register in source) {
+			if (i === 0) {
+				register = order[register];
+			}
 
-		register_count++;
+			if (printed[register] || registers[register] === undefined) {
+				continue;
+			}
 
-		if (register_count < 3) {
-			line += '  ';
-		} else {
-			console.log(line);
+			line += register + ': 0x' + registers[register].toString(16).padStart(8, '0');
 
-			register_count = 0;
-			line = indent;
+			register_count++;
+
+			if (register_count < 4) {
+				line += '  ';
+			} else {
+				console.log(line);
+
+				register_count = 0;
+				line = indent;
+			}
+
+			printed[register] = true;
 		}
+
+		source = registers;
 	}
 
 	if (register_count > 0) {
@@ -118,7 +145,7 @@ function print_stack(indent, base, memory) {
 			}
 		}
 
-		line += ' |' + string + '|';
+		line += ' ' + string;
 
 		console.log(line);
 	}

@@ -35,5 +35,7 @@ return array_merge($base, array(
     'accelerator' => false,
 
     'show-version' => true,
+
+    'symbol-stores' => array(),
 ));
 

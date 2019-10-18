@@ -54,7 +54,7 @@ function print_memory(region) {
 
 	const kAddressBytes = 4;
 	const kHeader = false;
-	const kRowBytes = 16;
+	const kRowBytes = 32;
 	const kChunkBytes = 8;
 	const kChunkText = false;
 
@@ -101,7 +101,7 @@ function print_memory(region) {
 			}
 		}
 
-		line += ' |' + string + '|';
+		line += ' ' + string;
 
 		console.log(line);
 	}

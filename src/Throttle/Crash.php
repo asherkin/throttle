@@ -649,6 +649,7 @@ class Crash
 
         return $app['twig']->render('carburetor.html.twig', array(
             'id' => $id,
+            'scan' => $app['request']->get('scan', null),
             'symbols' => $app['request']->get('symbols', null),
         ));
     }
@@ -668,9 +669,18 @@ class Crash
             $app->abort(403);
         }
 
-        $config = $app['root'].'/app/carburetor-config.json';
-        if ($app['request']->get('symbols', null) === 'no') {
-            $config = $app['root'].'/app/carburetor-config-no-symbols.json';
+        $options = [];
+        if ($app['request']->get('scan', null) === 'no') {
+            $options[] = '--no-scan';
+        }
+
+        $symbol_stores = [];
+        if ($app['request']->get('symbols', null) !== 'no') {
+            $symbol_stores = array_map(function ($p) use ($app) {
+                return $app['root'].'/symbols/'.$p;
+            }, $app['config']['symbol-stores']);
+
+            array_unshift($symbol_stores, $app['root'].'/cache/symbols');
         }
 
         $path = $app['root'] . '/dumps/' . substr($id, 0, 2) . '/' . $id . '.dmp';
@@ -681,7 +691,7 @@ class Crash
 
         set_time_limit(120);
 
-        list($stdout, $stderr) = execx($app['root'].'/bin/carburetor %s %s', $config, $path);
+        list($stdout, $stderr) = execx($app['root'].'/bin/carburetor %Ls %s %Ls', $options, $path, $symbol_stores);
 
         return new \Symfony\Component\HttpFoundation\Response($stdout, 200, array(
             'Content-Type' => 'application/json',
