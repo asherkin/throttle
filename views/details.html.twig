@@ -15,10 +15,6 @@
 {% endif %}
 {% endif %}
 
-{%if outdated %}
-<div class="alert alert-block alert-warning">This crash was submitted using an older version of Accelerator, please <a href="https://forums.alliedmods.net/showthread.php?t=277703" class="alert-link">update to the latest version</a> for full functionality.</div>
-{% endif %}
-
 <div class="well" style="position: relative;">
     <dl class="dl-horizontal" style="margin: 0;">
         <dt>Uploaded</dt>
@@ -57,10 +53,18 @@
 <div class="alert alert-block alert-danger">An error occurred while processing this crash.</div>
 {% endif %}
 
+{%if outdated %}
+<div class="alert alert-block alert-warning">This crash was submitted using an older version of Accelerator, please <a href="https://forums.alliedmods.net/showthread.php?t=277703" class="alert-link">update to the latest version</a> for full functionality.</div>
+{% endif %}
+
 {% if crash.processed == 1 and crash.failed == 0 %}
 {% for notice in notices %}
 <div class="alert alert-block alert-{{ notice.severity }}">{{ notice.text|raw }}</div>
 {% endfor %}
+
+{%if show_sourcepawn_message %}
+<div class="alert alert-block alert-info">Update to SourceMod 1.10.0.6431 or later for improved SourcePawn stack traces.<br>This crash is from a server running a version of SourceMod that does not fully support SourcePawn stack walking and the stack trace displayed may be incomplete or incorrect.</div>
+{% endif %}
 
 {% if crash.thread != 0 %}
 <div class="alert alert-block alert-info">This crash is not from the main thread.<br>The stack trace displayed below is of the thread that crashed.</div>
