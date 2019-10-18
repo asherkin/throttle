@@ -127,6 +127,12 @@ class Crash
         // TODO: Determine whether we want the crash dump...
         $return = 'Y|';
         foreach ($signature->modules as $module) {
+            if ($module->identifier === '000000000000000000000000000000000') {
+                $app['monolog']->warning('Ignoring module with invalid identifier: '.$module->file);
+                $return .= 'N';
+                continue;
+            }
+
             // TODO: N query problem...
             $exists = $app['db']->executeQuery('SELECT TRUE FROM module WHERE name = ? AND identifier = ? AND present = 1 LIMIT 1', [$module->file, $module->identifier])->fetchColumn(0);
             $return .= ($exists === false) ? 'Y' : 'N';
@@ -177,7 +183,7 @@ class Crash
                 $owner = gmp_add('76561197960265728', $owner);
             } /* else if (gmp_cmp($owner, '0xFFFFFFFF') < 0) {
                 $owner = gmp_add('76561197960265728', $owner);
-            } */ else if (gmp_cmp(gmp_and($owner, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
+            } */ else if (!ctype_digit($owner) || gmp_cmp(gmp_and($owner, '0xFFFFFFFF00000000'), '76561197960265728') !== 0) {
                 $app['monolog']->warning('Bad owner provided in submit', array('id' => $id, 'owner' => $owner));
                 $owner = null;
             }
@@ -253,8 +259,13 @@ class Crash
 
         $command_line = null;
         if (isset($metadata['CommandLine'])) {
-            $command_line = $metadata['CommandLine'];
+            $old = mb_substitute_character();
+            mb_substitute_character(0xFFFD);
+
+            $command_line = mb_convert_encoding($metadata['CommandLine'], 'UTF-8', 'UTF-8');
             unset($metadata['CommandLine']);
+
+            mb_substitute_character($old);
         }
 
         // Strip any presubmit token, until we're ready to do something with them
@@ -320,7 +331,7 @@ class Crash
 
                 return $app->redirect($app['url_generator']->generate('index'));
             }
-    
+
             return $app->abort(404);
         }
 
@@ -333,6 +344,16 @@ class Crash
         if ($crash['thread'] == -1) {
             $crash['thread'] = 0;
         }
+
+        $crash['cmdline'] = preg_replace_callback(array_map(function($v) {
+            return sprintf('/(?<=%s )[^ ]+/', preg_quote($v));
+        }, [
+            '+sv_password',
+            '+rcon_password',
+            '+sv_setsteamaccount',
+        ]), function($matches) {
+            return str_repeat('*', strlen($matches[0]));
+        }, $crash['cmdline']);
 
         $crash['metadata'] = json_decode($crash['metadata'], true);
 
