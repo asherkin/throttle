@@ -45,7 +45,7 @@ class Stats
             $data = round($historical + ($live - $last));
             \apcu_add($key, $data, 10);
 */
-            
+
             $data = round($historical);
             \apcu_add($key, $data, 300);
         }
@@ -299,6 +299,7 @@ class Stats
     {
         $data = self::getRawRrdData($start, $step, $metric);
         if (!empty($data)) {
+            array_pop($data); // A rrdtool change seems to have resulted in a NaN entry ending up at the end.
             $last_stamp = end($data)[0] + $step;
 
             // TODO: Iteratively step down the periods, required for more than one day.

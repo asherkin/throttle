@@ -128,6 +128,8 @@ $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
             return 'Process Time';
         case 'Source Mod Path':
             return 'SourceMod Path';
+        case 'Source Mod Version':
+            return 'SourceMod Version';
         default:
             return $name;
         }

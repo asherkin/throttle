@@ -375,6 +375,26 @@ class Crash
         $modules = $app['db']->executeQuery('SELECT name, identifier, processed, present, HEX(base) AS base FROM module WHERE crash = ? ORDER BY name', array($id))->fetchAll();
         $stats = $app['db']->executeQuery('SELECT COUNT(DISTINCT crash.owner) AS owners, COUNT(DISTINCT crash.ip) AS ips, COUNT(*) AS crashes FROM crash, (SELECT owner, stackhash FROM crash WHERE id = ?) AS this WHERE this.stackhash = crash.stackhash', array($id))->fetch();
 
+        $outdated = false;
+        if ($app['config']['accelerator']) {
+            $outdated = !isset($crash['metadata']['ExtensionVersion']) || version_compare($crash['metadata']['ExtensionVersion'], $app['config']['accelerator'], '<');
+        }
+
+        $has_error_string = false;
+        if (isset($stack[0]['rendered'])) {
+            $has_error_string = preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1;
+        }
+
+        $show_sourcepawn_message = false;
+        if (isset($crash['metadata']['SourceModVersion']) && version_compare($crash['metadata']['SourceModVersion'], '1.10.0.6431', '<')) {
+            foreach ($stack as $frame) {
+                if (preg_match('/^sourcepawn\\.jit\\.[^!]+!sp::[^:]+::Invoke/', $frame['rendered']) === 1) {
+                    $show_sourcepawn_message = true;
+                    break;
+                }
+            }
+        }
+
         return $app['twig']->render('details.html.twig', array(
             'crash' => $crash,
             'can_manage' => $can_manage,
@@ -382,8 +402,9 @@ class Crash
             'stack' => $stack,
             'modules' => $modules,
             'stats' => $stats,
-            'outdated' => ($app['config']['accelerator'] ? (isset($crash['metadata']['ExtensionVersion']) ? version_compare($crash['metadata']['ExtensionVersion'], $app['config']['accelerator'], '<') : true) : false),
-            'has_error_string' => (isset($stack[0]['rendered']) ? (preg_match('/^engine(_srv)?\\.so!Sys_Error(_Internal)?\\(/', $stack[0]['rendered']) === 1) : false),
+            'outdated' => $outdated,
+            'has_error_string' => $has_error_string,
+            'show_sourcepawn_message' => $show_sourcepawn_message,
         ));
     }
 
