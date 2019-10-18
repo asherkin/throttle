@@ -81,7 +81,7 @@ class CrashProcessCommand extends Command
             $output->writeln('Only processing the first ' . $limit);
         }
 
-        $symbols = \Filesystem::listDirectory($app['root'] . '/symbols');
+        $symbols = $app['config']['symbol-stores'];
         $output->writeln('Using symbols from: ' . implode(' ', $symbols));
 
         foreach ($symbols as &$path) {
