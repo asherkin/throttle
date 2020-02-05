@@ -25,19 +25,19 @@
         "doctrine/doctrine-migrations-bundle": "^2.0",
         "league/flysystem-bundle": "^1.1",
         "phacility/libphutil": "dev-stable",
-        "symfony/console": "4.3.*",
-        "symfony/dotenv": "4.3.*",
+        "symfony/console": "4.4.*",
+        "symfony/dotenv": "4.4.*",
         "symfony/flex": "^1.1",
-        "symfony/framework-bundle": "4.3.*",
-        "symfony/http-client": "4.3.*",
-        "symfony/lock": "4.3.*",
+        "symfony/framework-bundle": "4.4.*",
+        "symfony/http-client": "4.4.*",
+        "symfony/lock": "4.4.*",
         "symfony/monolog-bundle": "^3.3",
-        "symfony/process": "4.3.*",
-        "symfony/security-bundle": "4.3.*",
-        "symfony/stopwatch": "4.3.*",
-        "symfony/twig-bundle": "4.3.*",
-        "symfony/web-profiler-bundle": "4.3.*",
-        "symfony/yaml": "4.3.*"
+        "symfony/process": "4.4.*",
+        "symfony/security-bundle": "4.4.*",
+        "symfony/stopwatch": "4.4.*",
+        "symfony/twig-bundle": "4.4.*",
+        "symfony/web-profiler-bundle": "4.4.*",
+        "symfony/yaml": "4.4.*"
     },
     "replace": {
         "paragonie/random_compat": "2.*",
@@ -68,7 +68,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "4.3.*"
+            "require": "4.4.*"
         }
     },
     "autoload": {

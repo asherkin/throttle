@@ -9,7 +9,7 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
-            anonymous: true
+            anonymous: lazy
             logout:
                 path: logout
                 success_handler: App\Security\LogoutSuccessHandler
