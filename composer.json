@@ -23,6 +23,7 @@
         "ext-zlib": "*",
         "doctrine/doctrine-bundle": "^1.11",
         "doctrine/doctrine-migrations-bundle": "^2.0",
+        "league/flysystem-bundle": "^1.1",
         "phacility/libphutil": "dev-stable",
         "symfony/console": "4.3.*",
         "symfony/dotenv": "4.3.*",
@@ -55,7 +56,8 @@
         "phpstan/extension-installer": "^1.0",
         "phpstan/phpstan": "^0.11.7",
         "phpstan/phpstan-symfony": "^0.11.6",
-        "symfony/maker-bundle": "^1.11"
+        "symfony/maker-bundle": "^1.11",
+        "theofidry/psysh-bundle": "^3.5"
     },
     "config": {
         "preferred-install": {
