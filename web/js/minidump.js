@@ -36,27 +36,28 @@ StreamType[0x47670008] = 'MD_LINUX_AUXV';
 StreamType[0x47670009] = 'MD_LINUX_MAPS';
 StreamType[0x4767000A] = 'MD_LINUX_DSO_DEBUG';
 
-var MinidumpFlags = [];
-MinidumpFlags[0x00000000] = 'MD_NORMAL';
-MinidumpFlags[0x00000001] = 'MD_WITH_DATA_SEGS';
-MinidumpFlags[0x00000002] = 'MD_WITH_FULL_MEMORY';
-MinidumpFlags[0x00000004] = 'MD_WITH_HANDLE_DATA';
-MinidumpFlags[0x00000008] = 'MD_FILTER_MEMORY';
-MinidumpFlags[0x00000010] = 'MD_SCAN_MEMORY';
-MinidumpFlags[0x00000020] = 'MD_WITH_UNLOADED_MODULES';
-MinidumpFlags[0x00000040] = 'MD_WITH_INDIRECTLY_REFERENCED_MEMORY';
-MinidumpFlags[0x00000080] = 'MD_FILTER_MODULE_PATHS';
-MinidumpFlags[0x00000100] = 'MD_WITH_PROCESS_THREAD_DATA';
-MinidumpFlags[0x00000200] = 'MD_WITH_PRIVATE_READ_WRITE_MEMORY';
-MinidumpFlags[0x00000400] = 'MD_WITHOUT_OPTIONAL_DATA';
-MinidumpFlags[0x00000800] = 'MD_WITH_FULL_MEMORY_INFO';
-MinidumpFlags[0x00001000] = 'MD_WITH_THREAD_INFO';
-MinidumpFlags[0x00002000] = 'MD_WITH_CODE_SEGS';
-MinidumpFlags[0x00004000] = 'MD_WITHOUT_AUXILLIARY_SEGS';
-MinidumpFlags[0x00008000] = 'MD_WITH_FULL_AUXILLIARY_STATE';
-MinidumpFlags[0x00010000] = 'MD_WITH_PRIVATE_WRITE_COPY_MEMORY';
-MinidumpFlags[0x00020000] = 'MD_IGNORE_INACCESSIBLE_MEMORY';
-MinidumpFlags[0x00040000] = 'MD_WITH_TOKEN_INFORMATION';
+var MinidumpFlags = [
+    [0x00000000, 'MD_NORMAL'],
+    [0x00000001, 'MD_WITH_DATA_SEGS'],
+    [0x00000002, 'MD_WITH_FULL_MEMORY'],
+    [0x00000004, 'MD_WITH_HANDLE_DATA'],
+    [0x00000008, 'MD_FILTER_MEMORY'],
+    [0x00000010, 'MD_SCAN_MEMORY'],
+    [0x00000020, 'MD_WITH_UNLOADED_MODULES'],
+    [0x00000040, 'MD_WITH_INDIRECTLY_REFERENCED_MEMORY'],
+    [0x00000080, 'MD_FILTER_MODULE_PATHS'],
+    [0x00000100, 'MD_WITH_PROCESS_THREAD_DATA'],
+    [0x00000200, 'MD_WITH_PRIVATE_READ_WRITE_MEMORY'],
+    [0x00000400, 'MD_WITHOUT_OPTIONAL_DATA'],
+    [0x00000800, 'MD_WITH_FULL_MEMORY_INFO'],
+    [0x00001000, 'MD_WITH_THREAD_INFO'],
+    [0x00002000, 'MD_WITH_CODE_SEGS'],
+    [0x00004000, 'MD_WITHOUT_AUXILLIARY_SEGS'],
+    [0x00008000, 'MD_WITH_FULL_AUXILLIARY_STATE'],
+    [0x00010000, 'MD_WITH_PRIVATE_WRITE_COPY_MEMORY'],
+    [0x00020000, 'MD_IGNORE_INACCESSIBLE_MEMORY'],
+    [0x00040000, 'MD_WITH_TOKEN_INFORMATION'],
+];
 
 var AuxvNames = [];
 AuxvNames[0] = 'AT_NULL';
@@ -259,7 +260,7 @@ oReq.onload = function(oEvent) {
     html += '<dt>Checksum</dt><dd>0x' + hex(view.getUint32()) + '</dd>';
     html += '<dt>Time Stamp</dt><dd>' + new Date(view.getUint32() * 1000) + '</dd>';
     var minidumpFlags = view.getUint64();
-    html += '<dt>Flags</dt><dd>' + MinidumpFlags.filter(function(name, flag) { return (flag != 0 || minidumpFlags.lo == 0) && ((minidumpFlags.lo & flag) == flag); }).join(' | ') + ' (0x' + hex64(minidumpFlags) + ')</dd>';
+    html += '<dt>Flags</dt><dd>' + MinidumpFlags.filter(function([flag, name]) { return (flag != 0 || minidumpFlags.lo == 0) && ((minidumpFlags.lo & flag) == flag); }).map(([flag, name]) => name).join(' | ') + ' (0x' + hex64(minidumpFlags) + ')</dd>';
     html += '</dl>';
     content.append(html);
 
@@ -434,7 +435,70 @@ oReq.onload = function(oEvent) {
             html += '<dt>csd_version</dt><dd>' + printString(view) + '</dd>';
             html += '<dt>suite_mask</dt><dd>0x' + hex(view.getUint16()) + '</dd>';
             html += '<dt>reserved2</dt><dd>0x' + hex(view.getUint16()) + '</dd>';
-            // CPU info stuff...
+            // TODO: CPU info stuff...
+            break;
+        }
+        case 'MD_MEMORY_INFO_LIST_STREAM': {
+            var MemoryProtectionFlags = [
+                [0, 'PAGE_INVALID'],
+                [0x01, 'PAGE_NOACCESS'],
+                [0x02, 'PAGE_READONLY'],
+                [0x04, 'PAGE_READWRITE'],
+                [0x08, 'PAGE_WRITECOPY'],
+                [0x10, 'PAGE_EXECUTE'],
+                [0x20, 'PAGE_EXECUTE_READ'],
+                [0x40, 'PAGE_EXECUTE_READWRITE'],
+                [0x80, 'PAGE_EXECUTE_WRITECOPY'],
+                [0x100, 'PAGE_GUARD'],
+                [0x200, 'PAGE_NOCACHE'],
+                [0x400, 'PAGE_WRITECOMBINE'],
+            ];
+
+            var MemoryStateFlags = [
+                [0, 'MEM_INVALID'],
+                [0x1000, 'MEM_COMMIT'],
+                [0x2000, 'MEM_RESERVE'],
+                [0x10000, 'MEM_FREE'],
+            ];
+
+            var MemoryTypeFlags = [
+                [0, 'MEM_INVALID'],
+                [0x20000, 'MEM_PRIVATE'],
+                [0x40000, 'MEM_MAPPED'],
+                [0x1000000, 'MEM_IMAGE'],
+            ];
+
+            var memoryInfoListStart = view.tell();
+
+            var memoryInfoListHeaderSize = view.getUint32();
+            var memoryInfoListEntrySize = view.getUint32();
+            var memoryInfoListCount = view.getUint64();
+
+            for (var j = 0; j < memoryInfoListCount.lo; ++j) {
+                // Seek straight to the state, optimization.
+                view.seek(memoryInfoListStart + memoryInfoListHeaderSize + (j * memoryInfoListEntrySize) + 32);
+                if (view.getUint32() === 0x10000) continue; // MEM_FREE
+
+                view.seek(memoryInfoListStart + memoryInfoListHeaderSize + (j * memoryInfoListEntrySize));
+                html += '<dt>Region ' + j + '</dt><dd><div class="well well-sm"><dl class="dl-horizontal dl-minidump">';
+
+                html += '<dt>Base Address</dt><dd>0x' + hex64(view.getUint64()) + '</dd>';
+                html += '<dt>Allocation Base</dt><dd>0x' + hex64(view.getUint64()) + '</dd>';
+                var memoryInfoAllocationProtect = view.getUint32();
+                html += '<dt>Allocation Protect</dt><dd>' + MemoryProtectionFlags.filter(function([flag, name]) { return (flag != 0 || memoryInfoAllocationProtect == 0) && ((memoryInfoAllocationProtect & flag) == flag); }).map(([flag, name]) => name).join(' | ') + ' (0x' + hex(memoryInfoAllocationProtect) + ')</dd>';
+                view.getUint32() // Useless alignment bytes.
+                html += '<dt>Region Size</dt><dd>0x' + hex64(view.getUint64()) + '</dd>';
+                var memoryInfoState = view.getUint32();
+                html += '<dt>State</dt><dd>' + MemoryStateFlags.filter(function([flag, name]) { return (flag != 0 || memoryInfoState == 0) && ((memoryInfoState & flag) == flag); }).map(([flag, name]) => name).join(' | ') + ' (0x' + hex(memoryInfoState) + ')</dd>';
+                var memoryInfoProtect = view.getUint32();
+                html += '<dt>Protect</dt><dd>' + MemoryProtectionFlags.filter(function([flag, name]) { return (flag != 0 || memoryInfoProtect == 0) && ((memoryInfoProtect & flag) == flag); }).map(([flag, name]) => name).join(' | ') + ' (0x' + hex(memoryInfoProtect) + ')</dd>';
+                var memoryInfoType = view.getUint32();
+                html += '<dt>Type</dt><dd>' + MemoryTypeFlags.filter(function([flag, name]) { return (flag != 0 || memoryInfoType == 0) && ((memoryInfoType & flag) == flag); }).map(([flag, name]) => name).join(' | ') + ' (0x' + hex(memoryInfoType) + ')</dd>';
+                view.getUint32() // Useless alignment bytes.
+
+                html += '</dl></div></dd>';
+            }
+
             break;
         }
         case 'MD_BREAKPAD_INFO_STREAM': {
