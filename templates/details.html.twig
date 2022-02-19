@@ -211,10 +211,12 @@
     });
 
 {% if has_error_string %}
-    $.getJSON('{{ path('error', {id: crash.id}) }}', function(data) {
-        if (data.string) {
-            $('#error-details').text(data.string);
-        }
+    $(function() {
+        $.getJSON('{{ path('error', {id: crash.id}) }}', function(data) {
+            if (data.string) {
+                $('#error-details').text(data.string);
+            }
+        });
     });
 {% endif %}
 </script>

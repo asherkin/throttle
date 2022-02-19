@@ -21,17 +21,17 @@
         "ext-pdo_mysql": "*",
         "ext-redis": "*",
         "ext-zlib": "*",
-        "doctrine/doctrine-bundle": "^1.11",
-        "doctrine/doctrine-migrations-bundle": "^2.0",
-        "league/flysystem-bundle": "^1.1",
-        "phacility/libphutil": "dev-stable",
+        "doctrine/doctrine-bundle": "^1.12",
+        "doctrine/doctrine-migrations-bundle": "^2.1",
+        "league/flysystem-bundle": "^1.5",
+        "phacility/arcanist": "dev-stable",
         "symfony/console": "4.4.*",
         "symfony/dotenv": "4.4.*",
-        "symfony/flex": "^1.1",
+        "symfony/flex": "^1.6",
         "symfony/framework-bundle": "4.4.*",
         "symfony/http-client": "4.4.*",
         "symfony/lock": "4.4.*",
-        "symfony/monolog-bundle": "^3.3",
+        "symfony/monolog-bundle": "^3.5",
         "symfony/process": "4.4.*",
         "symfony/security-bundle": "4.4.*",
         "symfony/stopwatch": "4.4.*",
@@ -52,11 +52,11 @@
         "symfony/symfony": "*"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.15",
+        "friendsofphp/php-cs-fixer": "^2.16",
         "phpstan/extension-installer": "^1.0",
-        "phpstan/phpstan": "^0.11.7",
-        "phpstan/phpstan-symfony": "^0.11.6",
-        "symfony/maker-bundle": "^1.11",
+        "phpstan/phpstan": "^0.11",
+        "phpstan/phpstan-symfony": "^0.11",
+        "symfony/maker-bundle": "^1.15",
         "theofidry/psysh-bundle": "^3.5"
     },
     "config": {
@@ -85,11 +85,11 @@
         {
             "type": "package",
             "package": {
-                "name": "phacility/libphutil",
+                "name": "phacility/arcanist",
                 "version": "dev-stable",
                 "source": {
                     "type": "git",
-                    "url": "https://github.com/phacility/libphutil.git",
+                    "url": "https://github.com/phacility/arcanist.git",
                     "reference": "origin/stable"
                 }
             }

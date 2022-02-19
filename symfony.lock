@@ -102,6 +102,15 @@
     "jean85/pretty-package-versions": {
         "version": "1.2"
     },
+    "laminas/laminas-code": {
+        "version": "3.4.1"
+    },
+    "laminas/laminas-eventmanager": {
+        "version": "3.2.1"
+    },
+    "laminas/laminas-zendframework-bridge": {
+        "version": "1.0.3"
+    },
     "league/flysystem": {
         "version": "1.0.52"
     },
@@ -154,11 +163,8 @@
     "ocramius/proxy-manager": {
         "version": "2.2.2"
     },
-    "phacility/libphutil": {
+    "phacility/arcanist": {
         "version": "dev-stable"
-    },
-    "php": {
-        "version": "7.3"
     },
     "php-cs-fixer/diff": {
         "version": "v1.3.0"
@@ -429,10 +435,7 @@
     "twig/twig": {
         "version": "v2.10.0"
     },
-    "zendframework/zend-code": {
-        "version": "3.3.1"
-    },
-    "zendframework/zend-eventmanager": {
-        "version": "3.2.1"
+    "webimpress/safe-writer": {
+        "version": "2.0.1"
     }
 }
