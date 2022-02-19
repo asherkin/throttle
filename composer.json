@@ -1,75 +1,68 @@
 {
-    "name": "asherkin/throttle",
     "type": "project",
-    "description": "Lightweight google-breakpad back-end written in PHP and backed by MySQL",
-    "homepage": "https://crash.limetech.io/",
-    "license": "Apache-2.0",
-    "authors": [
-        {
-            "name": "Asher Baker",
-            "email": "asherkin@limetech.io",
-            "homepage": "https://limetech.io"
-        }
-    ],
+    "license": "proprietary",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "require": {
-        "php": "^7.2.0",
-        "ext-PDO": "*",
+        "php": ">=7.2.5",
         "ext-ctype": "*",
-        "ext-gmp": "*",
         "ext-iconv": "*",
-        "ext-json": "*",
-        "ext-pdo_mysql": "*",
-        "ext-redis": "*",
-        "ext-zlib": "*",
-        "doctrine/doctrine-bundle": "^1.12",
-        "doctrine/doctrine-migrations-bundle": "^2.1",
-        "league/flysystem-bundle": "^1.5",
-        "phacility/arcanist": "dev-stable",
-        "symfony/console": "4.4.*",
-        "symfony/dotenv": "4.4.*",
-        "symfony/flex": "^1.6",
-        "symfony/framework-bundle": "4.4.*",
-        "symfony/http-client": "4.4.*",
-        "symfony/lock": "4.4.*",
-        "symfony/monolog-bundle": "^3.5",
-        "symfony/process": "4.4.*",
-        "symfony/security-bundle": "4.4.*",
-        "symfony/stopwatch": "4.4.*",
-        "symfony/twig-bundle": "4.4.*",
-        "symfony/web-profiler-bundle": "4.4.*",
-        "symfony/yaml": "4.4.*"
-    },
-    "replace": {
-        "paragonie/random_compat": "2.*",
-        "symfony/polyfill-ctype": "*",
-        "symfony/polyfill-iconv": "*",
-        "symfony/polyfill-php56": "*",
-        "symfony/polyfill-php70": "*",
-        "symfony/polyfill-php71": "*",
-        "symfony/polyfill-php72": "*"
-    },
-    "conflict": {
-        "symfony/symfony": "*"
+        "doctrine/annotations": "^1.0",
+        "doctrine/doctrine-bundle": "^2.5",
+        "doctrine/doctrine-migrations-bundle": "^3.2",
+        "doctrine/orm": "^2.11",
+        "phpdocumentor/reflection-docblock": "^5.3",
+        "phpstan/phpdoc-parser": "^1.2",
+        "sensio/framework-extra-bundle": "^6.1",
+        "symfony/asset": "5.4.*",
+        "symfony/console": "5.4.*",
+        "symfony/doctrine-messenger": "5.4.*",
+        "symfony/dotenv": "5.4.*",
+        "symfony/expression-language": "5.4.*",
+        "symfony/flex": "^1.17|^2",
+        "symfony/form": "5.4.*",
+        "symfony/framework-bundle": "5.4.*",
+        "symfony/http-client": "5.4.*",
+        "symfony/intl": "5.4.*",
+        "symfony/mailer": "5.4.*",
+        "symfony/mime": "5.4.*",
+        "symfony/monolog-bundle": "^3.0",
+        "symfony/notifier": "5.4.*",
+        "symfony/process": "5.4.*",
+        "symfony/property-access": "5.4.*",
+        "symfony/property-info": "5.4.*",
+        "symfony/proxy-manager-bridge": "5.4.*",
+        "symfony/runtime": "5.4.*",
+        "symfony/security-bundle": "5.4.*",
+        "symfony/serializer": "5.4.*",
+        "symfony/string": "5.4.*",
+        "symfony/translation": "5.4.*",
+        "symfony/twig-bundle": "5.4.*",
+        "symfony/validator": "5.4.*",
+        "symfony/web-link": "5.4.*",
+        "symfony/webapp-meta": "^1.0",
+        "symfony/webpack-encore-bundle": "^1.12",
+        "symfony/yaml": "5.4.*",
+        "twig/extra-bundle": "^2.12|^3.0",
+        "twig/twig": "^2.12|^3.0"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.16",
-        "phpstan/extension-installer": "^1.0",
-        "phpstan/phpstan": "^0.11",
-        "phpstan/phpstan-symfony": "^0.11",
-        "symfony/maker-bundle": "^1.15",
-        "theofidry/psysh-bundle": "^3.5"
+        "symfony/debug-bundle": "5.4.*",
+        "symfony/maker-bundle": "^1.0",
+        "symfony/stopwatch": "5.4.*",
+        "symfony/web-profiler-bundle": "5.4.*"
     },
     "config": {
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true,
+            "symfony/flex": true,
+            "symfony/runtime": true
+        },
+        "optimize-autoloader": true,
         "preferred-install": {
             "*": "dist"
         },
         "sort-packages": true
-    },
-    "extra": {
-        "symfony": {
-            "allow-contrib": false,
-            "require": "4.4.*"
-        }
     },
     "autoload": {
         "psr-4": {
@@ -81,31 +74,30 @@
             "App\\Tests\\": "tests/"
         }
     },
-    "repositories": [
-        {
-            "type": "package",
-            "package": {
-                "name": "phacility/arcanist",
-                "version": "dev-stable",
-                "source": {
-                    "type": "git",
-                    "url": "https://github.com/phacility/arcanist.git",
-                    "reference": "origin/stable"
-                }
-            }
-        }
-    ],
+    "replace": {
+        "symfony/polyfill-ctype": "*",
+        "symfony/polyfill-iconv": "*",
+        "symfony/polyfill-php72": "*"
+    },
     "scripts": {
+        "auto-scripts": {
+            "cache:clear": "symfony-cmd",
+            "assets:install %PUBLIC_DIR%": "symfony-cmd"
+        },
         "post-install-cmd": [
             "@auto-scripts"
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ],
-        "auto-scripts": {
-            "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
-        },
-        "phpstan": "phpstan analyse src"
+        ]
+    },
+    "conflict": {
+        "symfony/symfony": "*"
+    },
+    "extra": {
+        "symfony": {
+            "allow-contrib": false,
+            "require": "5.4.*"
+        }
     }
 }
