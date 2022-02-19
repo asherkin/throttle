@@ -1,0 +1,9 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello HomeController!{% endblock %}
+
+{% block content %}
+<h1>Hello {{ controller_name }}! ✅</h1>
+
+<div {{ stimulus_controller('hello') }}></div>
+{% endblock %}
