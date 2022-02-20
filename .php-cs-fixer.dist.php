@@ -26,6 +26,8 @@ return (new PhpCsFixer\Config())
         'phpdoc_order' => true,
         'strict_comparison' => true,
         'strict_param' => true,
+        'cast_spaces' => ['space' => 'none'],
+        'yoda_style' => ['equal' => false, 'identical' => false, 'less_and_greater' => false],
     ])
     ->setFinder($finder)
     ->setCacheFile(__DIR__.'/var/.php_cs.cache')

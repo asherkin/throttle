@@ -4,7 +4,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=7.2.5",
+        "php": ">=8.0",
         "ext-ctype": "*",
         "ext-iconv": "*",
         "doctrine/annotations": "^1.0",
@@ -43,7 +43,9 @@
         "symfony/webapp-meta": "^1.0",
         "symfony/webpack-encore-bundle": "^1.12",
         "symfony/yaml": "5.4.*",
+        "twig/cssinliner-extra": "^3.3",
         "twig/extra-bundle": "^2.12|^3.0",
+        "twig/inky-extra": "^3.3",
         "twig/twig": "^2.12|^3.0"
     },
     "require-dev": {
@@ -61,7 +63,8 @@
         "allow-plugins": {
             "composer/package-versions-deprecated": true,
             "symfony/flex": true,
-            "symfony/runtime": true
+            "symfony/runtime": true,
+            "phpstan/extension-installer": true
         },
         "optimize-autoloader": true,
         "preferred-install": {

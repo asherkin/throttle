@@ -1,20 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ app.request.locale }}">
     <head>
         <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
-        {# Run `composer require symfony/webpack-encore-bundle` to start using Symfony UX #}
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}{{ app_name }}{% endblock %}</title>
         {% block stylesheets %}
             {{ encore_entry_link_tags('app') }}
         {% endblock %}
-
         {% block javascripts %}
             {{ encore_entry_script_tags('app') }}
         {% endblock %}
     </head>
     <body>
         {% block body %}
+            <header class="p-2 mb-3 border-bottom">
+                <div class="container">
+                    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start">
+                        <a href="{{ url('index') }}" class="btn btn-link d-flex align-items-center mb-2 mb-sm-0 text-dark text-decoration-none">
+                            <svg class="me-2" width="40" height="32" fill="currentColor" role="img" aria-label="{{ app_name }}">
+                                <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#speedometer2"></use>
+                            </svg>
+                            {{ app_name }}
+                        </a>
+                        <div class="col-12 col-sm-auto ms-sm-auto text-end">
+                            {% if app.user %}
+                                <a href="{{ url('logout') }}" class="btn btn-outline-dark me-2">
+                                    <svg class="bi me-1" width="16" height="16" aria-hidden="true">
+                                        <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-right"></use>
+                                    </svg>
+                                    Logout
+                                </a>
+                            {% elseif not (app.request.get('_route') starts with 'login') %}
+                                <a href="{{ url('login') }}" class="btn btn-outline-primary me-2">
+                                    <svg class="bi me-1" width="16" height="16" aria-hidden="true">
+                                        <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-in-right"></use>
+                                    </svg>
+                                    Login
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </header>
             <div class="container">
                 {% block content %}{% endblock %}
             </div>

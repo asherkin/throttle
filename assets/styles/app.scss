@@ -1,3 +1,17 @@
 // Override bootstrap variables here.
 
 @import "~bootstrap/scss/bootstrap";
+
+.bi {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  fill: currentColor;
+  vertical-align: -0.125em;
+}
+
+.form-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 360px;
+}

@@ -14,6 +14,12 @@ Encore
     // only needed for CDN's or sub-directory deploy
     //.setManifestKeyPrefix('build/')
 
+    .copyFiles({
+        from: './node_modules/bootstrap-icons',
+        pattern: /\.svg$/,
+        includeSubdirectories: false,
+    })
+
     /*
      * ENTRY CONFIG
      *

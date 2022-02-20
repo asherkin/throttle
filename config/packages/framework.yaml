@@ -12,6 +12,9 @@ framework:
         cookie_samesite: lax
         storage_factory_id: session.storage.factory.native
 
+    form:
+        legacy_error_messages: false
+
     #esi: true
     #fragments: true
     php_errors:
