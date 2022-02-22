@@ -2,6 +2,22 @@
 
 {% block content %}
 <div class="form-wrapper">
+    {% if login_link_sent %}
+        <div class="alert alert-success">{{ 'login.link_sent' | trans }}</div>
+    {% endif %}
+    {% if error %}
+        <div class="alert alert-danger">{{ error.messageKey | trans(error.messageData, 'security') }}</div>
+    {% endif %}
     {{ form(form) }}
+    <hr>
+    Login with external service:
+    <div class="mt-2 d-grid gap-2 grid-columns">
+        <a href="{{ path('login_steam') }}" class="btn btn-outline-primary">
+            <svg class="bi me-1" width="16" height="16" aria-hidden="true">
+                <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#steam"></use>
+            </svg>
+            Steam
+        </a>
+    </div>
 </div>
 {% endblock %}

@@ -24,3 +24,14 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Security\UserManager:
+        arguments:
+            $loginLinkLifetime: '%app.login_link_lifetime%'
+
+    # this isn't quite correct, but it works for now
+    App\Security\SteamOpenIdAuthenticator:
+        arguments:
+            $successHandler: '@security.authentication.success_handler.main.login_link'
+            $failureHandler: '@security.authentication.failure_handler.main.login_link'
+            $steamApiKey: '%env(STEAM_API_KEY)%'

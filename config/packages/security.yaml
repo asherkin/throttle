@@ -9,7 +9,7 @@ security:
         app_user_provider:
             entity:
                 class: App\Entity\User
-                property: email
+                property: id
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
@@ -21,9 +21,12 @@ security:
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall
             login_link:
-                check_route: login_check
+                check_route: login_link
                 lifetime: '%app.login_link_lifetime%'
                 signature_properties: ['id']
+
+            custom_authenticators:
+                - App\Security\SteamOpenIdAuthenticator
 
             logout:
                 path: logout

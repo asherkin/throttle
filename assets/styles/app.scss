@@ -15,3 +15,7 @@
   margin-right: auto;
   max-width: 360px;
 }
+
+.grid-columns {
+  grid-auto-flow: column;
+}

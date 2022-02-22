@@ -2,9 +2,10 @@ parameters:
     level: 9
     paths:
         - src
-        - public
+        - tests
+        - migrations
     symfony:
         containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
     doctrine:
-        allowNullablePropertyForRequiredField: true
+        allowNullablePropertyForRequiredField: false
         objectManagerLoader: tests/object-manager.php

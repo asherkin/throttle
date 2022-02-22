@@ -16,7 +16,7 @@
             <header class="p-2 mb-3 border-bottom">
                 <div class="container">
                     <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start">
-                        <a href="{{ url('index') }}" class="btn btn-link d-flex align-items-center mb-2 mb-sm-0 text-dark text-decoration-none">
+                        <a href="{{ path('index') }}" class="btn btn-link d-flex align-items-center mb-2 mb-sm-0 text-dark text-decoration-none">
                             <svg class="me-2" width="40" height="32" fill="currentColor" role="img" aria-label="{{ app_name }}">
                                 <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#speedometer2"></use>
                             </svg>
@@ -24,14 +24,14 @@
                         </a>
                         <div class="col-12 col-sm-auto ms-sm-auto text-end">
                             {% if app.user %}
-                                <a href="{{ url('logout') }}" class="btn btn-outline-dark me-2">
+                                <a href="{{ path('logout') }}" class="btn btn-outline-dark me-2">
                                     <svg class="bi me-1" width="16" height="16" aria-hidden="true">
                                         <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-right"></use>
                                     </svg>
                                     Logout
                                 </a>
                             {% elseif not (app.request.get('_route') starts with 'login') %}
-                                <a href="{{ url('login') }}" class="btn btn-outline-primary me-2">
+                                <a href="{{ path('login') }}" class="btn btn-outline-primary me-2">
                                     <svg class="bi me-1" width="16" height="16" aria-hidden="true">
                                         <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-in-right"></use>
                                     </svg>

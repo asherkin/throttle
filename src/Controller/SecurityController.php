@@ -2,21 +2,23 @@
 
 namespace App\Controller;
 
-use App\Repository\UserRepository;
+use App\Security\UserManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Notifier\NotifierInterface;
+use Symfony\Component\Notifier\Recipient\Recipient;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Security\Http\LoginLink\LoginLinkHandlerInterface;
 use Symfony\Component\Security\Http\LoginLink\LoginLinkNotification;
 
 class SecurityController extends AbstractController
 {
     #[Route('/login', name: 'login')]
-    public function login(NotifierInterface $notifier, LoginLinkHandlerInterface $loginLinkHandler, UserRepository $userRepository, Request $request): Response
+    public function login(NotifierInterface $notifier, LoginLinkHandlerInterface $loginLinkHandler, UserManager $userManager, Request $request, AuthenticationUtils $authenticationUtils): Response
     {
         $form = $this->createFormBuilder()
             ->add('email', EmailType::class, [
@@ -31,8 +33,7 @@ class SecurityController extends AbstractController
             /** @var array{email: string} */
             $data = $form->getData();
 
-            $identifier = $data['email'];
-            $user = $userRepository->findOrCreateOneByUserIdentifier($identifier);
+            $user = $userManager->findOrCreateUserForEmailAddress($data['email']);
 
             $loginLinkDetails = $loginLinkHandler->createLoginLink($user);
 
@@ -41,12 +42,20 @@ class SecurityController extends AbstractController
                 sprintf('Your %s login link', $this->getParameter('app.name'))
             );
 
-            $notifier->send($notification, $user->asRecipient());
+            $notifier->send($notification, new Recipient($data['email']));
 
-            return $this->redirectToRoute('login_link_sent');
+            $request->getSession()->set('login_link_sent', true);
+
+            return $this->redirectToRoute('login');
         }
 
+        $loginLinkSent = $request->getSession()->remove('login_link_sent') !== null;
+
+        $error = $authenticationUtils->getLastAuthenticationError();
+
         return $this->renderForm('security/login.html.twig', [
+            'login_link_sent' => $loginLinkSent,
+            'error' => $error,
             'form' => $form,
         ]);
     }
@@ -57,14 +66,14 @@ class SecurityController extends AbstractController
         throw new \LogicException('unreachable');
     }
 
-    #[Route('/login/sent', name: 'login_link_sent')]
-    public function sent(): Response
+    #[Route('/login/link', name: 'login_link')]
+    public function link(): Response
     {
-        return $this->render('security/login_link_sent.html.twig');
+        throw new \LogicException('unreachable');
     }
 
-    #[Route('/login/link', name: 'login_check')]
-    public function check(): Response
+    #[Route('/login/steam', name: 'login_steam')]
+    public function steam(): Response
     {
         throw new \LogicException('unreachable');
     }
