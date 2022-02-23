@@ -35,3 +35,8 @@ services:
             $successHandler: '@security.authentication.success_handler.main.login_link'
             $failureHandler: '@security.authentication.failure_handler.main.login_link'
             $steamApiKey: '%env(STEAM_API_KEY)%'
+
+    App\Security\GitHubOAuthAuthenticator:
+        arguments:
+            $successHandler: '@security.authentication.success_handler.main.login_link'
+            $failureHandler: '@security.authentication.failure_handler.main.login_link'

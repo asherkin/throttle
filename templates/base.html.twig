@@ -24,6 +24,7 @@
                         </a>
                         <div class="col-12 col-sm-auto ms-sm-auto text-end">
                             {% if app.user %}
+                                <span class="me-2">Hello {{ app.user.userIdentifier }}</span>
                                 <a href="{{ path('logout') }}" class="btn btn-outline-dark me-2">
                                     <svg class="bi me-1" width="16" height="16" aria-hidden="true">
                                         <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-right"></use>

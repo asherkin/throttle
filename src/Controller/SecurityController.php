@@ -77,4 +77,10 @@ class SecurityController extends AbstractController
     {
         throw new \LogicException('unreachable');
     }
+
+    #[Route('/login/github', name: 'login_github')]
+    public function github(): Response
+    {
+        throw new \LogicException('unreachable');
+    }
 }
