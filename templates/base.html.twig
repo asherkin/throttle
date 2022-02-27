@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{% block title %}{{ app_name }}{% endblock %}</title>
+        <title>{% if block('title') is defined %}{{ block('title') }} - {% endif %}{{ app_name }}</title>
         {% block stylesheets %}
             {{ encore_entry_link_tags('app') }}
         {% endblock %}
@@ -12,19 +12,19 @@
         {% endblock %}
     </head>
     <body>
-        {% block body %}
-            <header class="p-2 mb-3 border-bottom">
+        {% block page_body %}
+            <header class="mb-3 border-bottom">
                 <div class="container">
-                    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start">
-                        <a href="{{ path('index') }}" class="btn btn-link d-flex align-items-center mb-2 mb-sm-0 text-dark text-decoration-none">
-                            <svg class="me-2" width="40" height="32" fill="currentColor" role="img" aria-label="{{ app_name }}">
+                    <div class="navbar navbar-light align-items-center justify-content-center justify-content-sm-between">
+                        <a href="{{ path('index') }}" class="py-1 px-2 d-flex align-items-center text-dark text-decoration-none">
+                            <svg class="me-2" width="32" height="32" fill="currentColor" role="img" aria-label="{{ app_name }}">
                                 <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#speedometer2"></use>
                             </svg>
                             {{ app_name }}
                         </a>
-                        <div class="col-12 col-sm-auto ms-sm-auto text-end">
+                        <div class="d-flex align-items-center ms-auto">
                             {% if app.user %}
-                                <span class="me-2">Hello {{ app.user.userIdentifier }}</span>
+                                <span class="navbar-text me-3">{{ include('_server_owner.html.twig', {owner: app.user}) }}</span>
                                 <a href="{{ path('logout') }}" class="btn btn-outline-dark me-2">
                                     <svg class="bi me-1" width="16" height="16" aria-hidden="true">
                                         <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-right"></use>
@@ -44,7 +44,7 @@
                 </div>
             </header>
             <div class="container">
-                {% block content %}{% endblock %}
+                {% block body %}{% endblock %}
             </div>
         {% endblock %}
     </body>

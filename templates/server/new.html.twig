@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Server{% endblock %}
+
+{% block body %}
+    <h1>Create new Server</h1>
+
+    {{ include('server/_form.html.twig') }}
+
+    <a href="{{ path('server_index') }}">back to list</a>
+{% endblock %}

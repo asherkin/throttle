@@ -1,7 +1,10 @@
 {% extends 'base.html.twig' %}
 
-{% block content %}
+{% block body %}
 <h1>Hello {{ controller_name }}! ✅</h1>
 
 <div {{ stimulus_controller('hello') }}></div>
+
+    <a href="{{ path('team_index') }}">Teams</a>
+    <a href="{{ path('server_index') }}">Servers</a>
 {% endblock %}

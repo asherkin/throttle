@@ -1,6 +1,8 @@
 {% extends 'base.html.twig' %}
 
-{% block content %}
+{% block title %}Login{% endblock %}
+
+{% block body %}
 <div class="form-wrapper">
     {% if login_link_sent %}
         <div class="alert alert-success">{{ 'login.link_sent' | trans }}</div>

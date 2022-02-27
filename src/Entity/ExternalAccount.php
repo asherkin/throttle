@@ -12,20 +12,20 @@ class ExternalAccount
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    private int $id;
+    protected int $id;
 
     #[ORM\ManyToOne(targetEntity: User::class, fetch: 'EAGER', inversedBy: 'externalAccounts')]
     #[ORM\JoinColumn(nullable: false)]
-    private User $user;
+    protected User $user;
 
     #[ORM\Column(type: 'string', length: 255)]
-    private string $kind;
+    protected string $kind;
 
     #[ORM\Column(type: 'string', length: 255)]
-    private string $identifier;
+    protected string $identifier;
 
     #[ORM\Column(type: 'string', length: 255)]
-    private string $displayName;
+    protected string $displayName;
 
     public function getId(): int
     {

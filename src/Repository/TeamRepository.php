@@ -2,17 +2,17 @@
 
 namespace App\Repository;
 
-use App\Entity\ExternalAccount;
+use App\Entity\Team;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<ExternalAccount>
+ * @extends ServiceEntityRepository<Team>
  */
-class ExternalAccountRepository extends ServiceEntityRepository
+class TeamRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, ExternalAccount::class);
+        parent::__construct($registry, Team::class);
     }
 }

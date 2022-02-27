@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Server index{% endblock %}
+
+{% block body %}
+    <h1>Server index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for owner in owners %}
+            <tr>
+                <th>{{ owner.id }}</th>
+                <th>{{ include('_server_owner.html.twig') }}</th>
+                <th><a href="{{ path('server_new', {owner: owner.id}) }}">new</a></th>
+            </tr>
+            {% for server in (servers[owner.id] ?? []) %}
+                <tr>
+                    <td>{{ server.id }}</td>
+                    <td>{{ server.name }}</td>
+                    <td>
+                        <a href="{{ path('server_show', {'id': server.id}) }}">show</a>
+                        <a href="{{ path('server_edit', {'id': server.id}) }}">edit</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td></td>
+                    <td colspan="2">no records found</td>
+                </tr>
+            {% endfor %}
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

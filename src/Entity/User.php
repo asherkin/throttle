@@ -10,32 +10,35 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-class User implements UserInterface
+class User extends ServerOwner implements UserInterface
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
-    private int $id;
-
     /** @var array<int, string> */
     #[ORM\Column(type: 'json')]
-    private array $roles = [];
+    protected array $roles = [];
 
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $lastLogin = null;
+    protected ?\DateTimeImmutable $lastLogin = null;
 
     /** @var Collection<int, ExternalAccount> */
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: ExternalAccount::class, cascade: ['remove'])]
-    private Collection $externalAccounts;
+    protected Collection $externalAccounts;
+
+    /** @var Collection<int, Team> */
+    #[ORM\OneToMany(mappedBy: 'owner', targetEntity: Team::class, cascade: ['remove'])]
+    #[ORM\OrderBy(['name' => 'ASC'])]
+    protected Collection $teams;
 
     public function __construct()
     {
+        parent::__construct();
+
         $this->externalAccounts = new ArrayCollection();
+        $this->teams = new ArrayCollection();
     }
 
-    public function getId(): int
+    public function getIcon(): string
     {
-        return $this->id;
+        return 'person-fill';
     }
 
     /**
@@ -105,13 +108,54 @@ class User implements UserInterface
     }
 
     /**
+     * @return Collection<int, Team>
+     */
+    public function getTeams(): Collection
+    {
+        return $this->teams;
+    }
+
+    public function addTeam(Team $team): self
+    {
+        if (!$this->teams->contains($team)) {
+            $this->teams[] = $team;
+            $team->setOwner($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTeam(Team $team): self
+    {
+        if ($this->teams->removeElement($team)) {
+            // set the owning side to null (unless already changed)
+            if ($team->getOwner() === $this) {
+                $team->setOwner(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ServerOwner>
+     */
+    public function getServerOwners(): Collection
+    {
+        /** @var array<int, ServerOwner> $serverOwners */
+        $serverOwners = [$this, ...$this->getTeams()];
+
+        return new ArrayCollection($serverOwners);
+    }
+
+    /**
      * A visual identifier that represents this user.
      *
      * @see UserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string)$this->id;
+        return (string)$this->getId();
     }
 
     /**
@@ -119,7 +163,7 @@ class User implements UserInterface
      */
     public function getUsername(): string
     {
-        return (string)$this->id;
+        return $this->getUserIdentifier();
     }
 
     /**
