@@ -1,0 +1,18 @@
+sentry:
+    dsn: '%env(SENTRY_DSN)%'
+    messenger:
+        enabled: true
+        capture_soft_fails: true
+    options:
+        environment: '%kernel.environment%'
+        traces_sample_rate: 1.0
+        integrations:
+            - 'Sentry\Integration\IgnoreErrorsIntegration'
+
+services:
+    Sentry\Integration\IgnoreErrorsIntegration:
+        arguments:
+            $options:
+                ignore_exceptions:
+                    - 'Symfony\Component\HttpKernel\Exception\NotFoundHttpException'
+                    - 'Symfony\Component\Security\Core\Exception\AccessDeniedException'
