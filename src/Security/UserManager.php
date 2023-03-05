@@ -33,7 +33,15 @@ class UserManager
         ]);
 
         if ($externalAccount !== null) {
+            $user = $externalAccount->getUser();
+
+            // If the user's existing name matches the existing external account display name, update it.
+            if ($user->getName() === $externalAccount->getDisplayName()) {
+                $user->setName($displayName);
+            }
+
             $externalAccount->setDisplayName($displayName);
+
             $this->entityManager->flush();
 
             return $externalAccount;
@@ -41,6 +49,7 @@ class UserManager
 
         // TODO: Display a warning interstitial that the user might be creating a new account.
         $user = new User();
+        $user->setName($displayName);
 
         $externalAccount = new ExternalAccount();
         $externalAccount->setUser($user);
@@ -57,7 +66,9 @@ class UserManager
 
     public function findOrCreateUserForEmailAddress(string $emailAddress): User
     {
-        $externalAccount = $this->findOrCreateExternalAccount('email', $emailAddress, $emailAddress);
+        $atPosition = mb_strrpos($emailAddress, '@');
+        $displayName = mb_substr($emailAddress, 0, ($atPosition !== false) ? $atPosition : null);
+        $externalAccount = $this->findOrCreateExternalAccount('email', $emailAddress, $displayName);
 
         $user = $externalAccount->getUser();
 

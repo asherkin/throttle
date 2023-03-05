@@ -13,7 +13,7 @@
     {{ form(form) }}
     <hr>
     Login with external service:
-    <div class="mt-2 d-grid gap-2 grid-columns">
+    <div class="mt-2 d-grid gap-2" style="grid-template-columns: 1fr 1fr;">
         <a href="{{ path('login_steam') }}" class="btn btn-outline-primary">
             <svg class="bi me-1" width="16" height="16" aria-hidden="true">
                 <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#steam"></use>
