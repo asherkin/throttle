@@ -4,6 +4,11 @@ twig:
     globals:
         app_name: '%app.name%'
 
+when@prod:
+    twig:
+        globals:
+            sentry_dsn: '%env(SENTRY_DSN)%'
+
 when@test:
     twig:
         strict_variables: true

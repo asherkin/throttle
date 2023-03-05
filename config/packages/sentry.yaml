@@ -11,6 +11,8 @@ when@prod:
 
         options:
             environment: '%kernel.environment%'
+            send_default_pii: true
+            sample_rate: 1.0
             traces_sample_rate: 1.0
             integrations:
                 - 'Sentry\Integration\IgnoreErrorsIntegration'

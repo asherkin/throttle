@@ -3,11 +3,23 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% if sentry_dsn is defined %}
+            {{ sentry_trace_meta() }}
+            {{ sentry_baggage_meta() }}
+        {% endif %}
         <title>{% if block('title') is defined %}{{ block('title') }} - {% endif %}{{ app_name }}</title>
         {% block stylesheets %}
             {{ encore_entry_link_tags('app') }}
         {% endblock %}
         {% block javascripts %}
+            <script>
+                const APP_CONFIG = {
+                    environment: {{ app.environment | default("dev") | json_encode | raw }},
+                    sentry_dsn: {{ sentry_dsn | default(null) | json_encode | raw }},
+                    sentry_tunnel: {{ path('sentry') | json_encode | raw }},
+                    sentry_user: {{ (app.user ? { username: app.user.userIdentifier } : { ip_address: app.request.clientIp }) | json_encode | raw }}
+                };
+            </script>
             {{ encore_entry_script_tags('app') }}
         {% endblock %}
     </head>
