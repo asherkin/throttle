@@ -54,16 +54,19 @@ class ServerRepository extends ServiceEntityRepository
      */
     public function findAllForUserGroupedByOwner(User $user): Collection
     {
+        /** @var Collection<int, Collection<int, Server>> $groupedServers */
         $groupedServers = new ArrayCollection();
 
         foreach ($this->findAllForUser($user) as $server) {
             $ownerId = $server->getOwner()->getId();
 
-            if (!isset($groupedServers[$ownerId])) {
-                $groupedServers[$ownerId] = new ArrayCollection();
+            $ownerCollection = $groupedServers[$ownerId];
+            if ($ownerCollection === null) {
+                $ownerCollection = new ArrayCollection();
+                $groupedServers[$ownerId] = $ownerCollection;
             }
 
-            $groupedServers[$ownerId]->add($server);
+            $ownerCollection->add($server);
         }
 
         return $groupedServers;

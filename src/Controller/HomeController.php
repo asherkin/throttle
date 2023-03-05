@@ -31,10 +31,11 @@ class HomeController extends AbstractController
             throw $this->createNotFoundException('Sentry not configured');
         }
 
-
         $envelope = $request->getContent();
         $pieces = explode("\n", $envelope, 2);
-        $header = json_decode($pieces[0], true, flags: JSON_THROW_ON_ERROR);
+
+        /** @var array{dsn?: string, forwarded_for?: string} $header */
+        $header = json_decode($pieces[0], true, flags: \JSON_THROW_ON_ERROR);
 
         // It is unclear if we actually need to be checking this.
         if (!isset($header['dsn']) || $header['dsn'] !== (string)$dsn) {
@@ -43,7 +44,7 @@ class HomeController extends AbstractController
 
         // Patch the real client IP into the envelope header.
         $header['forwarded_for'] = $request->getClientIp();
-        $pieces[0] = json_encode($header, JSON_THROW_ON_ERROR);
+        $pieces[0] = json_encode($header, \JSON_THROW_ON_ERROR);
         $envelope = implode("\n", $pieces);
 
         $response = $httpClient->request('POST', $dsn->getEnvelopeApiEndpointUrl(), [

@@ -129,16 +129,17 @@ class SteamOpenIdAuthenticator extends AbstractAuthenticator
         $returnToQuery = mb_substr($returnTo, mb_strlen($currentUrl) + 1);
         parse_str($returnToQuery, $returnToQuery);
         foreach ($returnToQuery as $k => $v) {
-            if ($request->query->get($k) !== $v) {
+            if ($request->query->get((string)$k) !== $v) {
                 throw new CustomUserMessageAuthenticationException('OpenID return URL param does not match.');
             }
         }
 
         $claimedId = $request->query->get('openid_claimed_id', '');
         $claimedIdMatches = null;
-        if (preg_match(self::OPENID_CLAIM_REGEX, $claimedId, $claimedIdMatches, \PREG_UNMATCHED_AS_NULL) !== 1) {
+        if (preg_match(self::OPENID_CLAIM_REGEX, $claimedId, $claimedIdMatches) !== 1) {
             throw new CustomUserMessageAuthenticationException('OpenID claimed ID invalid.');
         }
+
         $steamId = $claimedIdMatches[1];
 
         $signed = explode(',', $request->query->get('openid_signed', ''));
