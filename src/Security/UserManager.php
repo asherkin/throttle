@@ -36,6 +36,7 @@ class UserManager
             $user = $externalAccount->getUser();
 
             // If the user's existing name matches the existing external account display name, update it.
+            // TODO: This doesn't work for Discord where we strip the discriminator off the user display name.
             if ($user->getName() === $externalAccount->getDisplayName()) {
                 $user->setName($displayName);
             }

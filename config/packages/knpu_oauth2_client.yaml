@@ -6,3 +6,9 @@ knpu_oauth2_client:
             client_id: '%env(OAUTH_GITHUB_CLIENT_ID)%'
             client_secret: '%env(OAUTH_GITHUB_CLIENT_SECRET)%'
             redirect_route: login_github
+
+        discord:
+            type: discord
+            client_id: '%env(OAUTH_DISCORD_CLIENT_ID)%'
+            client_secret: '%env(OAUTH_DISCORD_CLIENT_SECRET)%'
+            redirect_route: login_discord

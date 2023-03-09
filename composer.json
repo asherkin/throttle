@@ -48,7 +48,8 @@
         "twig/cssinliner-extra": "^3.3",
         "twig/extra-bundle": "^2.12|^3.0",
         "twig/inky-extra": "^3.3",
-        "twig/twig": "^2.12|^3.0"
+        "twig/twig": "^2.12|^3.0",
+        "wohali/oauth2-discord-new": "^1.2"
     },
     "require-dev": {
         "phpstan/extension-installer": "^1.1",

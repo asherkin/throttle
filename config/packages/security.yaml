@@ -29,6 +29,7 @@ security:
             custom_authenticators:
                 - App\Security\SteamOpenIdAuthenticator
                 - App\Security\GitHubOAuthAuthenticator
+                - App\Security\DiscordOAuthAuthenticator
 
             logout:
                 path: logout

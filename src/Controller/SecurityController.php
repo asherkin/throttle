@@ -83,4 +83,10 @@ class SecurityController extends AbstractController
     {
         throw new \LogicException('unreachable');
     }
+
+    #[Route('/login/discord', name: 'login_discord')]
+    public function discord(): Response
+    {
+        throw new \LogicException('unreachable');
+    }
 }
