@@ -25,7 +25,7 @@ class UserManager
         $this->loginLinkLifetime = $loginLinkLifetime;
     }
 
-    public function findOrCreateExternalAccount(string $kind, string $identifier, string $displayName): ExternalAccount
+    public function findOrCreateUserForExternalAccount(string $kind, string $identifier, string $displayName, string $newUserDisplayName): User
     {
         $externalAccount = $this->externalAccountRepository->findOneBy([
             'kind' => $kind,
@@ -44,35 +44,31 @@ class UserManager
 
             $this->entityManager->flush();
 
-            return $externalAccount;
+            return $user;
         }
 
         // TODO: Display a warning interstitial that the user might be creating a new account.
         $user = new User();
-        $user->setName($displayName);
+        $user->setName($newUserDisplayName);
 
-        $externalAccount = new ExternalAccount();
-        $externalAccount->setUser($user);
-        $externalAccount->setKind($kind);
-        $externalAccount->setIdentifier($identifier);
-        $externalAccount->setDisplayName($displayName);
+        $externalAccount = new ExternalAccount($user, $kind, $identifier, $displayName);
+        $user->addExternalAccount($externalAccount);
 
         $this->entityManager->persist($user);
         $this->entityManager->persist($externalAccount);
         $this->entityManager->flush();
 
-        return $externalAccount;
+        return $user;
     }
 
     public function findOrCreateUserForEmailAddress(string $emailAddress): User
     {
         $atPosition = mb_strrpos($emailAddress, '@');
         $displayName = mb_substr($emailAddress, 0, ($atPosition !== false) ? $atPosition : null);
-        $externalAccount = $this->findOrCreateExternalAccount('email', $emailAddress, $displayName);
 
-        $user = $externalAccount->getUser();
+        $user = $this->findOrCreateUserForExternalAccount('email', $emailAddress, $emailAddress, $displayName);
 
-        // If findOrCreateExternalAccount just created this user for us, schedule a check that they logged in.
+        // If findOrCreateUserForExternalAccount just created this user for us, schedule a check that they logged in.
         // TODO: It would probably be significantly cleaner to implement our own LoginLink implementation that
         //       did all the work post-login - there is really no reason to do it before they click the link...
         //       As another alternative, we may be able to use a temporary in-memory User for the login link,

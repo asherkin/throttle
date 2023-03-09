@@ -54,15 +54,14 @@ class GitHubOAuthAuthenticator extends OAuth2Authenticator
         $client = $this->clientRegistry->getClient('github');
         $accessToken = $this->fetchAccessToken($client);
 
-        /** @var GithubResourceOwner $user */
-        $user = $client->fetchUserFromToken($accessToken);
+        /** @var GithubResourceOwner $resourceOwner */
+        $resourceOwner = $client->fetchUserFromToken($accessToken);
+
         /** @var array{login: string, node_id: string} $userInfo */
-        $userInfo = $user->toArray();
+        $userInfo = $resourceOwner->toArray();
 
-        $externalAccount = $this->userManager->findOrCreateExternalAccount(
-            self::EXTERNAL_ACCOUNT_KIND, $userInfo['node_id'], $userInfo['login']);
-
-        $user = $externalAccount->getUser();
+        $user = $this->userManager->findOrCreateUserForExternalAccount(
+            self::EXTERNAL_ACCOUNT_KIND, $userInfo['node_id'], $userInfo['login'], $userInfo['login']);
 
         return new SelfValidatingPassport(new UserBadge($user->getUserIdentifier(), function () use ($user) {
             return $user;

@@ -59,11 +59,10 @@ class SteamOpenIdAuthenticator extends AbstractAuthenticator
         }
 
         $steamId = $this->validateOpenIdResponse($request);
+        $steamDisplayName = $this->getSteamDisplayName($steamId);
 
-        $externalAccount = $this->userManager->findOrCreateExternalAccount(
-            self::EXTERNAL_ACCOUNT_KIND, $steamId, $this->getSteamDisplayName($steamId));
-
-        $user = $externalAccount->getUser();
+        $user = $this->userManager->findOrCreateUserForExternalAccount(
+            self::EXTERNAL_ACCOUNT_KIND, $steamId, $steamDisplayName, $steamDisplayName);
 
         return new SelfValidatingPassport(new UserBadge($user->getUserIdentifier(), function () use ($user) {
             return $user;

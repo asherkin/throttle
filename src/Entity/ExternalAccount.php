@@ -14,7 +14,7 @@ class ExternalAccount
     #[ORM\Column(type: 'integer')]
     protected int $id;
 
-    #[ORM\ManyToOne(targetEntity: User::class, fetch: 'EAGER', inversedBy: 'externalAccounts')]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'externalAccounts')]
     #[ORM\JoinColumn(nullable: false)]
     protected User $user;
 
@@ -26,6 +26,14 @@ class ExternalAccount
 
     #[ORM\Column(type: 'string', length: 255)]
     protected string $displayName;
+
+    public function __construct(User $user, string $kind, string $identifier, string $displayName)
+    {
+        $this->user = $user;
+        $this->kind = $kind;
+        $this->identifier = $identifier;
+        $this->displayName = $displayName;
+    }
 
     public function getId(): int
     {
@@ -53,23 +61,9 @@ class ExternalAccount
         return $this->kind;
     }
 
-    public function setKind(string $kind): self
-    {
-        $this->kind = $kind;
-
-        return $this;
-    }
-
     public function getIdentifier(): string
     {
         return $this->identifier;
-    }
-
-    public function setIdentifier(string $identifier): self
-    {
-        $this->identifier = $identifier;
-
-        return $this;
     }
 
     public function getDisplayName(): string
