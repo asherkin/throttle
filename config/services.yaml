@@ -45,3 +45,8 @@ services:
         arguments:
             $successHandler: '@security.authentication.success_handler.main.login_link'
             $failureHandler: '@security.authentication.failure_handler.main.login_link'
+
+    App\Security\AlliedModdersOAuthAuthenticator:
+        arguments:
+            $successHandler: '@security.authentication.success_handler.main.login_link'
+            $failureHandler: '@security.authentication.failure_handler.main.login_link'

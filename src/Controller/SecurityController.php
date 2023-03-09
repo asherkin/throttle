@@ -89,4 +89,10 @@ class SecurityController extends AbstractController
     {
         throw new \LogicException('unreachable');
     }
+
+    #[Route('/login/alliedmods', name: 'login_alliedmods')]
+    public function alliedmods(): Response
+    {
+        throw new \LogicException('unreachable');
+    }
 }
