@@ -1,0 +1,12 @@
+{
+  "mode": {
+    "symbol": {
+      "dest": "assets",
+      "sprite": "throttle-icons.svg"
+    }
+  },
+  "svg": {
+    "namespaceClassnames": false,
+    "xmlDeclaration": false
+  }
+}

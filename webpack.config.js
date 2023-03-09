@@ -20,6 +20,12 @@ Encore
         includeSubdirectories: false,
     })
 
+    .copyFiles({
+        from: './assets',
+        pattern: /(^|\/)throttle-icons\.svg$/,
+        includeSubdirectories: false,
+    })
+
     /*
      * ENTRY CONFIG
      *
