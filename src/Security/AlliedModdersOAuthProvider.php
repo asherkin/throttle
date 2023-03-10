@@ -43,6 +43,7 @@ class AlliedModdersOAuthProvider extends AbstractProvider
 
     /**
      * @param mixed[]|string $data
+     *
      * @throws IdentityProviderException
      */
     protected function checkResponse(ResponseInterface $response, $data)

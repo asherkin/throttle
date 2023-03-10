@@ -14,6 +14,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Security\Http\LoginLink\LoginLinkHandlerInterface;
 use Symfony\Component\Security\Http\LoginLink\LoginLinkNotification;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class SecurityController extends AbstractController
 {
@@ -23,8 +25,9 @@ class SecurityController extends AbstractController
         $form = $this->createFormBuilder()
             ->add('email', EmailType::class, [
                 'attr' => ['autocomplete' => 'email'],
+                'constraints' => [new NotBlank(), new Email()],
             ])
-            ->add('save', SubmitType::class, ['label' => 'Login'])
+            ->add('submit', SubmitType::class)
             ->getForm();
 
         $form->handleRequest($request);

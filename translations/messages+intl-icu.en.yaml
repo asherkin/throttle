@@ -1,1 +1,5 @@
-login.link_sent: 'Login link sent, check your email.'
+login:
+  link_sent: 'Login link sent, check your email.'
+  send_email: 'Send Link'
+  via_email: 'Login via email:'
+  via_external: 'Login with external service:'

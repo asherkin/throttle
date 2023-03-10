@@ -10,9 +10,19 @@
     {% if error %}
         <div class="alert alert-danger">{{ error.messageKey | trans(error.messageData, 'security') }}</div>
     {% endif %}
-    {{ form(form) }}
+    {{ form_start(form) }}
+        <div id="form">
+            {{ form_label(form.email, 'login.via_email') }}
+            <div class="input-group">
+                {{ form_widget(form.email) }}
+                {{ form_widget(form.submit, { label: 'login.send_email' }) }}
+            </div>
+            {{ form_errors(form.email) }}
+            {{ form_rest(form) }}
+        </div>
+    {{ form_end(form) }}
     <hr>
-    Login with external service:
+    {{ 'login.via_external' | trans }}
     <div class="mt-2 d-grid gap-2" style="grid-template-columns: 1fr 1fr;">
         <a href="{{ path('login_steam') }}" class="btn btn-outline-primary">
             <svg class="bi me-1" width="16" height="16" aria-hidden="true">
