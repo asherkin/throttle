@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User{% endblock %}
+
+{% block body %}
+    <h1>User</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ user.id }}</td>
+            </tr>
+            <tr>
+                <th>Name</th>
+                <td>{{ user.name }}</td>
+            </tr>
+            <tr>
+                <th>Roles</th>
+                <td>{{ user.roles | map(role => ('role.' ~ role) | trans) | join(', ') }}</td>
+            </tr>
+            <tr>
+                <th>Contact Email</th>
+                <td>{{ (user.contactEmail is not null) ? user.contactEmail : ('form.none' | trans | wrap('em')) }}</td>
+            </tr>
+            <tr>
+                <th>Last Login</th>
+                <td>{{ user.lastLogin ? (user.lastLogin | date('Y-m-d H:i:s')) : ('form.none' | trans | wrap('em')) }}</td>
+            </tr>
+            <tr>
+                <th>Linked Accounts</th>
+                <td>
+                    <table class="table table-sm">
+                        {% for externalAccount in user.externalAccounts %}
+                            <tr>
+                                <td title="{{ externalAccount.kind | humanize }}">
+                                    <svg class="{{ externalAccount.kind == 'alliedmods' ? 'ti' : 'bi'}} me-1" width="16" height="16" aria-hidden="true">
+                                        <use xlink:href="{{ asset('build/' ~ (externalAccount.kind == 'alliedmods' ? 'throttle' : 'bootstrap') ~ '-icons.svg') }}#{{ externalAccount.kind == 'email' ? 'envelope-fill' : externalAccount.kind }}"></use>
+                                    </svg>
+                                    {{ externalAccount.displayName }}
+                                </td>
+                                <td>{{ externalAccount.lastLogin ? (externalAccount.lastLogin | date('Y-m-d H:i:s')) : ('form.never_used' | trans | wrap('em')) }}</td>
+                                <td>
+                                    {% if app.user == user and externalAccount.kind != 'email' %}
+                                        <a href="{{ path('user_refresh_login', { id: user.id, externalAccount: externalAccount.id }) }}">refresh</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <em>{{ 'form.none' | trans }}</em>
+                        {% endfor %}
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('user_index') }}">back to list</a>
+
+    <a href="{{ path('user_edit', {'id': user.id}) }}">edit</a>
+
+    {% if is_granted('ROLE_ALLOWED_TO_SWITCH') and app.user.userIdentifier != user.userIdentifier %}
+        {# TODO: Extend Symfony's ImpersonateUrlGenerator to handle this for us. #}
+        <a href="{{ path(app.request.attributes.get('_route'), { _switch_user: user.userIdentifier } + app.request.attributes.get('_route_params') + app.request.query.all()) }}">impersonate</a>
+    {% endif %}
+
+    {{ include('user/_delete_form.html.twig') }}
+{% endblock %}

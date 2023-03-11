@@ -3,3 +3,13 @@ login:
   send_email: 'Send Link'
   via_email: 'Login via email:'
   via_external: 'Login with external service:'
+form:
+  name: 'Name'
+  roles: 'Roles'
+  contact_email: 'Contact Email'
+  none: 'None'
+  never_used: 'Never Used'
+role:
+  ROLE_USER: 'User'
+  ROLE_ADMIN: 'Administrator'
+  ROLE_ALLOWED_TO_SWITCH: 'Impersonate Users'

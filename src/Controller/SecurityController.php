@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Notifier\NotifierInterface;
 use Symfony\Component\Notifier\Recipient\Recipient;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Core\Authorization\Voter\AuthenticatedVoter;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Security\Http\LoginLink\LoginLinkHandlerInterface;
 use Symfony\Component\Security\Http\LoginLink\LoginLinkNotification;
@@ -22,6 +23,10 @@ class SecurityController extends AbstractController
     #[Route('/login', name: 'login')]
     public function login(NotifierInterface $notifier, LoginLinkHandlerInterface $loginLinkHandler, UserManager $userManager, Request $request, AuthenticationUtils $authenticationUtils): Response
     {
+        if ($this->isGranted(AuthenticatedVoter::IS_AUTHENTICATED)) {
+            return $this->redirectToRoute('index');
+        }
+
         $form = $this->createFormBuilder()
             ->add('email', EmailType::class, [
                 'attr' => ['autocomplete' => 'email'],

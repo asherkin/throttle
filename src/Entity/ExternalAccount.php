@@ -15,7 +15,7 @@ class ExternalAccount
     protected int $id;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'externalAccounts')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     protected User $user;
 
     #[ORM\Column(type: 'string', length: 255)]
@@ -26,6 +26,9 @@ class ExternalAccount
 
     #[ORM\Column(type: 'string', length: 255)]
     protected string $displayName;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $lastLogin = null;
 
     public function __construct(User $user, string $kind, string $identifier, string $displayName)
     {
@@ -74,6 +77,18 @@ class ExternalAccount
     public function setDisplayName(string $displayName): self
     {
         $this->displayName = $displayName;
+
+        return $this;
+    }
+
+    public function getLastLogin(): ?\DateTimeImmutable
+    {
+        return $this->lastLogin;
+    }
+
+    public function setLastLogin(?\DateTimeImmutable $lastLogin): self
+    {
+        $this->lastLogin = $lastLogin;
 
         return $this;
     }

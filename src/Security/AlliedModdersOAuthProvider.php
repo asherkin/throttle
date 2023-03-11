@@ -5,6 +5,7 @@ namespace App\Security;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericResourceOwner;
+use League\OAuth2\Client\Provider\ResourceOwnerInterface;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
@@ -46,7 +47,7 @@ class AlliedModdersOAuthProvider extends AbstractProvider
      *
      * @throws IdentityProviderException
      */
-    protected function checkResponse(ResponseInterface $response, $data)
+    protected function checkResponse(ResponseInterface $response, $data): void
     {
         if (!\is_array($data)) {
             throw new IdentityProviderException('Malformed response', 0, $data);
@@ -62,7 +63,7 @@ class AlliedModdersOAuthProvider extends AbstractProvider
     /**
      * @param mixed[] $response
      */
-    protected function createResourceOwner(array $response, AccessToken $token)
+    protected function createResourceOwner(array $response, AccessToken $token): ResourceOwnerInterface
     {
         return new GenericResourceOwner($response, self::ACCESS_TOKEN_RESOURCE_OWNER_ID);
     }

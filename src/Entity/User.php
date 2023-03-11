@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -12,21 +13,35 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User extends ServerOwner implements UserInterface
 {
+    public const ROLE_USER = 'ROLE_USER';
+    public const ROLE_ADMIN = 'ROLE_ADMIN';
+    public const ROLE_ALLOWED_TO_SWITCH = 'ROLE_ALLOWED_TO_SWITCH';
+
+    public const MANAGED_ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_ALLOWED_TO_SWITCH,
+    ];
+
     /** @var array<int, string> */
     #[ORM\Column(type: 'json')]
     protected array $roles = [];
 
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[ORM\Column(nullable: true)]
     protected ?\DateTimeImmutable $lastLogin = null;
 
     /** @var Collection<int, ExternalAccount> */
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: ExternalAccount::class, cascade: ['remove'])]
+    #[ORM\OrderBy(['kind' => 'ASC', 'displayName' => 'ASC'])]
     protected Collection $externalAccounts;
 
     /** @var Collection<int, Team> */
     #[ORM\OneToMany(mappedBy: 'owner', targetEntity: Team::class, cascade: ['remove'])]
     #[ORM\OrderBy(['name' => 'ASC'])]
     protected Collection $teams;
+
+    #[ORM\OneToOne()]
+    #[ORM\JoinColumn(onDelete: 'SET NULL')]
+    protected ?ExternalAccount $contactEmail = null;
 
     public function __construct()
     {
@@ -48,9 +63,10 @@ class User extends ServerOwner implements UserInterface
      */
     public function getRoles(): array
     {
-        $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
+        $roles = array_intersect(self::MANAGED_ROLES, $this->roles);
+
+        // Guarantee every user at least has ROLE_USER
+        array_unshift($roles, self::ROLE_USER);
 
         return array_unique($roles);
     }
@@ -60,7 +76,7 @@ class User extends ServerOwner implements UserInterface
      */
     public function setRoles(array $roles): self
     {
-        $this->roles = $roles;
+        $this->roles = array_intersect(self::MANAGED_ROLES, $this->roles);
 
         return $this;
     }
@@ -103,6 +119,50 @@ class User extends ServerOwner implements UserInterface
                 $externalAccount->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getEmailAddresses(): array
+    {
+        $externalAccountCriteria = Criteria::create()
+            ->where(Criteria::expr()->eq('kind', 'email'));
+
+        return $this->externalAccounts
+            ->matching($externalAccountCriteria)
+            ->map(fn ($externalAccount) => $externalAccount->getIdentifier())
+            ->toArray();
+    }
+
+    public function getContactEmail(): ?string
+    {
+        return $this->contactEmail?->getIdentifier();
+    }
+
+    public function setContactEmail(?string $contactEmail): self
+    {
+        if ($contactEmail === null) {
+            $this->contactEmail = null;
+
+            return $this;
+        }
+
+        $externalAccountCriteria = Criteria::create()
+            ->where(Criteria::expr()->eq('kind', 'email'))
+            ->andWhere(Criteria::expr()->eq('identifier', $contactEmail));
+
+        $externalAccount = $this->externalAccounts
+            ->matching($externalAccountCriteria)
+            ->first();
+
+        if ($externalAccount === false) {
+            throw new \InvalidArgumentException('Contact email does not belong to the user');
+        }
+
+        $this->contactEmail = $externalAccount;
 
         return $this;
     }

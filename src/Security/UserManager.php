@@ -42,6 +42,7 @@ class UserManager
             }
 
             $externalAccount->setDisplayName($displayName);
+            $externalAccount->setLastLogin(new \DateTimeImmutable());
 
             $this->entityManager->flush();
 
@@ -53,6 +54,7 @@ class UserManager
         $user->setName($newUserDisplayName);
 
         $externalAccount = new ExternalAccount($user, $kind, $identifier, $displayName);
+        $externalAccount->setLastLogin(new \DateTimeImmutable());
         $user->addExternalAccount($externalAccount);
 
         $this->entityManager->persist($user);

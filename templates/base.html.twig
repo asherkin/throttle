@@ -36,13 +36,24 @@
                         </a>
                         <div class="d-flex align-items-center ms-auto">
                             {% if app.user %}
-                                <span class="navbar-text me-3">{{ include('_server_owner.html.twig', {owner: app.user}) }}</span>
-                                <a href="{{ path('logout') }}" class="btn btn-outline-dark me-2">
-                                    <svg class="bi me-1" width="16" height="16" aria-hidden="true">
-                                        <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-right"></use>
-                                    </svg>
-                                    Logout
+                                <a href="{{ path('user_show', { id: app.user.id }) }}" class="btn navbar-text-btn me-1">
+                                    {{ include('_server_owner.html.twig', {owner: app.user}) }}
                                 </a>
+                                {% if is_granted('IS_IMPERSONATOR') %}
+                                    <a href="{{ impersonation_exit_path() }}" class="btn btn-outline-danger me-2">
+                                        <svg class="bi me-1" width="16" height="16" aria-hidden="true">
+                                            <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-right"></use>
+                                        </svg>
+                                        Exit Impersonation
+                                    </a>
+                                {% else %}
+                                    <a href="{{ logout_path() }}" class="btn btn-outline-dark me-2">
+                                        <svg class="bi me-1" width="16" height="16" aria-hidden="true">
+                                            <use xlink:href="{{ asset('build/bootstrap-icons.svg') }}#box-arrow-right"></use>
+                                        </svg>
+                                        Logout
+                                    </a>
+                                {% endif %}
                             {% elseif not (app.request.get('_route') starts with 'login') %}
                                 <a href="{{ path('login') }}" class="btn btn-outline-primary me-2">
                                     <svg class="bi me-1" width="16" height="16" aria-hidden="true">
